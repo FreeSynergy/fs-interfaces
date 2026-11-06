@@ -38,6 +38,13 @@ const nameConflictProblemType   :Text = "https://freesynergy.net/problems/files/
 const invalidNameProblemType    :Text = "https://freesynergy.net/problems/files/invalid-name";
 const changedOutsideProblemType :Text = "https://freesynergy.net/problems/files/changed-outside";
 
+# What to do when the target name is taken, for rename, move, copy and upload. `refuse` (the default, 0)
+# answers a name-conflict Problem and changes nothing. `keepBoth` gives the INCOMING entry a free name:
+# `name (2).ext`, `name (3).ext` (a copy: `name (copy).ext`). There is no "replace": nothing here ever
+# overwrites a file, with or without a flag. Parameters added at the end of existing methods, so old
+# callers send 0 = refuse (note: the Rust `copy_file` without `_as` keeps the old keep-both behaviour).
+enum OnConflict { refuse @0; keepBoth @1; }
+
 struct File {
   envelope  @0 :Envelope;          # AS2 `Document` (`Image`, `Video`, `Audio` where they apply); envelope.name = the real file name
   mediaType @1 :Text;
@@ -88,17 +95,17 @@ interface Files {
 interface Folders {
   list         @0 (folder :Uuid, cursor :Cursor) -> (page :EntryPage);           # folder.list
   createFolder @1 (parent :Uuid, name :Text) -> (folder :Folder);                # folder.create
-  renameFolder @2 (id :Uuid, name :Text) -> (folder :Folder);                    # folder.rename
+  renameFolder @2 (id :Uuid, name :Text, onConflict :OnConflict) -> (folder :Folder);                    # folder.rename
   deleteFolder @3 (id :Uuid) -> ();                                              # folder.delete
-  moveFile     @4 (id :Uuid, folder :Uuid) -> (file :File);                      # file.move
-  copyFile     @5 (id :Uuid, folder :Uuid) -> (file :File);                      # file.copy
-  renameFile   @6 (id :Uuid, name :Text) -> (file :File);                        # file.rename
+  moveFile     @4 (id :Uuid, folder :Uuid, onConflict :OnConflict) -> (file :File);                      # file.move
+  copyFile     @5 (id :Uuid, folder :Uuid, onConflict :OnConflict) -> (file :File);                      # file.copy
+  renameFile   @6 (id :Uuid, name :Text, onConflict :OnConflict) -> (file :File);                        # file.rename
   trash        @7 (id :Uuid) -> ();                                              # file.delete
   restore      @8 (id :Uuid) -> (file :File);                                    # file.restore
   purge        @9 (id :Uuid) -> ();                                              # file.purge
   get          @10 (id :Uuid) -> (found :Bool, file :File);                      # file.resolve
   classify     @11 (id :Uuid, categories :List(Text)) -> (file :File);           # file.classify (ADR 0029)
-  moveFolder   @12 (id :Uuid, parent :Uuid) -> (folder :Folder);                 # folder.move: into itself or below is refused
+  moveFolder   @12 (id :Uuid, parent :Uuid, onConflict :OnConflict) -> (folder :Folder);                 # folder.move: into itself or below is refused
   rescan       @13 (folder :Uuid) -> (report :RescanReport);                     # folder.rescan: see RescanReport. PROVISIONAL rules; unset folder = the top
 }
 
@@ -123,7 +130,7 @@ interface Upload {
 }
 
 interface Transfer {
-  startUpload  @0 (folder :Uuid, name :Text, mediaType :Text) -> (upload :Upload, id :Text);  # file.upload
+  startUpload  @0 (folder :Uuid, name :Text, mediaType :Text, onConflict :OnConflict) -> (upload :Upload, id :Text);  # file.upload
   resumeUpload @1 (id :Text) -> (upload :Upload);                                # file.upload
   open         @2 (id :Uuid) -> (blob :Blob);                                    # file.download
 }
