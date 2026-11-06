@@ -69,7 +69,8 @@ impl<T> Page<T> {
     }
 }
 
-/// The length a `Blob.read` really answers: what a client asked for, up to what fits a message.
+/// The length a `Blob.read` really answers: what a client asked for, up to what fits a message. The
+/// contract allows fewer bytes than asked; only an empty answer means the end.
 #[must_use]
 pub fn clamp_read(length: u32) -> u32 {
     length.min(u32::try_from(MAX_PAGE_BYTES).unwrap_or(u32::MAX))

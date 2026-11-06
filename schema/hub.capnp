@@ -31,6 +31,8 @@ struct Activity {
   target    @6 :Common.Uuid;
   envelope  @7 :Common.Envelope;               # summary of the object (after image, else before image)
   payload   @8 :Data;                          # JSON: before/after images or the caller payload
+  originalAt    @9 :Common.Timestamp;          # when the program did it (`at` is when the hub applied it); never for withheld or sensitive objects (ADR 0029)
+  originalActor @10 :Text;                     # who did it. Empty for now: only the person can release it, a manifest cannot (open, strategy session)
 }
 
 struct ProgramInfo {

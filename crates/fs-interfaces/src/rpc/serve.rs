@@ -5,7 +5,6 @@
 
 use std::future::Future;
 use std::io;
-use std::ops::Deref;
 use std::path::Path;
 use std::time::Duration;
 
@@ -15,7 +14,7 @@ use capnp_rpc::rpc_twoparty_capnp::Side;
 use capnp_rpc::{RpcSystem, twoparty};
 use rustix::io::Errno;
 use tokio::net::UnixStream;
-use tokio::task::JoinHandle;
+use tokio::sync::oneshot;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 use super::socket::{BoundSocket, bind_socket};
@@ -75,24 +74,11 @@ pub async fn serve(
 }
 
 /// A capability on another program, and the connection it lives on. Dropping this closes the
-/// connection: capabilities taken from it stop working.
+/// connection: every call on a capability taken from it, also one under way, fails as disconnected.
 pub struct Connection<C> {
     /// The root capability.
     pub client: C,
-    task: JoinHandle<()>,
-}
-
-impl<C> Deref for Connection<C> {
-    type Target = C;
-    fn deref(&self) -> &C {
-        &self.client
-    }
-}
-
-impl<C> Drop for Connection<C> {
-    fn drop(&mut self) {
-        self.task.abort();
-    }
+    _close: oneshot::Sender<()>,
 }
 
 /// Reach the capability served on `socket`.
@@ -109,10 +95,20 @@ pub async fn connect<C: FromClientHook>(socket: &Path) -> io::Result<Connection<
     }
     let mut rpc = system(stream, Side::Client, None);
     let client: C = rpc.bootstrap(Side::Server);
-    let task = tokio::task::spawn_local(async move {
-        drop(rpc.await);
+    let disconnector = rpc.get_disconnector();
+    let (close, closed) = oneshot::channel::<()>();
+    tokio::task::spawn_local(async move {
+        tokio::pin!(rpc);
+        tokio::select! {
+            _ = &mut rpc => return,
+            _ = closed => {}
+        }
+        let _ = futures::future::join(disconnector, rpc).await;
     });
-    Ok(Connection { client, task })
+    Ok(Connection {
+        client,
+        _close: close,
+    })
 }
 
 /// A program's main loop: bind `socket` first, so a second start never touches the data of the first;

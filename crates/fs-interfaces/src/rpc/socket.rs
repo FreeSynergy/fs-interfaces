@@ -53,20 +53,32 @@ fn already_running(path: &Path) -> io::Error {
     )
 }
 
-/// Only this user may write in the directory: nobody else can swap the socket or the lock. Reading
-/// is harmless, the socket itself is 0600.
+/// Nobody else may be able to swap the socket or the lock: the directory is this user's, only this
+/// user writes there, and the same holds up the path (root's directories count, and a sticky one
+/// like `/tmp`, where others cannot rename what is ours). Reading is harmless, the socket is 0600.
 fn prepare_directory(dir: &Path) -> io::Result<()> {
     if !dir.exists() {
         std::fs::create_dir_all(dir)?;
         std::fs::set_permissions(dir, PermissionsExt::from_mode(0o700))?;
     }
-    let meta = std::fs::metadata(dir)?;
     let me = rustix::process::geteuid().as_raw();
-    if meta.uid() != me || meta.mode() & 0o022 != 0 {
-        return Err(io::Error::new(
+    let refuse = |d: &Path| {
+        io::Error::new(
             io::ErrorKind::PermissionDenied,
-            format!("{} must be writable by this user alone", dir.display()),
-        ));
+            format!("{} must be writable by this user alone", d.display()),
+        )
+    };
+    let dir = dir.canonicalize()?;
+    let meta = std::fs::metadata(&dir)?;
+    if meta.uid() != me || meta.mode() & 0o022 != 0 {
+        return Err(refuse(&dir));
+    }
+    for ancestor in dir.ancestors().skip(1) {
+        let meta = std::fs::metadata(ancestor)?;
+        let foreign = meta.uid() != me && meta.uid() != 0;
+        if foreign || (meta.mode() & 0o022 != 0 && meta.mode() & 0o1000 == 0) {
+            return Err(refuse(ancestor));
+        }
     }
     Ok(())
 }
@@ -113,9 +125,11 @@ async fn clear_stale(path: &Path) -> io::Result<()> {
 /// A live server owns it (`AddrInUse`), something else is at the path, others can write in the
 /// directory, or the file system refuses.
 pub async fn bind_socket(path: &Path) -> io::Result<BoundSocket> {
-    if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
-        prepare_directory(dir)?;
-    }
+    let dir = path
+        .parent()
+        .filter(|d| !d.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    prepare_directory(dir)?;
     let lock = take_lock(path)?;
     clear_stale(path).await?;
     let listener = UnixListener::bind(path)?;

@@ -78,6 +78,14 @@ impl Problem {
         })
     }
 
+    /// Fill a wire `Problem`.
+    pub fn write(&self, mut out: crate::common_capnp::problem::Builder<'_>) {
+        out.set_type(self.problem_type.as_str());
+        out.set_title(self.title.as_str());
+        out.set_detail(self.detail.as_str());
+        out.set_status(self.status);
+    }
+
     /// Whether this is the explicit "not possible" of the provider rule (ADR 0045).
     #[must_use]
     pub fn is_unsupported(&self) -> bool {
@@ -97,7 +105,8 @@ pub fn unsupported(not_possible: &Unsupported) -> Error {
     .into_error()
 }
 
-/// Any other failure of a provider, without a problem type of its own.
+/// Any other failure of a provider, without a problem type of its own. Not for an RPC error from
+/// elsewhere: a program that passes one on returns it unchanged, or its problem is lost.
 pub fn failed(error: impl std::fmt::Display) -> Error {
     Error::failed(error.to_string())
 }

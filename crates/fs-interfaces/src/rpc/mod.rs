@@ -6,8 +6,8 @@
 //! here runs on one thread inside a `tokio::task::LocalSet`, as `capnp-rpc` requires.
 //!
 //! A consumer ends a subscription by dropping the capability **and** the response it came in: the
-//! response keeps its own reference. A `ChangeListener` must not answer with an error: a stream that
-//! failed once stays failed, and that ends the feed.
+//! response keeps its own reference. A `ChangeListener` must not answer `change` with an error: a stream
+//! that failed once stays failed, and that ends the feed.
 //!
 //! The contracts' messages are limited ([`MAX_MESSAGE_BYTES`]); one larger message ends the whole
 //! connection with all its capabilities. So a server never answers more than fits: pages are cut by
@@ -20,12 +20,14 @@ mod feed;
 mod ids;
 mod page;
 mod problem;
+mod pump;
 mod serve;
 mod socket;
 
 pub use envelope::{read_envelope, write_envelope};
 pub use feed::{
-    ChangeReceiver, ChangeSender, FEED_CAPACITY, Notice, change_channel, forward, write_change,
+    ChangeReceiver, ChangeSender, FEED_CAPACITY, FEED_ENDED_PROBLEM_TYPE, FEED_STALL, Notice,
+    change_channel, forward, write_change,
 };
 pub use ids::{from_millis, read_object_id, read_uuid, to_millis, write_object_id, write_uuid};
 pub use page::{DEFAULT_PAGE_SIZE, MAX_MESSAGE_BYTES, MAX_PAGE_BYTES, Page, clamp_read};

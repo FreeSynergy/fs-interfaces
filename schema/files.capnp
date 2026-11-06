@@ -194,7 +194,7 @@ interface BlobBackend {
   supportReport @0 () -> (report :SupportReport);
   put    @1 (key :Text, offset :UInt64, data :Data) -> ();                       # blob.write
   commit @2 (key :Text) -> (info :BlobInfo);                                     # blob.write
-  get    @3 (key :Text, offset :UInt64, length :UInt32) -> (data :Data);         # blob.read
+  get    @3 (key :Text, offset :UInt64, length :UInt32) -> (data :Data);         # blob.read; may answer fewer bytes than asked, empty = the end
   stat   @4 (key :Text) -> (found :Bool, info :BlobInfo);                        # blob.read
   delete @5 (key :Text) -> ();                                                   # blob.delete
   pending @6 (key :Text) -> (bytes :UInt64);                                     # blob.write: how much of an unfinished key is held, for resuming

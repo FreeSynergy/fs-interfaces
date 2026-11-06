@@ -49,7 +49,14 @@ async fn a_problem_crosses_a_real_socket_and_the_socket_goes_with_the_server() {
         }));
 
         let client = connect::<blob::Client>(&path).await.unwrap();
-        let error = client.size_request().send().promise.await.err().unwrap();
+        let error = client
+            .client
+            .size_request()
+            .send()
+            .promise
+            .await
+            .err()
+            .unwrap();
         assert!(matches!(error.kind, capnp::ErrorKind::Unimplemented));
         let problem = Problem::from_error(&error).expect("typed problem");
         assert_eq!(problem.problem_type, UNSUPPORTED_PROBLEM_TYPE);
@@ -76,7 +83,7 @@ async fn dropped_connections_close_on_both_sides() {
         let before = open_fds();
         for _ in 0..20 {
             let client = connect::<blob::Client>(&path).await.unwrap();
-            let _ = client.size_request().send().promise.await;
+            let _ = client.client.size_request().send().promise.await;
             drop(client);
             tokio::time::sleep(std::time::Duration::from_millis(5)).await;
         }
@@ -135,6 +142,47 @@ async fn a_directory_others_can_reach_is_refused() {
         std::fs::set_permissions(&open, PermissionsExt::from_mode(0o777)).unwrap();
         let refused = bind_socket(&open.join("x.sock")).await.unwrap_err();
         assert_eq!(refused.kind(), ErrorKind::PermissionDenied);
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn a_writable_ancestor_is_refused_too() {
+    local(async {
+        let dir = tempfile::tempdir().unwrap();
+        let open = dir.path().join("open");
+        let inner = open.join("inner");
+        std::fs::create_dir_all(&inner).unwrap();
+        std::fs::set_permissions(&inner, PermissionsExt::from_mode(0o755)).unwrap();
+        std::fs::set_permissions(&open, PermissionsExt::from_mode(0o777)).unwrap();
+        let refused = bind_socket(&inner.join("x.sock")).await.unwrap_err();
+        assert_eq!(refused.kind(), ErrorKind::PermissionDenied);
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn calls_after_the_connection_was_dropped_fail_instead_of_hanging() {
+    local(async {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("x.sock");
+        let bound = bind_socket(&path).await.unwrap();
+        let server: blob::Client = new_client(NoBlob);
+        tokio::task::spawn_local(serve(bound, server.client, std::future::pending()));
+        let connection = connect::<blob::Client>(&path).await.unwrap();
+        let client = connection.client.clone();
+        drop(connection);
+        let answer = tokio::time::timeout(
+            std::time::Duration::from_secs(3),
+            client.size_request().send().promise,
+        )
+        .await
+        .expect("the call hung");
+        let error = answer.err().unwrap();
+        assert!(
+            matches!(error.kind, capnp::ErrorKind::Disconnected),
+            "{error:?}"
+        );
     })
     .await;
 }

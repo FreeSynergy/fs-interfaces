@@ -22,7 +22,7 @@ struct Problem   {                                          # RFC 9457 shape
 
 interface Blob {                                            # bytes behind a capability (originals, attachments)
   size @0 () -> (bytes :UInt64, mediaType :Text);
-  read @1 (offset :UInt64, length :UInt32) -> (data :Data);
+  read @1 (offset :UInt64, length :UInt32) -> (data :Data);  # may answer fewer bytes than asked; empty = the end
 }
 
 # AS2 envelope (ADR 0020, 0032): every object carries it
@@ -61,7 +61,14 @@ struct Change {
     deleted @2 :Uuid;
   }
 }
-interface ChangeListener { change @0 (change :Change) -> stream; }
+# `ended` is the last call of a feed that ended without the consumer dropping its `Subscription`: the
+# consumer fell too far behind, its listener failed, or the source closed. Changes may have been
+# missed. To go on, subscribe again and then read the current state (`list`, `query`), in that order.
+# A listener must not answer `change` with an error: a stream that failed once stays failed.
+interface ChangeListener {
+  change @0 (change :Change) -> stream;
+  ended  @1 (problem :Problem) -> ();
+}
 interface Subscription { }                                  # dropping it ends the subscription
 
 # ---- Provider rule (ADR 0045): like a parent class, every provider offers all methods ----
