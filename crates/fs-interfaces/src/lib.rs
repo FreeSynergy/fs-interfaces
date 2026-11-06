@@ -15,6 +15,7 @@
 //! * [`texts_capnp`] - texts (owner `fs-wiki`)
 //! * [`surveys_capnp`] - surveys and decisions (owner `fs-surveys`)
 //! * [`history_capnp`] - what happened, across programs (owner `fs-history`)
+//! * [`resources_capnp`] - things, capacity, needs and offers (owner `fs-resources`)
 //!
 //! [`provider`] holds the Rust side of the provider rule: [`Unsupported`] and [`Capabilities`].
 //!
@@ -54,6 +55,9 @@ pub mod people_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod places_capnp;
+#[rustfmt::skip]
+#[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
+pub mod resources_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod surveys_capnp;
