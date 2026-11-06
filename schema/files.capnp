@@ -210,6 +210,7 @@ interface BlobBackend {
   scan    @13 (dir :Text) -> (items :List(Scanned));                             # blob.scan: one level, sorted by name; empty = the top
   has     @14 (spot :Spot) -> (found :Bool);                                     # blob.read: is something at this spot (bytes left in the trash by a crash)
   sweepPending @15 (keep :List(Text), olderThanSecs :UInt64) -> (removed :UInt32); # blob.delete: pending blobs not in `keep` and older than that: leftovers of a crash
+  inspect @16 (spot :Spot) -> (found :Bool, info :BlobInfo);                      # blob.read: size, checksum (read from the bytes) and time of the blob at a spot, e.g. in the trash folder
 }
 
 # Where a blob is. `pending` and `trash` are inside the program's own hidden folder: never a user file.
