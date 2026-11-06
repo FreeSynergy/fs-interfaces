@@ -1,0 +1,18 @@
+[package]
+name = "fs-interfaces"
+description = "FreeSynergy interface contracts: Cap'n Proto schemas (one owner per topic, draft until 1.0) with committed generated Rust, and the shared provider rule (Unsupported, Capabilities)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+capnp = "0.27"
+
+[dev-dependencies]
+# Our own pure-Rust schema compiler (ADR 0040) regenerates the committed code ...
+capnp-compiler = { git = "https://github.com/FreeSynergy/fs-capnpc", tag = "v0.1.0" }
+capnpc = "0.27"
+# ... and the official compiler (as WASM) is the oracle in tests/generated_matches_official.rs.
+capnpc-embedded = "0.2"
