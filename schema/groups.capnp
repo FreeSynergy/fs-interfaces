@@ -92,13 +92,19 @@ interface Items {
   delete    @3 (id :Uuid) -> ();                                                 # group.delete
   get       @4 (id :Uuid) -> (found :Bool, group :Group);                        # group.read
   list      @5 (cursor :Cursor) -> (page :GroupPage);                            # group.read
-  addParent @6 (id :Uuid, parent :Uuid) -> (group :Group);                       # group.nest (a cycle is refused)
+  addParent @6 (id :Uuid, parent :Uuid) -> (group :Group);                       # group.nest: SUPERSEDED by requestParent @13 (a parent now has to consent); a provider answers unsupported
   removeParent @7 (id :Uuid, parent :Uuid) -> (group :Group);                    # group.nest
   parents   @8 (id :Uuid) -> (ids :List(Uuid));                                  # group.read
   children  @9 (id :Uuid) -> (ids :List(Uuid));                                  # group.read
   ancestors @10 (id :Uuid) -> (ids :List(Uuid));                                 # group.read
   descendants @11 (id :Uuid) -> (ids :List(Uuid));                               # group.read
   setRightFlow @12 (id :Uuid, flow :RightFlow) -> (group :Group);                # group.update
+  # Nesting needs the parent's consent (PROVISIONAL: who consents is still the owner's to answer).
+  # requestParent only writes a request; the link exists once approveParent ran on behalf of the parent.
+  requestParent @13 (child :Uuid, parent :Uuid) -> (request :ParentRequest);     # group.nest (a cycle is refused)
+  approveParent @14 (request :Uuid) -> (group :Group);                           # group.nest: returns the child with its new parent
+  declineParent @15 (request :Uuid) -> ();                                       # group.nest
+  parentRequests @16 (parent :Uuid) -> (items :List(ParentRequest));             # group.nest: any state, oldest first
 }
 
 interface Memberships {
@@ -118,6 +124,9 @@ interface Invitations {
   decline @2 (id :Uuid) -> ();                                                   # invite.answer
   revoke  @3 (id :Uuid) -> ();                                                   # invite.create
   list    @4 (group :Uuid) -> (items :List(Invitation));                         # invite.read
+  # accept only works for the invitee exactly. For an invitation sent to an e-mail address the caller
+  # says which verified address the person proved (PROVISIONAL; nothing is verified by the provider).
+  acceptProved @5 (id :Uuid, person :Text, provedAddress :Text) -> (membership :Membership);  # invite.answer
 }
 
 interface Delegations {
@@ -144,8 +153,24 @@ interface GroupDirectory {
   remove @2 (id :Uuid) -> ();                                                    # directory.apply
   read   @3 (id :Uuid) -> (found :Bool, group :DirectoryGroup);                  # directory.read
   list   @4 () -> (items :List(DirectoryGroup));                                 # directory.read
+  # One value per directory, stable, different for two directories of one provider (for example the
+  # URL of the instance). The mirror ledger is kept under it.
+  directoryId @5 () -> (id :Text);
+  # apply: a person the directory cannot map must not stop the rest. The adapter applies everything else
+  # and answers with a problem that names the people left out (Unmapped).
 }
 
 # Each group sets itself whether and in which direction its rights are passed on (ADR 0055 point 6).
 # The exact meaning of down and up is provisional and lives in the implementing program.
 enum RightFlow { none @0; down @1; up @2; }
+
+# A group asks to become a child of another. The link exists only once the parent's side approves.
+enum RequestState { pending @0; approved @1; declined @2; }
+
+struct ParentRequest {
+  id        @0 :Uuid;
+  child     @1 :Uuid;
+  parent    @2 :Uuid;
+  requester @3 :Text;              # who asked (IRI of the acting person)
+  state     @4 :RequestState;
+}
