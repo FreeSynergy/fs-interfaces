@@ -48,6 +48,7 @@ struct ImportReport {
   created @0 :List(Uuid);
   skipped @1 :List(Text);              # uids that already existed
   failed  @2 :List(Text);
+  unclear @3 :List(Text);              # stored, with a sensitive marking that names no category (ADR 0029)
 }
 
 # ---- Relations: what someone is to me (part of the card) ----
@@ -116,7 +117,9 @@ interface Persons {
   findByEmail    @7  (email :Text) -> (items :List(Person));                     # person.find
   findByPhone    @8  (phone :Text) -> (items :List(Person));                     # person.find
   importText     @9  (mediaType :Text, text :Text) -> (report :ImportReport);    # person.import
-  exportText     @10 (id :Uuid, mediaType :Text) -> (text :Text);                # person.export
+  # A sensitive card, or a sensitive member of a list, goes along only if its uid is in `released`
+  # (ADR 0029). A refused card is a problem; members left out of a list are named in `withheld`.
+  exportText     @10 (id :Uuid, mediaType :Text, released :List(Text)) -> (text :Text, withheld :List(Text)); # person.export
   relate         @11 (id :Uuid, otherUid :Text, relation :Text) -> (person :Person);   # relation.write
   unrelate       @12 (id :Uuid, otherUid :Text, relation :Text) -> (person :Person);   # relation.write
   relations      @13 (id :Uuid) -> (items :List(Relation));                      # relation.read
