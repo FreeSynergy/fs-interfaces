@@ -44,7 +44,7 @@ pub use page::{
     check_answer, check_intake, clamp_read,
 };
 pub use problem::{
-    INVALID_REQUEST, MAX_DETAIL_BYTES, Problem, TOO_LARGE, failed, invalid_request,
+    INVALID_REQUEST, MAX_DETAIL_BYTES, Problem, TOO_LARGE, capped, failed, invalid_request,
     is_unimplemented, too_large, unsupported,
 };
 pub use serve::{

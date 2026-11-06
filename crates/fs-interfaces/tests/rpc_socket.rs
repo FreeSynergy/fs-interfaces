@@ -203,6 +203,47 @@ fn options_refuse_what_they_cannot_use() {
 }
 
 #[test]
+fn an_instance_is_a_domain() {
+    use fs_interfaces::rpc::ServerOptions;
+    let parse = |name: &str| {
+        let args = ["--socket", "/s", "--data", "/d", "--instance", name];
+        ServerOptions::parse("x", args.map(Into::into))
+    };
+    for good in [
+        "example.org",
+        "a.b-c.example",
+        "xn--bcher-kva.example",
+        "localhost",
+    ] {
+        let options = parse(good).unwrap().unwrap();
+        assert_eq!(options.instance.as_deref(), Some(good));
+    }
+    let long_label = "a".repeat(64);
+    let longest = ["a"; 127].join(".");
+    assert_eq!(longest.len(), 253);
+    assert!(parse(&longest).is_ok());
+    let long_name = ["a"; 128].join(".");
+    for bad in [
+        "a/b",
+        "x y",
+        "a@b",
+        "a:80",
+        "a..b",
+        ".a",
+        "a.",
+        "-a",
+        "a-",
+        "bücher.example",
+        "a?b",
+        "a#b",
+    ] {
+        assert!(parse(bad).is_err(), "{bad}");
+    }
+    assert!(parse(&long_label).is_err());
+    assert!(parse(&long_name).is_err());
+}
+
+#[test]
 fn a_data_directory_is_for_this_user_alone() {
     use fs_interfaces::rpc::prepare_data_dir;
     let dir = tempfile::tempdir().unwrap();

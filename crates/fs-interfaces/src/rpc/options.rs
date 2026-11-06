@@ -37,6 +37,22 @@ pub fn default_data_dir(program: &str) -> Option<PathBuf> {
     Some(base.join("freesynergy").join(program))
 }
 
+/// A domain as an IRI can carry it: labels of ASCII letters, digits and inner hyphens, 63 bytes each,
+/// 253 in all, without a port. The name ends up in `https://<instance>/...`, so anything else would
+/// make every new object's IRI wrong, or point it elsewhere. An international name comes as `xn--`.
+fn is_domain(name: &str) -> bool {
+    name.len() <= 253
+        && name.split('.').all(|label| {
+            !label.is_empty()
+                && label.len() <= 63
+                && !label.starts_with('-')
+                && !label.ends_with('-')
+                && label
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'-')
+        })
+}
+
 /// Create the data directory for this user alone; refuse one that others can reach, or one below a
 /// directory that others could swap. Answers the canonical path, the one that was checked and is the
 /// one to use.
@@ -61,7 +77,8 @@ impl ServerOptions {
     /// Read `--socket PATH --data DIR --actor IRI --instance DOMAIN`. `Ok(None)` means help was asked for.
     ///
     /// # Errors
-    /// An unknown argument, a missing or empty value, or a location that has no default here.
+    /// An unknown argument, a missing or empty value, an instance that is no domain, or a location
+    /// that has no default here.
     pub fn parse(
         program: &str,
         args: impl IntoIterator<Item = OsString>,
@@ -96,11 +113,15 @@ impl ServerOptions {
             || LOCAL_OWNER.to_string(),
             |a| a.to_string_lossy().into_owned(),
         );
+        let instance = instance.map(|i| i.to_string_lossy().into_owned());
+        if let Some(name) = instance.as_deref().filter(|name| !is_domain(name)) {
+            return Err(format!("--instance needs a domain, not {name}"));
+        }
         Ok(Some(Self {
             socket,
             data,
             actor,
-            instance: instance.map(|i| i.to_string_lossy().into_owned()),
+            instance,
         }))
     }
 

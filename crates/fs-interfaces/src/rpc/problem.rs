@@ -42,8 +42,9 @@ pub struct Problem {
     pub next: Option<Vec<u8>>,
 }
 
-/// The longest start of `text` of at most [`MAX_DETAIL_BYTES`].
-fn capped(text: &str) -> &str {
+/// The longest start of `text` of at most [`MAX_DETAIL_BYTES`], for a text that goes into an answer.
+#[must_use]
+pub fn capped(text: &str) -> &str {
     let mut end = text.len().min(MAX_DETAIL_BYTES);
     while !text.is_char_boundary(end) {
         end -= 1;
