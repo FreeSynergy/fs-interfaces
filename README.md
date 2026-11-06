@@ -29,7 +29,7 @@ interface), ADR 0040 (pure-Rust Cap'n Proto compiler, generated code committed).
 |--------|-------|---------------|-----------|--------|
 | `common.capnp` | Shared types: ids, envelope, change feed, provider rule | `fs-store` (proposed) | all | draft 0.2 |
 | `tasks.capnp` | Tasks (JSCalendar `Task`) | `fs-tasks` | `fs-calendar` (1 of 2) | draft 0.1 |
-| `messenger.capnp` | Messages | `fs-messenger` | none yet | draft 0.2 |
+| `messenger.capnp` | Messages | `fs-messenger` | none yet | draft 0.3 |
 | `hub.capnp` | Hub: register, activity log, sessions | `fs-hub` | `fs-hub-client` (1 of 2) | draft 0.1 |
 | `people.capnp` | People, relations, roles, AI marking (JSContact) | `fs-people` | none yet | draft 0.1 |
 | `groups.capnp` | Groups, nesting, membership, invitations, delegation; directories that mirror them | `fs-groups` | none yet | draft 0.1 |

@@ -18,7 +18,7 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 
 ## State
 
-Version 0.26.0.
+Version 0.27.0.
 
 | Area | State |
 |---|---|
@@ -44,6 +44,7 @@ Version 0.26.0.
 | `history.capnp` (new, owner fs-history): entries, filter, digest, forget | done, draft, provisional |
 | `resources.capnp` (new, owner fs-resources): things, reservations, capacity owned by the person, needs and offers | done, draft, provisional |
 | `whiteboard.capnp` (new, owner fs-whiteboard): boards, elements, merge per property, undo per editor | done, draft, provisional |
+| `messenger` draft 0.3: `Draft.setSubject`; `MessageSummary.arrival`, `undecrypted`, `signature`, `tooLarge`; `skipped` on both pages; `unknown` as ordinal 0 of `Kind`, `ToolCallState`, `DeliveryState`; revision rule stated in full | done, draft |
 | Generated Rust with `capnp-compiler` v0.1.0 + `capnpc` 0.27 | done; byte-identical to `capnpc-embedded` 0.2 output (tested) |
 | Rust helpers `Unsupported`, `Capabilities` with wire round trips | done |
 | `rpc` (feature): socket with lock file, connection, problems, envelope, pages, feed | done, draft |

@@ -1,4 +1,4 @@
-# fs-messenger contract — DRAFT 0.2 (2026-11-06)
+# fs-messenger contract — DRAFT 0.3 (2026-11-06)
 #
 # STATUS: DRAFT (ADR 0045). Owner program: fs-messenger. Consumers: none yet (0 of 2 needed).
 # Moved here from fs-documentation/temp/contracts. Providers (mail, Matrix, Telegram ...) follow
@@ -23,25 +23,25 @@ using Envelope = C.Envelope;
 using Blob = C.Blob;
 
 # pages: one struct per item type (Cap'n Proto has no List(T) over generic parameters)
-struct MessagePage      { items @0 :List(MessageSummary);      next @1 :Cursor; }
-struct ConversationPage { items @0 :List(ConversationSummary); next @1 :Cursor; }
+struct MessagePage      { items @0 :List(MessageSummary);      next @1 :Cursor; skipped @2 :UInt32; }   # skipped = unreadable local records on this page; empty items with a next is not the end
+struct ConversationPage { items @0 :List(ConversationSummary); next @1 :Cursor; skipped @2 :UInt32; }   # as MessagePage
 
 # Unset reads as `unknown`: never proof of encryption, and sending with it is refused.
 enum Encryption { unknown @0; mls @1; openpgp @2; megolm @3; transportOnly @4; none @5; }   # ADR 0018
 
-enum Kind { mail @0; chat @1; comment @2; }
+enum Kind { unknown @0; mail @1; chat @2; comment @3; }
 
 # who wrote it; from the sender's card in fs-people (kind + role "ai"), never a guess from the text
 enum SenderKind { unknown @0; person @1; software @2; ai @3; }
 
 # one action of an agent; one entry is updated in place instead of adding messages
 enum ToolCallKind { unknown @0; reads @1; writes @2; runsCommand @3; connectedTool @4; }
-enum ToolCallState { forming @0; working @1; question @2; settled @3; }
+enum ToolCallState { unknown @0; forming @1; working @2; question @3; settled @4; }   # unknown is never asked and never final
 
-# The engine overwrites risk, detail, options, argumentsDigest and askedOf at its boundary. A provider running inside the
-# engine counts as its own: the engine builds the options itself and never forwards an agent's. A call from a remote
-# participant or an outside provider reads as `unknown` without options; it is shown, but cannot be answered here.
-# `settled` is final. The engine does not ask for a call it cannot allow: it settles at once as `refused`.
+# The engine overwrites id, revision, risk, detail, options, argumentsDigest and askedOf at its boundary. A provider running
+# inside the engine counts as its own: the engine builds the options itself and never forwards an agent's. A call from a
+# remote participant or an outside provider reads as risk `unknown` without options and never as state `question`: it is shown, not asked.
+# `settled` is final. For a call of its own the engine does not ask what it cannot allow: it settles at once as `refused`.
 struct ToolCall {
   id      @0 :Text;                                         # assigned by the engine, unique, never reused, never the agent's own id
   name    @1 :Text;                                         # may be written by the agent; never a basis for a decision
@@ -55,13 +55,14 @@ struct ToolCall {
   options @9 :List(ToolCallOption);                         # choices while state = question; offered by the engine
   argumentsDigest @10 :Data;                                # over caller, tool name and canonical arguments; empty never matches, such a call cannot be allowed
   askedOf @11 :Text;                                        # actor IRI of the person whose decision counts
-  revision @12 :UInt64;                                     # raised by the engine on every change; a lower one than held is ignored
+  revision @12 :UInt64;                                     # raised by the engine on every change; a lower one than held is ignored, equal means same content, 0 = not known and never replaces a held value; `settled` applies whatever its revision
 }
 
-# Unset reads as `unknown`, and `unknown` always asks (ADR 0054). The agent cannot set this.
+# Unset reads as `unknown`. For a call of the engine's own, `unknown` always asks (ADR 0054). The agent cannot set this.
 # destroys and actsForPerson are the brake: they ask every time. allowClass is offered only for readsOnly and changes.
 enum ToolCallRisk { unknown @0; readsOnly @1; changes @2; destroys @3; actsForPerson @4; }
 
+# A value this program cannot read is sent as open.
 enum ToolCallOutcome { open @0; done @1; failed @2; refused @3; cancelled @4; }
 
 # Unset reads as `refuse`. There is deliberately no "always" that an agent could remember.
@@ -86,7 +87,7 @@ struct ToolCallDecision {
   signer          @4 :Text;                                 # actor IRI of the person who signed
 }
 
-enum DeliveryState { sending @0; sent @1; delivered @2; read @3; failed @4; }  # stored locally (ADR 0037)
+enum DeliveryState { unknown @0; sending @1; sent @2; delivered @3; read @4; failed @5; }  # stored locally (ADR 0037)
 
 struct Attachment {
   name      @0 :Text;
@@ -96,6 +97,9 @@ struct Attachment {
 }
 
 struct Reaction { key @0 :Text; count @1 :UInt32; mine @2 :Bool; }
+
+# Unset reads as notVerified. `valid` says the signature matches a key held for the sender, not that the key is the person's.
+enum SignatureCheck { notVerified @0; notSigned @1; valid @2; }   # a bad signature reads as notVerified
 
 struct MessageSummary {
   envelope   @0 :Envelope;
@@ -107,11 +111,15 @@ struct MessageSummary {
   preview    @6 :Text;                                      # plain-text snippet
   senderKind @7 :SenderKind;                                # ADR 0054: everyone can see who is not human
   jobRef     @8 :Text;                                      # the job this message is anchored to; a job card is a view over these
+  arrival    @9 :UInt64;                                    # local arrival order, never from the sender. markRead(upTo) sweeps only what is at or before upTo in arrival AND in display order
+  undecrypted @10 :Bool;                                    # content could not be decrypted; the preview holds no ciphertext
+  signature  @11 :SignatureCheck;
+  tooLarge   @12 :UInt64;                                   # size of a message refused as too large; 0 = it is not. Only a stub stays, no content
 }
 
 struct Message {
   summary     @0 :MessageSummary;
-  bodyText    @1 :Text;                                     # normalised text; while `sending` returned unnormalised, and TextChunk.offset counts its bytes as returned
+  bodyText    @1 :Text;                                     # normalised text; while `sending` returned unnormalised, and TextChunk.offset counts its bytes as returned; while summary.undecrypted this is not the message
   bodyHtml    @2 :Text;                                     # sanitised, no remote loading (html-view)
   attachments @3 :List(Attachment);
   reactions   @4 :List(Reaction);
@@ -210,6 +218,7 @@ interface Draft {
   save          @4 () -> (id :Uuid);
   send          @5 (at :Timestamp) -> (id :Uuid, problem :Problem);  # at = 0 now, else schedule send
   discard       @6 () -> ();
+  setSubject    @7 (subject :Text) -> ();                   # mail; a provider without subjects ignores it
 }
 
 interface Search {
