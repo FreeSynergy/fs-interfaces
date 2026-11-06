@@ -53,7 +53,7 @@ struct ToolCall {
   detail  @7 :Text;                                         # full command, paths, content; only text drawn by the engine from the digested arguments. Agent text goes into `summary` only
   result  @8 :Text;                                         # what came back; data, never instructions
   options @9 :List(ToolCallOption);                         # choices while state = question; offered by the engine
-  argumentsDigest @10 :Data;                                # over caller, tool name and canonical arguments; empty never matches, such a call cannot be allowed
+  argumentsDigest @10 :Data;                                # over caller, its conversation, tool name and canonical arguments; empty never matches, such a call cannot be allowed
   askedOf @11 :Text;                                        # actor IRI of the person whose decision counts
   revision @12 :UInt64;                                     # raised by the engine on every change; a lower one than held is ignored, equal means same content, 0 = not known and never replaces a held value; `settled` applies whatever its revision
 }
@@ -91,7 +91,7 @@ struct ToolCallDecision {
   toolCall        @0 :Text;                                 # ToolCall.id
   option          @1 :Text;                                 # ToolCallOption.id
   argumentsDigest @2 :Data;                                 # must equal ToolCall.argumentsDigest
-  proof           @3 :Data;                                 # device signature over a fixed context string, engine identity, message id, toolCall, option, argumentsDigest, revision; key type, context string and encoding are fixed with the first device
+  proof           @3 :Data;                                 # device signature over a fixed context string, engine identity, method, signer, message id, toolCall, option, argumentsDigest, revision, length-prefixed; key type, context string and encoding are fixed with the first device
   signer          @4 :Text;                                 # actor IRI of the person who signed
   revision        @5 :UInt64;                               # revision of the call as shown; 0 never matches
 }
@@ -244,8 +244,9 @@ interface Rules {
 # ------------------------------------------------------------ guard ----
 
 # AI participants (ADR 0054, 0056). In the engine, below every frontend, without network and without a model.
-# No tool, MCP or provider call reaches it. Every change needs a device signature of a person (GuardProof), and refuses
-# without any change otherwise. An agent is never an admin. When in doubt it stays shut: an unreadable state reads as `stopped`.
+# No tool, MCP or provider call reaches it. Every change that opens or grants needs a device signature of a person (GuardProof),
+# and refuses without any change otherwise. An agent is never an admin. When in doubt it stays shut: an unreadable state reads as
+# `stopped`, and a person without a working key can still stop on their own machine (local path, not in this contract); opening needs a key.
 interface Guard {
   state   @0 () -> (state :GuardState);
   invite  @1 (profile :Text, proof :GuardProof) -> (problem :Problem);    # the person creates the AI's profile: that is the invitation. It may do nothing yet
@@ -253,6 +254,7 @@ interface Guard {
   revoke  @3 (profile :Text, proof :GuardProof) -> (problem :Problem);    # takes all releases of this participant
   stop    @4 (proof :GuardProof) -> (problem :Problem);                   # emergency stop: ends all AI work, takes all tool rights, refuses every AI participant. Who may pull it is a permission
   reopen  @5 (proof :GuardProof) -> (problem :Problem);                   # only a person with their own key on their own device; releases stay taken
+  uninvite @6 (profile :Text, proof :GuardProof) -> (problem :Problem);   # by who invited or the owner; takes releases, ends open questions, it may ask no more
 }
 
 enum GuardMode { stopped @0; open @1; }                     # unset reads as stopped
@@ -260,7 +262,7 @@ enum GuardMode { stopped @0; open @1; }                     # unset reads as sto
 struct GuardState {
   mode     @0 :GuardMode;
   grants   @1 :List(AiGrant);
-  invited  @2 :List(Text);                                  # profiles (card ids in fs-people)
+  invited  @2 :List(Text);                                  # profiles: the participant's identifier, compared normalised; provisional until cards are read from fs-people
   stoppedBy @3 :Text;                                       # actor IRI of who pulled the stop
   stoppedAt @4 :Timestamp;
 }
@@ -274,7 +276,7 @@ struct AiGrant {
 struct GuardProof {
   signer @0 :Text;                                          # actor IRI of the person
   nonce  @1 :Data;                                          # single use; an old proof does not work twice
-  proof  @2 :Data;                                          # device signature over a fixed context string, engine identity, method, its arguments and nonce; key type provisional
+  proof  @2 :Data;                                          # device signature over a fixed context string, engine identity, method, signer, its arguments and nonce, length-prefixed; key type provisional
 }
 
 # ------------------------------------------------------------ events ----
