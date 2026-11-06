@@ -152,10 +152,21 @@ interface Upload {
   abort    @3 () -> ();
 }
 
+# An unfinished upload, as listed by `Transfer.pendingUploads`.
+struct UploadInfo {
+  id        @0 :Text;              # for `resumeUpload`
+  folder    @1 :Uuid;              # unset = top level
+  name      @2 :Text;
+  mediaType @3 :Text;
+  received  @4 :UInt64;            # bytes the backend holds: where `write` goes on
+  started   @5 :Timestamp;
+}
+
 interface Transfer {
   startUpload  @0 (folder :Uuid, name :Text, mediaType :Text, onConflict :OnConflict) -> (upload :Upload, id :Text);  # file.upload
   resumeUpload @1 (id :Text) -> (upload :Upload);                                # file.upload
   open         @2 (id :Uuid) -> (blob :Blob);                                    # file.download
+  pendingUploads @3 () -> (items :List(UploadInfo));                             # file.upload: unfinished uploads, oldest first
 }
 
 interface Search {

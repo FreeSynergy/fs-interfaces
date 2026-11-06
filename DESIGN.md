@@ -17,7 +17,7 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 
 ## State
 
-Version 0.13.0.
+Version 0.14.0.
 
 | Area | State |
 |---|---|
@@ -36,6 +36,7 @@ Version 0.13.0.
 | `files` gains size and date filters in `FileFilter` (@4 to @9) | done |
 | `files` gains `Folders.emptyTrash @15`, `restoreTo @14`, `TrashReport`, and `onConflict` on `restore` | done |
 | `files` gains `Folders.getFolder @16` | done |
+| `files` gains `Transfer.pendingUploads @3` and `UploadInfo` | done |
 | Generated Rust with `capnp-compiler` v0.1.0 + `capnpc` 0.27 | done; byte-identical to `capnpc-embedded` 0.2 output (tested) |
 | Rust helpers `Unsupported`, `Capabilities` with wire round trips | done |
 | Tests | 2 oracle, 3 provider, 1 doc test |
