@@ -28,6 +28,21 @@ enum Encryption { mls @0; openpgp @1; megolm @2; transportOnly @3; none @4; }   
 
 enum Kind { mail @0; chat @1; comment @2; }
 
+# who wrote it; from the sender's card in fs-people (kind + role "ai"), never a guess from the text
+enum SenderKind { unknown @0; person @1; software @2; ai @3; }
+
+# one action of an agent; one entry is updated in place instead of adding messages
+enum ToolCallKind { reads @0; writes @1; runsCommand @2; connectedTool @3; }
+enum ToolCallState { forming @0; working @1; question @2; settled @3; }
+
+struct ToolCall {
+  id      @0 :Text;
+  name    @1 :Text;
+  kind    @2 :ToolCallKind;
+  state   @3 :ToolCallState;
+  summary @4 :Text;
+}
+
 enum DeliveryState { sending @0; sent @1; delivered @2; read @3; failed @4; }  # stored locally (ADR 0037)
 
 struct Attachment {
@@ -47,6 +62,7 @@ struct MessageSummary {
   unread     @4 :Bool;
   flagged    @5 :Bool;
   preview    @6 :Text;                                      # plain-text snippet
+  senderKind @7 :SenderKind;                                # ADR 0054: everyone can see who is not human
 }
 
 struct Message {
@@ -57,6 +73,8 @@ struct Message {
   reactions   @4 :List(Reaction);
   original    @5 :Blob;                                     # original as received (ADR 0030)
   originalMediaType @6 :Text;                               # message/rfc822, MIMI content, Matrix event
+  toolCalls   @7 :List(ToolCall);                           # what an agent is doing, visible (ADR 0054)
+  taskRefs    @8 :List(Text);                               # uids of tasks this message refers to (tasks.capnp)
 }
 
 struct ConversationSummary {

@@ -10,6 +10,9 @@
 //! * [`people_capnp`] - people and roles (owner `fs-people`)
 //! * [`groups_capnp`] - groups, and directories that mirror them (owner `fs-groups`)
 //! * [`files_capnp`] - files, and backends that keep the bytes (owner `fs-files`)
+//! * [`events_capnp`] - events (owner `fs-calendar`)
+//! * [`places_capnp`] - places, and sources of map tiles (owner `fs-maps`)
+//! * [`texts_capnp`] - texts (owner `fs-wiki`)
 //!
 //! [`provider`] holds the Rust side of the provider rule: [`Unsupported`] and [`Capabilities`].
 //!
@@ -22,6 +25,9 @@
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod common_capnp;
+#[rustfmt::skip]
+#[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
+pub mod events_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod files_capnp;
@@ -39,7 +45,13 @@ pub mod messenger_capnp;
 pub mod people_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
+pub mod places_capnp;
+#[rustfmt::skip]
+#[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod tasks_capnp;
+#[rustfmt::skip]
+#[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
+pub mod texts_capnp;
 
 pub mod provider;
 

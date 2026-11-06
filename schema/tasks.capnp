@@ -67,6 +67,7 @@ interface Tasks {
   items        @1 () -> (items :Items);
   subscribe    @2 (listener :ChangeListener) -> (subscription :Subscription);
   boards       @3 () -> (boards :Boards);      # placeholder, see below
+  supportReport @4 () -> (report :C.SupportReport);  # provider rule (ADR 0045)
 }
 
 interface Items {
