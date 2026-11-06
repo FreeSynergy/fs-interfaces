@@ -14,6 +14,7 @@
 //! * [`places_capnp`] - places, and sources of map tiles (owner `fs-maps`)
 //! * [`texts_capnp`] - texts (owner `fs-wiki`)
 //! * [`surveys_capnp`] - surveys and decisions (owner `fs-surveys`)
+//! * [`history_capnp`] - what happened, across programs (owner `fs-history`)
 //!
 //! [`provider`] holds the Rust side of the provider rule: [`Unsupported`] and [`Capabilities`].
 //!
@@ -35,6 +36,9 @@ pub mod files_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod groups_capnp;
+#[rustfmt::skip]
+#[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
+pub mod history_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod hub_capnp;
