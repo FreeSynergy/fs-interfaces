@@ -114,12 +114,21 @@ interface Folders {
   copyFile     @5 (id :Uuid, folder :Uuid, onConflict :OnConflict) -> (file :File);                      # file.copy
   renameFile   @6 (id :Uuid, name :Text, onConflict :OnConflict) -> (file :File);                        # file.rename
   trash        @7 (id :Uuid) -> ();                                              # file.delete
-  restore      @8 (id :Uuid) -> (file :File);                                    # file.restore
+  restore      @8 (id :Uuid, onConflict :OnConflict) -> (file :File);                                    # file.restore
   purge        @9 (id :Uuid) -> ();                                              # file.purge
   get          @10 (id :Uuid) -> (found :Bool, file :File);                      # file.resolve
   classify     @11 (id :Uuid, categories :List(Text)) -> (file :File);           # file.classify (ADR 0029)
   moveFolder   @12 (id :Uuid, parent :Uuid, onConflict :OnConflict) -> (folder :Folder);                 # folder.move: into itself or below is refused
+  restoreTo    @14 (id :Uuid, folder :Uuid, onConflict :OnConflict) -> (file :File);  # file.restoreTo: another folder than the original; unset folder = top level
+  emptyTrash   @15 () -> (report :TrashReport);                                  # file.emptyTrash: purge everything in the trash, for good
   rescan       @13 (folder :Uuid) -> (report :RescanReport);                     # folder.rescan: see RescanReport. PROVISIONAL rules; unset folder = the top
+}
+
+# What `emptyTrash` did. A file that cannot be purged stays in the trash and is listed in `failed`;
+# the others are still purged.
+struct TrashReport {
+  purged @0 :UInt32;
+  failed @1 :List(Uuid);
 }
 
 # What `rescan` found. It deletes nothing and overwrites nothing: files and folders that are on the disk
