@@ -12,6 +12,7 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 | `src/*_capnp.rs` (generated, committed) | Adapter | wire form; one module per schema, no generator needed at build time |
 | `src/provider.rs` `Unsupported` | Null Object | the explicit "not possible" (RFC 9457 `Problem`, status 501) |
 | `src/provider.rs` `Capabilities` | Value object | a provider's report of what it can do (`Support` per capability) |
+| `src/rpc/*` (feature `rpc`) | Adapter, Factory, Observer | the shared server and client side of every contract: socket, RPC system, envelope, RFC 9457 problems as RPC errors, pages, change feed |
 | `crates/regenerate` | Pipeline | `capnp-compiler` -> `CodeGeneratorRequest` -> `capnpc` -> files |
 | `tests/generated_matches_official.rs` | Oracle test | official compiler and ours must produce the committed code |
 
@@ -50,6 +51,8 @@ Version 0.17.0.
 * `capnp` 0.27 for all consumers (fs-hub moved from 0.23).
 * Generated code is not formatted (`#[rustfmt::skip]`) and exempt from lints; `regenerate` is a workspace member, not a feature,
   so it works before the library compiles.
+* `rpc` lives here, not in a repo of its own, because generated types of two `fs-interfaces` tags are different Rust types: a helper crate would have to be re-tagged for each contract tag. Behind a feature, so a program that only uses the contracts pulls in no runtime. Provisional, reported to the strategy session.
+* A problem crosses the wire inside the exception text behind a marker (`rpc::Problem`), because the contract methods have no error result; status 501 also sets the exception kind `unimplemented`. Pages are positions in the core's ordered list (`rpc::Page`), so an insert between two pages can shift the boundary by one.
 * The Rust trait with `Unsupported` defaults for each topic lives with the owner program (ADR 0043: trait first); this repo
   holds only the shared types.
 

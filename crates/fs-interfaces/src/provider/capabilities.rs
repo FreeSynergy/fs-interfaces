@@ -101,6 +101,20 @@ impl Capabilities {
         }
     }
 
+    /// Fill a wire `CapabilityList` (`common.capnp`): the ids this provider really offers.
+    pub fn write_list(
+        &self,
+        contract_version: &str,
+        mut out: crate::common_capnp::capability_list::Builder<'_>,
+    ) {
+        out.set_contract_version(contract_version);
+        let offered: Vec<_> = self.entries.iter().filter(|e| e.supported).collect();
+        let mut ids = out.init_ids(u32::try_from(offered.len()).unwrap_or(u32::MAX));
+        for (i, e) in (0u32..).zip(offered) {
+            ids.set(i, e.capability.as_str());
+        }
+    }
+
     /// Read a wire `SupportReport` back.
     ///
     /// # Errors

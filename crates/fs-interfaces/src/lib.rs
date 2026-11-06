@@ -18,6 +18,9 @@
 //!
 //! [`provider`] holds the Rust side of the provider rule: [`Unsupported`] and [`Capabilities`].
 //!
+//! [`rpc`] (feature `rpc`) is the shared server and client side of every contract, so that each
+//! program's server only translates its own methods.
+//!
 //! Pattern: Adapter, the generated modules are the wire form; Null Object, a default method that
 //! answers `Unsupported` is the explicit "not possible".
 
@@ -62,5 +65,7 @@ pub mod tasks_capnp;
 pub mod texts_capnp;
 
 pub mod provider;
+#[cfg(feature = "rpc")]
+pub mod rpc;
 
 pub use provider::{Capabilities, Support, UNSUPPORTED_PROBLEM_TYPE, Unsupported};
