@@ -13,10 +13,14 @@
 //! connection with all its capabilities. So a server never answers more than fits: pages are cut by
 //! weight ([`Page::of_weighted`]), reads are clamped ([`clamp_read`]).
 //!
+//! A write of more than one step goes through [`run_to_end`], or a client that goes away leaves it half
+//! done.
+//!
 //! Pattern: Facade (declarations).
 
 mod envelope;
 mod feed;
+mod finish;
 mod ids;
 mod options;
 mod page;
@@ -30,6 +34,7 @@ pub use feed::{
     ChangeReceiver, ChangeSender, FEED_CAPACITY, FEED_ENDED_PROBLEM_TYPE, FEED_STALL, Notice,
     change_channel, forward, write_change,
 };
+pub use finish::run_to_end;
 pub use ids::{from_millis, read_object_id, read_uuid, to_millis, write_object_id, write_uuid};
 pub use options::{LOCAL_OWNER, ServerOptions, default_data_dir, prepare_data_dir};
 pub use page::{
