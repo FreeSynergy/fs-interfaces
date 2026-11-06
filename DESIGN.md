@@ -60,6 +60,8 @@ Version 0.25.0.
 * The Rust trait with `Unsupported` defaults for each topic lives with the owner program (ADR 0043: trait first); this repo
   holds only the shared types.
 
+* `supportReport` is the standard way to ask what a provider offers (strategy session, 2026-11-06). `capabilities` is not added to further contracts and goes before 1.0; ADR 0021 stays met, the report is what API, CLI and MCP query. The hub's `Manifest.capabilities` is another thing, what a program declares, and stays.
+
 ## Limits of `rpc`, to close before 1.0
 
 * **Pages:** the cursor is opaque to consumers (a leading version byte, nothing to calculate with). Today it marks a place in the core's ordered list, so an insert or delete between two pages can skip or repeat one entry. Before 1.0 it becomes a stable key (sort value plus id) without a contract change. For messages and `subscribe`, skipped or repeated entries count as errors (strategy session, 2026-11-06).
