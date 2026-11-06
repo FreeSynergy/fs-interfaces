@@ -28,6 +28,7 @@ struct Group {
   as2      @1 :Text;               # the AS2 `Group` as JSON (authoritative content)
   kind     @2 :Text;               # team, project, department, ... free text, not a fixed list
   parents  @3 :List(Uuid);
+  rightFlow @4 :RightFlow;         # whether and where this group's rights are passed on; default none
 }
 
 struct GroupPage { items @0 :List(Group); next @1 :Cursor; }
@@ -97,6 +98,7 @@ interface Items {
   children  @9 (id :Uuid) -> (ids :List(Uuid));                                  # group.read
   ancestors @10 (id :Uuid) -> (ids :List(Uuid));                                 # group.read
   descendants @11 (id :Uuid) -> (ids :List(Uuid));                               # group.read
+  setRightFlow @12 (id :Uuid, flow :RightFlow) -> (group :Group);                # group.update
 }
 
 interface Memberships {
@@ -143,3 +145,7 @@ interface GroupDirectory {
   read   @3 (id :Uuid) -> (found :Bool, group :DirectoryGroup);                  # directory.read
   list   @4 () -> (items :List(DirectoryGroup));                                 # directory.read
 }
+
+# Each group sets itself whether and in which direction its rights are passed on (ADR 0055 point 6).
+# The exact meaning of down and up is provisional and lives in the implementing program.
+enum RightFlow { none @0; down @1; up @2; }
