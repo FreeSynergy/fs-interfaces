@@ -164,7 +164,7 @@ struct Summary {
   ballots   @0 :UInt32;             # released ones
   hidden    @1 :Bool;
   questions @2 :List(QuestionSummary);
-  heldBack  @3 :UInt32;             # answers not released yet (see the header)
+  heldBack  @3 :UInt32;             # answers not released yet (see the header); anonymous: 0 while open
 }
 
 struct OptionResult {
@@ -175,7 +175,7 @@ struct OptionResult {
 
 struct Evaluation {
   method   @0 :Method;
-  winners  @1 :List(Text);          # empty = not decided (no majority, an objection, a tie in a round)
+  winners  @1 :List(Text);          # empty = not decided (no majority, an objection, a tie in a round, still open)
   options  @2 :List(OptionResult);
   note     @3 :Text;                # why not decided
   hidden   @4 :Bool;

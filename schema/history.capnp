@@ -58,10 +58,11 @@ interface EntryListener {
 
 # what a log has too much of: changes to one object by one program, close together, as one line
 struct DigestEntry {
-  first  @0 :Entry;
-  lastAt @1 :Timestamp;
+  first  @0 :Entry;           # the earliest entry of the group
+  lastAt @1 :Timestamp;       # the latest
   count  @2 :UInt32;
   kinds  @3 :List(Text);      # each verb once, in order of first appearance
+  continues @4 :Bool;         # cut off here because the run is very long; the next page goes on with it
 }
 
 struct DigestPage { items @0 :List(DigestEntry); next @1 :Cursor; }
@@ -75,7 +76,8 @@ interface History {
   get      @3 (id :Uuid) -> (found :Bool, entry :Entry);                           # history.read
   # entries of one object and program, no more than `windowMinutes` apart, become one; newest first
   digest   @4 (filter :EntryFilter, windowMinutes :UInt32, cursor :Cursor) -> (page :DigestPage); # history.digest
-  # removes the matching entries and keeps them out if delivered again; an empty filter is refused
+  # removes the matching entries, past ones only: what happens later is recorded again. They stay out
+  # if delivered again. An empty filter is refused
   forget   @5 (filter :EntryFilter) -> (removed :UInt32);                          # history.forget
   subscribe @6 (filter :EntryFilter, listener :EntryListener) -> (subscription :Subscription); # history.subscribe
 }
