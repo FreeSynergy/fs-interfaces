@@ -1,4 +1,4 @@
-# fs-messenger contract — DRAFT 0.3 (2026-11-06)
+# fs-messenger contract — DRAFT 0.4 (2026-11-06)
 #
 # STATUS: DRAFT (ADR 0045). Owner program: fs-messenger. Consumers: none yet (0 of 2 needed).
 # Moved here from fs-documentation/temp/contracts. Providers (mail, Matrix, Telegram ...) follow
@@ -78,13 +78,16 @@ struct ToolCallOption {
 
 # The answer to a question. Only the device of the person may send it (MessageAction.decide);
 # an answer that came through the agent's own client proves nothing about a person. Single use, enforced by the engine.
-# Refused without any change: empty digest, proof, signer or askedOf; unknown option; signer other than askedOf; call settled.
+# argumentsDigest and revision are those of the state the person saw when deciding, not the current ones.
+# Refused without any change: empty digest, proof, signer or askedOf; unknown option; signer other than askedOf; call settled;
+# digest or revision that no longer match the call. A harmless change with a new revision asks again, on purpose.
 struct ToolCallDecision {
   toolCall        @0 :Text;                                 # ToolCall.id
   option          @1 :Text;                                 # ToolCallOption.id
   argumentsDigest @2 :Data;                                 # must equal ToolCall.argumentsDigest
-  proof           @3 :Data;                                 # device signature over a fixed context string, engine identity, message id, toolCall, option, argumentsDigest; key type, context string and encoding are fixed with the first device
+  proof           @3 :Data;                                 # device signature over a fixed context string, engine identity, message id, toolCall, option, argumentsDigest, revision; key type, context string and encoding are fixed with the first device
   signer          @4 :Text;                                 # actor IRI of the person who signed
+  revision        @5 :UInt64;                               # revision of the call as shown; 0 never matches
 }
 
 enum DeliveryState { unknown @0; sending @1; sent @2; delivered @3; read @4; failed @5; }  # stored locally (ADR 0037)
@@ -155,6 +158,7 @@ interface Messenger {
   rules         @5 () -> (rules :Rules);                    # optional capability: may be null
   subscribe     @6 (filter :EventFilter, listener :Listener) -> (subscription :Subscription);
   supportReport @7 () -> (report :C.SupportReport);         # provider rule (ADR 0045)
+  guard         @8 () -> (guard :Guard);                    # person's device only; null for any other caller; never generated into MCP
 }
 
 interface Accounts {
@@ -229,6 +233,42 @@ struct SearchFilter { from @0 :Text; unread @1 :Bool; hasAttachment @2 :Bool; si
 interface Rules {
   list @0 () -> (sieve :Text);                               # rules stored as Sieve
   set  @1 (sieve :Text) -> (problem :Problem);
+}
+
+# ------------------------------------------------------------ guard ----
+
+# AI participants (ADR 0054, 0056). In the engine, below every frontend, without network and without a model.
+# No tool, MCP or provider call reaches it. Every change needs a device signature of a person (GuardProof), and refuses
+# without any change otherwise. An agent is never an admin. When in doubt it stays shut: an unreadable state reads as `stopped`.
+interface Guard {
+  state   @0 () -> (state :GuardState);
+  invite  @1 (profile :Text, proof :GuardProof) -> (problem :Problem);    # the person creates the AI's profile: that is the invitation. It may do nothing yet
+  release @2 (grant :AiGrant, proof :GuardProof) -> (problem :Problem);   # what it may do; destroys and actsForPerson always ask, whatever is released
+  revoke  @3 (profile :Text, proof :GuardProof) -> (problem :Problem);    # takes all releases of this participant
+  stop    @4 (proof :GuardProof) -> (problem :Problem);                   # emergency stop: ends all AI work, takes all tool rights, refuses every AI participant. Who may pull it is a permission
+  reopen  @5 (proof :GuardProof) -> (problem :Problem);                   # only a person with their own key on their own device; releases stay taken
+}
+
+enum GuardMode { stopped @0; open @1; }                     # unset reads as stopped
+
+struct GuardState {
+  mode     @0 :GuardMode;
+  grants   @1 :List(AiGrant);
+  invited  @2 :List(Text);                                  # profiles (card ids in fs-people)
+  stoppedBy @3 :Text;                                       # actor IRI of who pulled the stop
+  stoppedAt @4 :Timestamp;
+}
+
+# A release covers one participant and one risk class; unknown, destroys and actsForPerson can never be granted.
+struct AiGrant {
+  profile @0 :Text;
+  risk    @1 :ToolCallRisk;
+}
+
+struct GuardProof {
+  signer @0 :Text;                                          # actor IRI of the person
+  nonce  @1 :Data;                                          # single use; an old proof does not work twice
+  proof  @2 :Data;                                          # device signature over a fixed context string, engine identity, method, its arguments and nonce; key type provisional
 }
 
 # ------------------------------------------------------------ events ----
