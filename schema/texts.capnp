@@ -21,6 +21,7 @@ struct TextEntry {
   envelope @0 :Envelope;           # AS2 `Article` or `Note`
   path     @1 :Text;               # readable path, e.g. "manual/start"; unique
   document @2 :Text;               # the document as JSON (authoritative content)
+  revision @3 :UInt64;             # counts every write of this text (0.7: for editIf); never goes back, whatever the clock does
 }
 
 struct TextPage { items @0 :List(TextEntry); next @1 :Cursor; }
@@ -47,4 +48,5 @@ interface Texts {
   exportText @12 (id :Uuid, mediaType :Text) -> (text :Text);                    # text.export
   subscribe  @13 (listener :ChangeListener) -> (subscription :Subscription);     # text.subscribe
   moveFolder @14 (prefix :Text, path :Text) -> (moved :List(TextEntry));          # text.move: the text at `prefix` (if any) and every `prefix/...` move along; links follow; a clash below refuses all, nothing written
+  editIf     @15 (id :Uuid, revision :UInt64, document :Text) -> (text :TextEntry);  # text.edit, only if the text still has `revision`; otherwise it fails with a reason starting `conflict:` and writes nothing (compare-and-set; atomic inside one provider process only)
 }
