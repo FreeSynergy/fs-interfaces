@@ -70,6 +70,12 @@ enum ToolCallOutcome { open @0; done @1; failed @2; refused @3; cancelled @4; }
 # emergency stop, never forwarded as an agent's own "allow always"; the risk is still derived on every call.
 enum ToolCallChoice { refuse @0; allowOnce @1; allowClass @2; }
 
+# Problem.type of a refused decision (MessageAction.decide). Nothing changed. The answer is machine-readable through these.
+const decisionStaleProblemType :Text = "https://freesynergy.net/problems/decision-stale";              # digest or revision no longer match; a toolCall event with the fresh state follows
+const decisionSettledProblemType :Text = "https://freesynergy.net/problems/decision-settled";          # the call is settled; the toolCall event with its end follows
+const decisionNotAskedProblemType :Text = "https://freesynergy.net/problems/decision-not-asked-of-you"; # signer is not askedOf
+const decisionInvalidProblemType :Text = "https://freesynergy.net/problems/decision-invalid";          # empty field, unknown option, bad, replayed or expired proof
+
 struct ToolCallOption {
   id     @0 :Text;
   label  @1 :Text;
