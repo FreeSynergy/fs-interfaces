@@ -18,7 +18,7 @@
 # A person travels as JSContact JSON text, which stays authoritative (ADR 0014, 0050), next to the
 # AS2 envelope. Evolution rules (Cap'n Proto): never renumber or remove fields/methods; only append.
 
-0xf41de01e6495cb24;
+@0xf41de01e6495cb24;
 
 using C = import "common.capnp";
 using Uuid = C.Uuid;
