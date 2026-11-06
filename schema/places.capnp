@@ -35,6 +35,7 @@ interface Places {
   within @6 (box :BBox, cursor :Cursor) -> (page :PlacePage);                    # place.find
   findByName @7 (term :Text, cursor :Cursor) -> (page :PlacePage);               # place.find
   subscribe  @8 (listener :ChangeListener) -> (subscription :Subscription);      # place.subscribe
+  tiles      @9 () -> (source :TileSource);                                      # tile.read: a program has one socket, this is the way to its tiles
 }
 
 # ---- Provider interface: where map tiles come from. PMTiles over HTTP, a file, a region package. ----

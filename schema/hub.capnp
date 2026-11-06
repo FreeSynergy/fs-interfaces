@@ -66,7 +66,9 @@ interface Session {
 
   # hub -> program: activities of OTHER programs, only declared `reads` types. `since` zero =
   # continue from the hub-kept cursor of this program. Does not advance the cursor; call `ack`.
-  pull @1 (since :Common.Uuid, limit :UInt32) -> (
+  # An answer may hold fewer than `limit`: it is also cut by size, and `more` then says there is more.
+  # `envelopeOnly`: leave `payload` empty, for programs that need the routing summary, not the content.
+  pull @1 (since :Common.Uuid, limit :UInt32, envelopeOnly :Bool) -> (
     activities :List(Activity),
     last       :Common.Uuid,                   # scanned up to here (ack this)
     more       :Bool);

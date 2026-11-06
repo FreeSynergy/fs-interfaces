@@ -23,6 +23,8 @@ pub struct ServerOptions {
     pub data: PathBuf,
     /// IRI of the acting person, written to the log. Not a verified identity.
     pub actor: String,
+    /// Instance domain for the IRIs of new objects (ADR 0027); `None` = the program's default.
+    pub instance: Option<String>,
 }
 
 /// `$XDG_DATA_HOME/freesynergy/<program>`, else below `$HOME/.local/share`.
@@ -55,7 +57,7 @@ pub fn prepare_data_dir(dir: &Path) -> io::Result<()> {
 }
 
 impl ServerOptions {
-    /// Read `--socket PATH --data DIR --actor IRI`. `Ok(None)` means help was asked for.
+    /// Read `--socket PATH --data DIR --actor IRI --instance DOMAIN`. `Ok(None)` means help was asked for.
     ///
     /// # Errors
     /// An unknown argument, a missing or empty value, or a location that has no default here.
@@ -63,7 +65,7 @@ impl ServerOptions {
         program: &str,
         args: impl IntoIterator<Item = OsString>,
     ) -> Result<Option<Self>, String> {
-        let (mut socket, mut data, mut actor) = (None, None, None);
+        let (mut socket, mut data, mut actor, mut instance) = (None, None, None, None);
         let mut args = args.into_iter();
         while let Some(arg) = args.next() {
             let name = arg.to_string_lossy().into_owned();
@@ -71,6 +73,7 @@ impl ServerOptions {
                 "--socket" => &mut socket,
                 "--data" => &mut data,
                 "--actor" => &mut actor,
+                "--instance" => &mut instance,
                 "-h" | "--help" => return Ok(None),
                 other => return Err(format!("unknown argument {other}")),
             };
@@ -96,6 +99,7 @@ impl ServerOptions {
             socket,
             data,
             actor,
+            instance: instance.map(|i| i.to_string_lossy().into_owned()),
         }))
     }
 
@@ -108,7 +112,7 @@ impl ServerOptions {
             Ok(Some(options)) => options,
             Ok(None) => {
                 println!(
-                    "{binary} [--socket PATH] [--data DIR] [--actor IRI]\nDefaults: $XDG_RUNTIME_DIR/freesynergy/{program}.sock, $XDG_DATA_HOME/freesynergy/{program}, the local owner"
+                    "{binary} [--socket PATH] [--data DIR] [--actor IRI] [--instance DOMAIN]\nDefaults: $XDG_RUNTIME_DIR/freesynergy/{program}.sock, $XDG_DATA_HOME/freesynergy/{program}, the local owner"
                 );
                 std::process::exit(0);
             }
