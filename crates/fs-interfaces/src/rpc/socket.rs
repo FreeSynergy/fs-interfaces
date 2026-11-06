@@ -5,9 +5,9 @@
 //! answers on is ever removed; dropping the [`BoundSocket`] removes the socket while still holding
 //! the lock, so it can never remove a successor's.
 
-use std::fs::{File, OpenOptions, TryLockError};
+use std::fs::{DirBuilder, File, OpenOptions, TryLockError};
 use std::io;
-use std::os::unix::fs::{FileTypeExt, MetadataExt, OpenOptionsExt, PermissionsExt};
+use std::os::unix::fs::{DirBuilderExt, FileTypeExt, MetadataExt, OpenOptionsExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
 use tokio::net::{UnixListener, UnixStream};
@@ -54,26 +54,26 @@ fn already_running(path: &Path) -> io::Error {
     )
 }
 
-/// Nobody else may be able to swap the socket or the lock: the directory is this user's, only this
-/// user writes there, and the same holds up the path (root's directories count, and a sticky one
-/// like `/tmp`, where others cannot rename what is ours). Reading is harmless, the socket is 0600.
-fn prepare_directory(dir: &Path) -> io::Result<()> {
-    if !dir.exists() {
-        std::fs::create_dir_all(dir)?;
-        std::fs::set_permissions(dir, PermissionsExt::from_mode(0o700))?;
+/// Create a directory and the missing ones above it for this user alone, whatever the umask.
+pub(super) fn create_private(dir: &Path) -> io::Result<()> {
+    if dir.exists() {
+        return Ok(());
     }
+    DirBuilder::new().recursive(true).mode(0o700).create(dir)
+}
+
+fn refuse(d: &Path) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::PermissionDenied,
+        format!("{} must be writable by this user alone", d.display()),
+    )
+}
+
+/// Nobody else may be able to swap anything up the path: each directory above is this user's or
+/// root's, and only its owner writes there, or it is sticky like `/tmp`, where others cannot rename
+/// what is ours. `dir` must be canonical, so a symlink in the path cannot hide one.
+pub(super) fn check_ancestors(dir: &Path) -> io::Result<()> {
     let me = rustix::process::geteuid().as_raw();
-    let refuse = |d: &Path| {
-        io::Error::new(
-            io::ErrorKind::PermissionDenied,
-            format!("{} must be writable by this user alone", d.display()),
-        )
-    };
-    let dir = dir.canonicalize()?;
-    let meta = std::fs::metadata(&dir)?;
-    if meta.uid() != me || meta.mode() & 0o022 != 0 {
-        return Err(refuse(&dir));
-    }
     for ancestor in dir.ancestors().skip(1) {
         let meta = std::fs::metadata(ancestor)?;
         let foreign = meta.uid() != me && meta.uid() != 0;
@@ -82,6 +82,19 @@ fn prepare_directory(dir: &Path) -> io::Result<()> {
         }
     }
     Ok(())
+}
+
+/// Reading is harmless, the socket is 0600; writing in the directory is not. Answers the canonical
+/// path, the one that was checked and is the one to use.
+fn prepare_directory(dir: &Path) -> io::Result<PathBuf> {
+    create_private(dir)?;
+    let dir = dir.canonicalize()?;
+    let meta = std::fs::metadata(&dir)?;
+    if meta.uid() != rustix::process::geteuid().as_raw() || meta.mode() & 0o022 != 0 {
+        return Err(refuse(&dir));
+    }
+    check_ancestors(&dir)?;
+    Ok(dir)
 }
 
 fn take_lock(path: &Path) -> io::Result<File> {
@@ -130,14 +143,20 @@ pub async fn bind_socket(path: &Path) -> io::Result<BoundSocket> {
         .parent()
         .filter(|d| !d.as_os_str().is_empty())
         .unwrap_or(Path::new("."));
-    prepare_directory(dir)?;
-    let lock = take_lock(path)?;
-    clear_stale(path).await?;
-    let listener = UnixListener::bind(path)?;
-    std::fs::set_permissions(path, PermissionsExt::from_mode(0o600))?;
+    let name = path.file_name().ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("{} has no name", path.display()),
+        )
+    })?;
+    let path = prepare_directory(dir)?.join(name);
+    let lock = take_lock(&path)?;
+    clear_stale(&path).await?;
+    let listener = UnixListener::bind(&path)?;
+    std::fs::set_permissions(&path, PermissionsExt::from_mode(0o600))?;
     Ok(BoundSocket {
         listener,
-        path: path.to_path_buf(),
+        path,
         _lock: lock,
     })
 }

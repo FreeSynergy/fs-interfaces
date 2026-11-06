@@ -67,10 +67,11 @@ impl<T> Page<T> {
     }
 
     /// Like [`Page::of`], and the page also ends before `weight` of its items passes
-    /// [`MAX_PAGE_BYTES`]. A page always holds at least one item, so paging always advances.
+    /// [`MAX_PAGE_BYTES`]. A page holds at least one item, so paging advances; an item that does not
+    /// fit alone is refused, since sending it would end the connection.
     ///
     /// # Errors
-    /// The cursor is not one this code handed out, or `size` is zero.
+    /// The cursor is not one this code handed out, `size` is zero, or the next item alone is too large.
     pub fn of_weighted(
         all: Vec<T>,
         cursor: &[u8],
@@ -86,7 +87,12 @@ impl<T> Page<T> {
         let mut bytes = 0usize;
         for item in all.into_iter().skip(start).take(size) {
             bytes = bytes.saturating_add(weight(&item));
-            if bytes > MAX_PAGE_BYTES && !items.is_empty() {
+            if bytes > MAX_PAGE_BYTES {
+                if items.is_empty() {
+                    return Err(too_large(format!(
+                        "one item of {bytes} bytes, at most {MAX_PAGE_BYTES} fit"
+                    )));
+                }
                 break;
             }
             items.push(item);

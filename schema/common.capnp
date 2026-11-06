@@ -62,9 +62,11 @@ struct Change {
   }
 }
 # `ended` is the last call of a feed that ended without the consumer dropping its `Subscription`: the
-# consumer fell too far behind, its listener failed, or the source closed. Changes may have been
+# consumer fell too far behind, a change could not be told, or the source closed. Changes may have been
 # missed. To go on, subscribe again and then read the current state (`list`, `query`), in that order.
-# A listener must not answer `change` with an error: a stream that failed once stays failed.
+# A listener must not answer `change` with an error: a stream that failed once stays failed, later calls
+# on it fail too, and so a listener that failed or stopped answering cannot be told by `ended`. A
+# consumer that must know watches its connection as well.
 interface ChangeListener {
   change @0 (change :Change) -> stream;
   ended  @1 (problem :Problem) -> ();

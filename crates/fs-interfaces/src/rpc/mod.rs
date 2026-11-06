@@ -45,5 +45,7 @@ pub use problem::{
     INVALID_REQUEST, Problem, TOO_LARGE, failed, invalid_request, is_unimplemented, too_large,
     unsupported,
 };
-pub use serve::{Connection, connect, run_until_signal, serve};
+pub use serve::{
+    Connection, ReadLimits, connect, connect_with, run_until_signal, serve, serve_with,
+};
 pub use socket::{BoundSocket, bind_socket, default_socket};

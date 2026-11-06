@@ -3,8 +3,8 @@
 
 use fs_interfaces::common_capnp::{change, envelope};
 use fs_interfaces::rpc::{
-    DEFAULT_PAGE_SIZE, MAX_PAGE_BYTES, Notice, Page, Problem, clamp_read, read_envelope, read_uuid,
-    write_change, write_envelope,
+    DEFAULT_PAGE_SIZE, MAX_PAGE_BYTES, Notice, Page, Problem, TOO_LARGE, clamp_read, read_envelope,
+    read_uuid, write_change, write_envelope,
 };
 use fs_store::Envelope;
 
@@ -75,6 +75,17 @@ fn an_exactly_full_last_page_has_no_next() {
 }
 
 #[test]
+fn a_problem_can_be_read_back_from_the_wire() {
+    let p = Problem::new("https://x/y", "t", "d", 409);
+    let mut msg = capnp::message::Builder::new_default();
+    p.write(msg.init_root::<fs_interfaces::common_capnp::problem::Builder>());
+    let r = msg
+        .get_root_as_reader::<fs_interfaces::common_capnp::problem::Reader>()
+        .unwrap();
+    assert_eq!(Problem::read(r).unwrap(), p);
+}
+
+#[test]
 fn a_problem_survives_the_error_text() {
     let p = Problem::new("https://x/name-conflict", "Name taken", "a.txt exists", 409);
     let e = p.clone().into_error();
@@ -112,18 +123,18 @@ fn an_envelope_without_its_times_is_refused_not_dated_1970() {
 }
 
 #[test]
-fn heavy_pages_end_early_but_always_advance() {
+fn heavy_pages_end_early_and_an_item_too_large_is_refused() {
     let weigh = |n: &usize| *n;
     let all = vec![MAX_PAGE_BYTES - 1, 2, MAX_PAGE_BYTES * 2, 1];
     let first = Page::of_weighted(all.clone(), &[], 10, weigh).unwrap();
     assert_eq!(first.items, [MAX_PAGE_BYTES - 1]);
     let second = Page::of_weighted(all.clone(), &first.next, 10, weigh).unwrap();
     assert_eq!(second.items, [2]);
-    let third = Page::of_weighted(all.clone(), &second.next, 10, weigh).unwrap();
+    let error = Page::of_weighted(all.clone(), &second.next, 10, weigh).unwrap_err();
+    let problem = Problem::from_error(&error).unwrap();
     assert_eq!(
-        third.items,
-        [MAX_PAGE_BYTES * 2],
-        "an item alone still comes"
+        problem.problem_type, TOO_LARGE,
+        "better refused than the connection ended"
     );
     assert_eq!(clamp_read(u32::MAX) as usize, MAX_PAGE_BYTES);
     assert_eq!(clamp_read(7), 7);

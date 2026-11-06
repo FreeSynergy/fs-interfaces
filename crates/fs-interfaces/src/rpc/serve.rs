@@ -19,13 +19,20 @@ use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 use super::socket::{BoundSocket, bind_socket};
 
+/// What a connection reads at most, for programs whose single objects are larger than the default.
+pub type ReadLimits = ReaderOptions;
+
 /// Pause after the system ran out of descriptors or memory, instead of spinning on `accept`.
 const ACCEPT_PAUSE: Duration = Duration::from_millis(100);
 
-fn system(stream: UnixStream, side: Side, bootstrap: Option<Client>) -> RpcSystem<Side> {
+fn system(
+    stream: UnixStream,
+    side: Side,
+    bootstrap: Option<Client>,
+    limits: ReadLimits,
+) -> RpcSystem<Side> {
     let (r, w) = stream.into_split();
-    let network =
-        twoparty::VatNetwork::new(r.compat(), w.compat_write(), side, ReaderOptions::default());
+    let network = twoparty::VatNetwork::new(r.compat(), w.compat_write(), side, limits);
     RpcSystem::new(Box::new(network), bootstrap)
 }
 
@@ -44,6 +51,19 @@ pub async fn serve(
     bootstrap: Client,
     shutdown: impl Future<Output = ()>,
 ) -> io::Result<()> {
+    serve_with(socket, bootstrap, shutdown, ReadLimits::default()).await
+}
+
+/// [`serve`] with other read limits.
+///
+/// # Errors
+/// As for [`serve`].
+pub async fn serve_with(
+    socket: BoundSocket,
+    bootstrap: Client,
+    shutdown: impl Future<Output = ()>,
+    limits: ReadLimits,
+) -> io::Result<()> {
     tokio::pin!(shutdown);
     loop {
         tokio::select! {
@@ -53,7 +73,7 @@ pub async fn serve(
                     if !is_me(&stream) {
                         continue;
                     }
-                    let rpc = system(stream, Side::Server, Some(bootstrap.clone()));
+                    let rpc = system(stream, Side::Server, Some(bootstrap.clone()), limits);
                     tokio::task::spawn_local(async move {
                         drop(rpc.await);
                     });
@@ -86,6 +106,17 @@ pub struct Connection<C> {
 /// # Errors
 /// Nothing listens there, or the server runs as another user (`PermissionDenied`).
 pub async fn connect<C: FromClientHook>(socket: &Path) -> io::Result<Connection<C>> {
+    connect_with(socket, ReadLimits::default()).await
+}
+
+/// [`connect`] with other read limits.
+///
+/// # Errors
+/// As for [`connect`].
+pub async fn connect_with<C: FromClientHook>(
+    socket: &Path,
+    limits: ReadLimits,
+) -> io::Result<Connection<C>> {
     let stream = UnixStream::connect(socket).await?;
     if !is_me(&stream) {
         return Err(io::Error::new(
@@ -93,7 +124,7 @@ pub async fn connect<C: FromClientHook>(socket: &Path) -> io::Result<Connection<
             format!("{} is served by another user", socket.display()),
         ));
     }
-    let mut rpc = system(stream, Side::Client, None);
+    let mut rpc = system(stream, Side::Client, None, limits);
     let client: C = rpc.bootstrap(Side::Server);
     let disconnector = rpc.get_disconnector();
     let (close, closed) = oneshot::channel::<()>();

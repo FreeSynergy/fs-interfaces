@@ -5,7 +5,8 @@
 //! capability (RAII) stops the task; the task owns the program's own subscription, so that ends with
 //! it. A consumer that stops answering is not allowed to grow memory: on overflow what is queued is
 //! still delivered, then the feed ends. Every end the consumer did not ask for is told through
-//! `ChangeListener.ended`; a feed never ends silently.
+//! `ChangeListener.ended`, as far as the consumer can still be reached: a listener that failed or does
+//! not answer cannot be told (see `common.capnp`).
 
 use std::any::Any;
 use std::cell::RefCell;

@@ -91,6 +91,19 @@ impl Problem {
         out.set_status(self.status);
     }
 
+    /// Read a wire `Problem`.
+    ///
+    /// # Errors
+    /// The message is malformed.
+    pub fn read(r: crate::common_capnp::problem::Reader<'_>) -> capnp::Result<Self> {
+        Ok(Self {
+            problem_type: r.get_type()?.to_string()?,
+            title: r.get_title()?.to_string()?,
+            detail: r.get_detail()?.to_string()?,
+            status: r.get_status(),
+        })
+    }
+
     /// Whether this is the explicit "not possible" of the provider rule (ADR 0045).
     #[must_use]
     pub fn is_unsupported(&self) -> bool {

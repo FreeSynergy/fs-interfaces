@@ -214,3 +214,29 @@ fn a_data_directory_is_for_this_user_alone() {
     let refused = prepare_data_dir(&fresh).unwrap_err();
     assert_eq!(refused.kind(), ErrorKind::PermissionDenied);
 }
+
+#[test]
+fn a_data_directory_below_a_writable_parent_is_refused() {
+    use fs_interfaces::rpc::prepare_data_dir;
+    let dir = tempfile::tempdir().unwrap();
+    let open = dir.path().join("open");
+    std::fs::create_dir(&open).unwrap();
+    std::fs::set_permissions(&open, PermissionsExt::from_mode(0o777)).unwrap();
+    let refused = prepare_data_dir(&open.join("data")).unwrap_err();
+    assert_eq!(refused.kind(), ErrorKind::PermissionDenied);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn a_fresh_path_is_private_at_every_level() {
+    local(async {
+        let dir = tempfile::tempdir().unwrap();
+        let top = dir.path().join("a");
+        let path = top.join("b").join("x.sock");
+        let _bound = bind_socket(&path).await.unwrap();
+        for d in [top.clone(), top.join("b")] {
+            let mode = std::fs::metadata(&d).unwrap().permissions().mode();
+            assert_eq!(mode & 0o777, 0o700, "{}", d.display());
+        }
+    })
+    .await;
+}

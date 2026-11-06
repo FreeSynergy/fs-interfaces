@@ -6,10 +6,10 @@
 
 use std::ffi::OsString;
 use std::io;
-use std::os::unix::fs::{MetadataExt, PermissionsExt};
+use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 
-use super::socket::default_socket;
+use super::socket::{check_ancestors, create_private, default_socket};
 
 /// The acting person when none is named: the owner of this device.
 pub const LOCAL_OWNER: &str = "https://local.invalid/users/owner";
@@ -42,10 +42,7 @@ pub fn default_data_dir(program: &str) -> Option<PathBuf> {
 /// # Errors
 /// Others have access (`PermissionDenied`), or the file system refuses.
 pub fn prepare_data_dir(dir: &Path) -> io::Result<()> {
-    if !dir.exists() {
-        std::fs::create_dir_all(dir)?;
-        std::fs::set_permissions(dir, PermissionsExt::from_mode(0o700))?;
-    }
+    create_private(dir)?;
     let meta = std::fs::metadata(dir)?;
     if meta.uid() != rustix::process::geteuid().as_raw() || meta.mode() & 0o077 != 0 {
         return Err(io::Error::new(
@@ -53,7 +50,7 @@ pub fn prepare_data_dir(dir: &Path) -> io::Result<()> {
             format!("{} must belong to this user alone (0700)", dir.display()),
         ));
     }
-    Ok(())
+    check_ancestors(&dir.canonicalize()?)
 }
 
 impl ServerOptions {
