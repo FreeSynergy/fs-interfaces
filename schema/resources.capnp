@@ -116,8 +116,9 @@ struct Load { capacityMinutes @0 :UInt64; allocatedMinutes @1 :UInt64; }
 
 struct GroupLoad {
   hidden  @0 :Bool;           # too few people share; everything else stays empty
-  people  @1 :UInt32;         # how many share; 0 when hidden
+  people  @1 :UInt32;         # unused, always 0: a count would show who is absent in a week
   load    @2 :Load;           # rounded
+  allocationsHidden @3 :Bool; # too few people have allocations; `allocatedMinutes` stays 0
 }
 
 # ---- needs and offers ----
@@ -185,7 +186,7 @@ interface Reservations {
   ofResource @6 (resource :Uuid, from :Timestamp, to :Timestamp, cursor :Cursor) -> (page :ReservationPage); # reservation.read
   ofHolder   @7 (holder :Text, cursor :Cursor) -> (page :ReservationPage);                # reservation.read
   free    @8 (resource :Uuid, from :Timestamp, to :Timestamp) -> (periods :List(FreePeriod)); # reservation.read
-  # one step: a confirmed reservation keeps what it holds, or nothing changes
+  # one step: a confirmed reservation keeps what it holds, or nothing changes; refused for an offer's
   change  @9 (id :Uuid, quantity :UInt32, from :Timestamp, to :Timestamp) -> (reservation :Reservation); # reservation.request
 }
 
@@ -205,6 +206,7 @@ interface Capacities {
   # off until the person says so, for each group separately
   shareWithGroup @9 (group :Uuid, share :Bool) -> ();                       # capacity.share
   sharedGroups @10 () -> (groups :List(Uuid));                              # capacity.share
+  # whole weeks on a fixed grid from a Monday 00:00 UTC; others are refused
   groupLoad @11 (group :Uuid, from :Timestamp, to :Timestamp) -> (load :GroupLoad); # capacity.group
 }
 

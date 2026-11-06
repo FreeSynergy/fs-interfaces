@@ -18,7 +18,7 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 
 ## State
 
-Version 0.24.0.
+Version 0.25.0.
 
 | Area | State |
 |---|---|
