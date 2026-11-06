@@ -1,4 +1,4 @@
-# fs-files contract — DRAFT 0.1 (2026-11-06)
+# fs-files contract — DRAFT 0.2 (2026-11-06)
 #
 # STATUS: DRAFT, PROVISIONAL. Owner program: fs-files. Lives in fs-interfaces (ADR 0045).
 # Consumers so far: none (0 of 2). No file frontends have been analysed yet
@@ -7,6 +7,21 @@
 # What we know about a file is an object in fs-store; where its bytes are is a backend behind
 # `BlobBackend`. Programs refer to a file by its id and read through `C.Blob`; they never see paths
 # or backends. Saving is not exporting (ADR 0046). Evolution rules: never renumber, only append.
+#
+# NAMES. The `Envelope.name` of a file and of a folder IS its real name: the name a person gave it
+# and, on a backend that keeps real names (the local folder), the name on the disk. It is not
+# derived from anything else (ADR 0032 makes the envelope always carry a name; for files the name
+# is the content). Two entries in one folder never have the same name, compared exactly; whether
+# `Foto.jpg` and `foto.jpg` can sit side by side is up to the operating system. A name is refused
+# if it is empty, longer than 255 bytes, `.` or `..`, contains `/`, `\` or a control character, or
+# is `.fs-files` (the program's own folder). Nothing here ever replaces a file silently.
+#
+# PROBLEMS. Besides `unsupportedProblemType` (common.capnp) the methods below answer these RFC 9457
+# problem types (`Problem.type`, with `status` and a `detail` that names the entry):
+#   nameConflictProblemType     409  the name is taken in the folder, or on the disk (also a clash
+#                                    that only the disk sees, e.g. a case-insensitive file system)
+#   invalidNameProblemType      422  the name or path is not acceptable, here or on the disk
+#   changedOutsideProblemType   409  the bytes were changed or removed outside the program; `rescan`
 
 @0xc5c37233d97e6465;
 
@@ -19,8 +34,12 @@ using SupportReport = C.SupportReport;
 using ChangeListener = C.ChangeListener;
 using Subscription = C.Subscription;
 
+const nameConflictProblemType   :Text = "https://freesynergy.net/problems/files/name-conflict";
+const invalidNameProblemType    :Text = "https://freesynergy.net/problems/files/invalid-name";
+const changedOutsideProblemType :Text = "https://freesynergy.net/problems/files/changed-outside";
+
 struct File {
-  envelope  @0 :Envelope;          # AS2 `Document` (`Image`, `Video`, `Audio` where they apply)
+  envelope  @0 :Envelope;          # AS2 `Document` (`Image`, `Video`, `Audio` where they apply); envelope.name = the real file name
   mediaType @1 :Text;
   size      @2 :UInt64;
   checksum  @3 :Text;              # "blake3:<hex>"
@@ -29,7 +48,7 @@ struct File {
 }
 
 struct Folder {
-  envelope @0 :Envelope;           # AS2 `Collection`
+  envelope @0 :Envelope;           # AS2 `Collection`; envelope.name = the real folder name
   parent   @1 :Uuid;               # unset = top level
 }
 
@@ -80,6 +99,19 @@ interface Folders {
   get          @10 (id :Uuid) -> (found :Bool, file :File);                      # file.resolve
   classify     @11 (id :Uuid, categories :List(Text)) -> (file :File);           # file.classify (ADR 0029)
   moveFolder   @12 (id :Uuid, parent :Uuid) -> (folder :Folder);                 # folder.move: into itself or below is refused
+  rescan       @13 (folder :Uuid) -> (report :RescanReport);                     # folder.rescan: see RescanReport. PROVISIONAL rules; unset folder = the top
+}
+
+# What `rescan` found. It deletes nothing and overwrites nothing: files and folders that are on the disk
+# but unknown are taken over (`added`); files whose size or modification time changed outside get a new
+# size and checksum (`updated`; also bytes found in the trash folder after a crash and put back); files
+# without bytes are only reported (`missing`) and their records are kept; `skipped` says why an entry
+# was not taken over (symlink, name not accepted, name used by a record on another backend, ...).
+struct RescanReport {
+  added   @0 :List(Entry);
+  updated @1 :List(File);
+  missing @2 :List(File);
+  skipped @3 :List(Text);
 }
 
 # resumable: an upload survives a lost connection; ask `received` and go on from there
@@ -125,4 +157,32 @@ interface BlobBackend {
   stat   @4 (key :Text) -> (found :Bool, info :BlobInfo);                        # blob.read
   delete @5 (key :Text) -> ();                                                   # blob.delete
   pending @6 (key :Text) -> (bytes :UInt64);                                     # blob.write: how much of an unfinished key is held, for resuming
+
+  # ---- backends that keep real names (local folder). Others answer `Unsupported` for these. ----
+  naming  @7 () -> (byName :Bool);                                               # true: keys are paths of real names, folders exist on the disk
+  publish @8 (pending :Text, key :Text) -> (info :BlobInfo);                     # blob.rename: pending blob -> path `key`, atomic, NEVER replaces (name-conflict)
+  relocate @9 (from :Spot, to :Spot) -> ();                                      # blob.rename: file or folder, NEVER replaces (name-conflict); missing source = notFound
+  discard @10 (spot :Spot) -> ();                                                # blob.delete: missing is fine
+  makeDir @11 (path :Text, parents :Bool) -> ();                                 # blob.rename: without `parents` an existing path is a name-conflict
+  removeDir @12 (path :Text) -> ();                                              # blob.rename: only an empty folder; missing is fine
+  scan    @13 (dir :Text) -> (items :List(Scanned));                             # blob.scan: one level, sorted by name; empty = the top
+}
+
+# Where a blob is. `pending` and `trash` are inside the program's own hidden folder: never a user file.
+struct Spot {
+  union {
+    path    @0 :Text;              # committed blob or folder: a path of real names, `/`-separated
+    pending @1 :Text;              # unfinished upload with this key
+    trash   @2 :Text;              # trash entry with this id
+  }
+}
+
+enum ScanKind { file @0; dir @1; skipped @2; }
+
+struct Scanned {
+  name       @0 :Text;
+  kind       @1 :ScanKind;
+  size       @2 :UInt64;           # files only
+  modified   @3 :Int64;            # ns since the epoch, 0 = unknown
+  skipReason @4 :Text;             # when kind = skipped
 }
