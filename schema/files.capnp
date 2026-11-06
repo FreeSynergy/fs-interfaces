@@ -47,6 +47,7 @@ struct FileFilter {
   name      @0 :Text;              # substring
   mediaType @1 :Text;              # prefix, e.g. "image/"
   folder    @2 :Uuid;
+  trashed   @3 :Bool;              # true = search the trash instead, so a frontend can offer restore
 }
 
 struct BackendInfo {
@@ -78,6 +79,7 @@ interface Folders {
   purge        @9 (id :Uuid) -> ();                                              # file.purge
   get          @10 (id :Uuid) -> (found :Bool, file :File);                      # file.resolve
   classify     @11 (id :Uuid, categories :List(Text)) -> (file :File);           # file.classify (ADR 0029)
+  moveFolder   @12 (id :Uuid, parent :Uuid) -> (folder :Folder);                 # folder.move: into itself or below is refused
 }
 
 # resumable: an upload survives a lost connection; ask `received` and go on from there
@@ -112,7 +114,7 @@ interface Sharing {
 
 struct BlobInfo {
   size     @0 :UInt64;
-  checksum @1 :Text;
+  checksum @1 :Text;               # may be empty from `stat`: hashing a whole blob to answer a size question is wrong
 }
 
 interface BlobBackend {
@@ -122,4 +124,5 @@ interface BlobBackend {
   get    @3 (key :Text, offset :UInt64, length :UInt32) -> (data :Data);         # blob.read
   stat   @4 (key :Text) -> (found :Bool, info :BlobInfo);                        # blob.read
   delete @5 (key :Text) -> ();                                                   # blob.delete
+  pending @6 (key :Text) -> (bytes :UInt64);                                     # blob.write: how much of an unfinished key is held, for resuming
 }

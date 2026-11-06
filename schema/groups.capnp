@@ -100,6 +100,8 @@ interface Items {
 }
 
 interface Memberships {
+  # A group joins a group through Items.addParent, one home for nesting; add refuses a group member.
+  # An unknown group id is an error, not an empty answer, in all reads of this interface and Items.
   add       @0 (group :Uuid, member :Member, role :Text) -> (membership :Membership);  # member.add
   remove    @1 (membership :Uuid) -> ();                                         # member.remove
   direct    @2 (group :Uuid) -> (items :List(Membership));                       # member.read
@@ -126,6 +128,7 @@ interface Delegations {
 # ---- Provider interface: a directory that mirrors groups (ADR 0047). Kanidm is one adapter. ----
 # fs-groups says what should be; a directory is brought to that state, repeatably, and can heal.
 
+# Roles are not mirrored yet: a person appears once per group.
 struct DirectoryGroup {
   id      @0 :Uuid;                # the group id of fs-groups
   name    @1 :Text;

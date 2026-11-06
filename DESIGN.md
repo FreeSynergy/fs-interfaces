@@ -17,7 +17,7 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 
 ## State
 
-Version 0.4.0.
+Version 0.5.0.
 
 | Area | State |
 |---|---|
@@ -27,6 +27,7 @@ Version 0.4.0.
 | `people.capnp` (new, owner fs-people): people, relations, same-person links, role definitions and assignments, AI marking | done, draft, provider: fs-people-core; no consumer yet |
 | `groups.capnp`, `files.capnp` (new) | done, draft; `files` is provisional, no file frontends analysed yet |
 | `events`, `places`, `texts` (new); `messenger` gains `senderKind`, `toolCalls`, `taskRefs`; `tasks` gains `supportReport` | done, draft |
+| Corrections from the first providers: `files` gains `moveFolder`, `pending`, `FileFilter.trashed`; capability ids of `tasks` written down; rules of `groups` stated | done |
 | Generated Rust with `capnp-compiler` v0.1.0 + `capnpc` 0.27 | done; byte-identical to `capnpc-embedded` 0.2 output (tested) |
 | Rust helpers `Unsupported`, `Capabilities` with wire round trips | done |
 | Tests | 2 oracle, 3 provider, 1 doc test |

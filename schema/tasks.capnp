@@ -61,7 +61,8 @@ struct ImportReport {
   notes   @3 :List(Text);
 }
 
-# root capability (capability ids: "task.create", "task.edit", "task.assign", "relation.create", "label.assign")
+# root capability (capability ids: task.create, task.edit, task.assign, relation.create, label.assign,
+# task.read, task.query, task.delete, task.import, task.export, task.subscribe; boards: board.*, later)
 interface Tasks {
   capabilities @0 () -> (capabilities :CapabilityList);
   items        @1 () -> (items :Items);
