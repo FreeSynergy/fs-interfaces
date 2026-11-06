@@ -88,7 +88,7 @@ The remedy is `chmod g-w` on the directory the message names, or another `--data
 
 ## Tags not to use
 
-`fs-interfaces` v0.18.0 to v0.24.0 for `rpc`, superseded because of these findings: an oversized item makes all behind it unreadable, or an item above a message ends the connection; an error text has no size limit, so one bad request ends the connection; a signal cancels writes under way. Their contracts are fine; only the feature `rpc` should not be used.
+`fs-interfaces` v0.18.0 to v0.31.0 for `rpc`, superseded because of these findings: an oversized item makes all behind it unreadable, or an item above a message ends the connection; an error text has no size limit, so one bad request ends the connection; a signal cancels writes under way. Their contracts are fine; only the feature `rpc` should not be used.
 
 ## Open points
 
