@@ -1,15 +1,11 @@
 //! The shared RPC side, over a real Unix socket (feature `rpc`).
 #![cfg(feature = "rpc")]
 
-use std::rc::Rc;
-
-use capnp_rpc::new_client;
-use fs_interfaces::common_capnp::{blob, change, envelope};
+use fs_interfaces::common_capnp::{change, envelope};
 use fs_interfaces::rpc::{
-    DEFAULT_PAGE_SIZE, Notice, Page, Problem, bind_socket, connect, read_envelope, read_uuid,
-    serve, unsupported, write_change, write_envelope,
+    DEFAULT_PAGE_SIZE, MAX_PAGE_BYTES, Notice, Page, Problem, clamp_read, read_envelope, read_uuid,
+    write_change, write_envelope,
 };
-use fs_interfaces::{UNSUPPORTED_PROBLEM_TYPE, Unsupported};
 use fs_store::Envelope;
 
 fn roundtrip_envelope(e: &Envelope) -> Envelope {
@@ -64,7 +60,11 @@ fn pages_cover_everything_exactly_once() {
         cursor = page.next;
     }
     assert_eq!(seen, all);
-    assert!(Page::of(all, b"bad", DEFAULT_PAGE_SIZE).is_err());
+    assert!(Page::of(all.clone(), b"bad", DEFAULT_PAGE_SIZE).is_err());
+    assert!(
+        Page::of(all, &[], 0).is_err(),
+        "size zero must not read as the end"
+    );
 }
 
 #[test]
@@ -86,51 +86,45 @@ fn a_problem_survives_the_error_text() {
     );
 }
 
-/// A `Blob` that always answers "not possible", to see the problem cross a real connection.
-struct NoBlob;
-
-impl blob::Server for NoBlob {
-    async fn size(
-        self: Rc<Self>,
-        _: blob::SizeParams,
-        _: blob::SizeResults,
-    ) -> Result<(), capnp::Error> {
-        Err(unsupported(&Unsupported::new("blob.size", "no bytes here")))
-    }
+#[test]
+fn foreign_text_with_the_marker_is_no_problem_and_a_type_cannot_shift_fields() {
+    let foreign =
+        capnp::Error::failed("disk said: fs-problem\u{1f}501\u{1f}x\u{1f}y\u{1f}z".into());
+    assert_eq!(Problem::from_error(&foreign), None);
+    let p = Problem::new("https://x\u{1f}y", "t", "d", 400);
+    let back = Problem::from_error(&p.into_error()).unwrap();
+    assert_eq!((back.title.as_str(), back.detail.as_str()), ("t", "d"));
 }
 
-#[tokio::test(flavor = "current_thread")]
-async fn a_problem_crosses_a_real_socket_and_a_second_server_is_refused() {
-    let local = tokio::task::LocalSet::new();
-    local
-        .run_until(async {
-            let dir = tempfile::tempdir().unwrap();
-            let path = dir.path().join("sub").join("x.sock");
-            let listener = bind_socket(&path).await.unwrap();
-            let refused = bind_socket(&path).await.unwrap_err();
-            assert_eq!(refused.kind(), std::io::ErrorKind::AddrInUse);
+#[test]
+fn an_envelope_without_its_times_is_refused_not_dated_1970() {
+    let mut msg = capnp::message::Builder::new_default();
+    let e = Envelope::new("Task", "Name");
+    write_envelope(msg.init_root::<envelope::Builder>(), &e);
+    let mut bare = capnp::message::Builder::new_default();
+    {
+        let source = msg.get_root_as_reader::<envelope::Reader>().unwrap();
+        let mut out = bare.init_root::<envelope::Builder>();
+        out.set_type(source.get_type().unwrap());
+        out.set_id(source.get_id().unwrap()).unwrap();
+    }
+    assert!(read_envelope(bare.get_root_as_reader::<envelope::Reader>().unwrap()).is_err());
+}
 
-            let server: blob::Client = new_client(NoBlob);
-            let (stop, stopped) = tokio::sync::oneshot::channel::<()>();
-            let at = path.clone();
-            let serving = tokio::task::spawn_local(async move {
-                serve(listener, &at, server.client, async {
-                    drop(stopped.await);
-                })
-                .await
-            });
-
-            let client: blob::Client = connect(&path).await.unwrap();
-            let error = client.size_request().send().promise.await.err().unwrap();
-            assert!(matches!(error.kind, capnp::ErrorKind::Unimplemented));
-            let problem = Problem::from_error(&error).expect("typed problem");
-            assert_eq!(problem.problem_type, UNSUPPORTED_PROBLEM_TYPE);
-            assert_eq!(problem.status, 501);
-            assert!(problem.is_unsupported());
-            assert_eq!(problem.detail, "blob.size: no bytes here");
-
-            let _ = stop.send(());
-            serving.await.unwrap().unwrap();
-        })
-        .await;
+#[test]
+fn heavy_pages_end_early_but_always_advance() {
+    let weigh = |n: &usize| *n;
+    let all = vec![MAX_PAGE_BYTES - 1, 2, MAX_PAGE_BYTES * 2, 1];
+    let first = Page::of_weighted(all.clone(), &[], 10, weigh).unwrap();
+    assert_eq!(first.items, [MAX_PAGE_BYTES - 1]);
+    let second = Page::of_weighted(all.clone(), &first.next, 10, weigh).unwrap();
+    assert_eq!(second.items, [2]);
+    let third = Page::of_weighted(all.clone(), &second.next, 10, weigh).unwrap();
+    assert_eq!(
+        third.items,
+        [MAX_PAGE_BYTES * 2],
+        "an item alone still comes"
+    );
+    assert_eq!(clamp_read(u32::MAX) as usize, MAX_PAGE_BYTES);
+    assert_eq!(clamp_read(7), 7);
 }

@@ -678,6 +678,7 @@ dependencies = [
  "chrono",
  "fs-store",
  "futures",
+ "rustix 1.1.6",
  "tempfile",
  "tokio",
  "tokio-util",

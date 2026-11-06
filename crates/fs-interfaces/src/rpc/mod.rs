@@ -5,6 +5,14 @@
 //! lives here, once, so a program's server only translates its own methods (ADR 0043 §4). Everything
 //! here runs on one thread inside a `tokio::task::LocalSet`, as `capnp-rpc` requires.
 //!
+//! A consumer ends a subscription by dropping the capability **and** the response it came in: the
+//! response keeps its own reference. A `ChangeListener` must not answer with an error: a stream that
+//! failed once stays failed, and that ends the feed.
+//!
+//! The contracts' messages are limited ([`MAX_MESSAGE_BYTES`]); one larger message ends the whole
+//! connection with all its capabilities. So a server never answers more than fits: pages are cut by
+//! weight ([`Page::of_weighted`]), reads are clamped ([`clamp_read`]).
+//!
 //! Pattern: Facade (declarations).
 
 mod envelope;
@@ -16,9 +24,11 @@ mod serve;
 mod socket;
 
 pub use envelope::{read_envelope, write_envelope};
-pub use feed::{Notice, forward, write_change};
+pub use feed::{
+    ChangeReceiver, ChangeSender, FEED_CAPACITY, Notice, change_channel, forward, write_change,
+};
 pub use ids::{from_millis, read_object_id, read_uuid, to_millis, write_object_id, write_uuid};
-pub use page::{DEFAULT_PAGE_SIZE, Page};
+pub use page::{DEFAULT_PAGE_SIZE, MAX_MESSAGE_BYTES, MAX_PAGE_BYTES, Page, clamp_read};
 pub use problem::{Problem, failed, is_unimplemented, unsupported};
-pub use serve::{connect, run_until_signal, serve};
-pub use socket::{bind_socket, default_socket};
+pub use serve::{Connection, connect, run_until_signal, serve};
+pub use socket::{BoundSocket, bind_socket, default_socket};

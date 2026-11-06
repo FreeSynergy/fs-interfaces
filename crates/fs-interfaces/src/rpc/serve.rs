@@ -1,21 +1,27 @@
 //! Serving a capability on a Unix socket, and reaching it.
 //!
-//! Pattern: Adapter (transport) — streams become two-party RPC systems; Template method in
-//! [`run_until_signal`]: bind, serve until a signal, remove the socket. Must run on a `LocalSet`.
+//! Pattern: Adapter (transport) — streams become two-party RPC systems; RAII in [`Connection`];
+//! Template method in [`run_until_signal`]: bind, open, serve until a signal. Must run on a `LocalSet`.
 
 use std::future::Future;
 use std::io;
-use std::os::unix::fs::MetadataExt;
+use std::ops::Deref;
 use std::path::Path;
+use std::time::Duration;
 
 use capnp::capability::{Client, FromClientHook};
 use capnp::message::ReaderOptions;
 use capnp_rpc::rpc_twoparty_capnp::Side;
 use capnp_rpc::{RpcSystem, twoparty};
-use tokio::net::{UnixListener, UnixStream};
+use rustix::io::Errno;
+use tokio::net::UnixStream;
+use tokio::task::JoinHandle;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
-use super::socket::bind_socket;
+use super::socket::{BoundSocket, bind_socket};
+
+/// Pause after the system ran out of descriptors or memory, instead of spinning on `accept`.
+const ACCEPT_PAUSE: Duration = Duration::from_millis(100);
 
 fn system(stream: UnixStream, side: Side, bootstrap: Option<Client>) -> RpcSystem<Side> {
     let (r, w) = stream.into_split();
@@ -24,52 +30,94 @@ fn system(stream: UnixStream, side: Side, bootstrap: Option<Client>) -> RpcSyste
     RpcSystem::new(Box::new(network), bootstrap)
 }
 
-/// Hand `bootstrap` to every connection until `shutdown` resolves. Only the socket's owner may
-/// connect (`SO_PEERCRED`); others are dropped.
+fn is_me(stream: &UnixStream) -> bool {
+    let me = rustix::process::geteuid().as_raw();
+    stream.peer_cred().is_ok_and(|c| c.uid() == me)
+}
+
+/// Hand `bootstrap` to every connection until `shutdown` resolves. Only this user may connect
+/// (`SO_PEERCRED`); others are dropped. The socket is removed on return.
 ///
 /// # Errors
-/// The socket's metadata cannot be read.
+/// The listener failed in a way that will not pass; a shortage of descriptors or memory only pauses.
 pub async fn serve(
-    listener: UnixListener,
-    socket: &Path,
+    socket: BoundSocket,
     bootstrap: Client,
     shutdown: impl Future<Output = ()>,
 ) -> io::Result<()> {
-    let owner = std::fs::metadata(socket)?.uid();
     tokio::pin!(shutdown);
     loop {
         tokio::select! {
             () = &mut shutdown => return Ok(()),
-            accepted = listener.accept() => {
-                let Ok((stream, _)) = accepted else { continue };
-                if !stream.peer_cred().is_ok_and(|c| c.uid() == owner) {
-                    continue;
+            accepted = socket.listener.accept() => match accepted {
+                Ok((stream, _)) => {
+                    if !is_me(&stream) {
+                        continue;
+                    }
+                    let rpc = system(stream, Side::Server, Some(bootstrap.clone()));
+                    tokio::task::spawn_local(async move {
+                        drop(rpc.await);
+                    });
                 }
-                let rpc = system(stream, Side::Server, Some(bootstrap.clone()));
-                tokio::task::spawn_local(async move {
-                    drop(rpc.await);
-                });
+                Err(e) => match Errno::from_io_error(&e) {
+                    Some(Errno::CONNABORTED) => {}
+                    Some(Errno::MFILE | Errno::NFILE | Errno::NOMEM | Errno::NOBUFS) => {
+                        tokio::select! {
+                            () = &mut shutdown => return Ok(()),
+                            () = tokio::time::sleep(ACCEPT_PAUSE) => {}
+                        }
+                    }
+                    _ => return Err(e),
+                },
             }
         }
     }
 }
 
-/// Reach the capability served on `socket`. The connection lives on a local task.
-///
-/// # Errors
-/// Nothing listens there.
-pub async fn connect<C: FromClientHook>(socket: &Path) -> io::Result<C> {
-    let stream = UnixStream::connect(socket).await?;
-    let mut rpc = system(stream, Side::Client, None);
-    let client: C = rpc.bootstrap(Side::Server);
-    tokio::task::spawn_local(async move {
-        drop(rpc.await);
-    });
-    Ok(client)
+/// A capability on another program, and the connection it lives on. Dropping this closes the
+/// connection: capabilities taken from it stop working.
+pub struct Connection<C> {
+    /// The root capability.
+    pub client: C,
+    task: JoinHandle<()>,
 }
 
-/// A program's main loop: bind `socket`, serve what `open` builds until Ctrl-C or SIGTERM, then
-/// remove the socket. Runs its own single-threaded runtime and `LocalSet`.
+impl<C> Deref for Connection<C> {
+    type Target = C;
+    fn deref(&self) -> &C {
+        &self.client
+    }
+}
+
+impl<C> Drop for Connection<C> {
+    fn drop(&mut self) {
+        self.task.abort();
+    }
+}
+
+/// Reach the capability served on `socket`.
+///
+/// # Errors
+/// Nothing listens there, or the server runs as another user (`PermissionDenied`).
+pub async fn connect<C: FromClientHook>(socket: &Path) -> io::Result<Connection<C>> {
+    let stream = UnixStream::connect(socket).await?;
+    if !is_me(&stream) {
+        return Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            format!("{} is served by another user", socket.display()),
+        ));
+    }
+    let mut rpc = system(stream, Side::Client, None);
+    let client: C = rpc.bootstrap(Side::Server);
+    let task = tokio::task::spawn_local(async move {
+        drop(rpc.await);
+    });
+    Ok(Connection { client, task })
+}
+
+/// A program's main loop: bind `socket` first, so a second start never touches the data of the first;
+/// then serve what `open` builds until Ctrl-C or SIGTERM. Connections wait in the backlog meanwhile.
+/// Runs its own single-threaded runtime and `LocalSet`.
 ///
 /// # Errors
 /// The runtime, the socket or `open` failed.
@@ -83,8 +131,8 @@ where
         .build()?;
     let local = tokio::task::LocalSet::new();
     local.block_on(&runtime, async {
+        let bound = bind_socket(socket).await?;
         let bootstrap = open().await?;
-        let listener = bind_socket(socket).await?;
         let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
         let stop = async move {
             tokio::select! {
@@ -92,8 +140,6 @@ where
                 _ = term.recv() => {}
             }
         };
-        let served = serve(listener, socket, bootstrap, stop).await;
-        drop(std::fs::remove_file(socket));
-        served
+        serve(bound, bootstrap, stop).await
     })
 }

@@ -43,7 +43,8 @@ Version 0.17.0.
 | `history.capnp` (new, owner fs-history): entries, filter, digest, forget | done, draft, provisional |
 | Generated Rust with `capnp-compiler` v0.1.0 + `capnpc` 0.27 | done; byte-identical to `capnpc-embedded` 0.2 output (tested) |
 | Rust helpers `Unsupported`, `Capabilities` with wire round trips | done |
-| Tests | 2 oracle, 3 provider, 1 doc test |
+| `rpc` (feature): socket with lock file, connection, problems, envelope, pages, feed | done, draft |
+| Tests | 2 oracle, 3 provider, 17 `rpc`, 1 doc test |
 | Interfaces at 1.0 | none; the draft -> 1.0 gate needs two independent consumers per interface |
 
 ## Decisions
@@ -52,9 +53,16 @@ Version 0.17.0.
 * Generated code is not formatted (`#[rustfmt::skip]`) and exempt from lints; `regenerate` is a workspace member, not a feature,
   so it works before the library compiles.
 * `rpc` lives here, not in a repo of its own, because generated types of two `fs-interfaces` tags are different Rust types: a helper crate would have to be re-tagged for each contract tag. Behind a feature, so a program that only uses the contracts pulls in no runtime. Provisional, reported to the strategy session.
-* A problem crosses the wire inside the exception text behind a marker (`rpc::Problem`), because the contract methods have no error result; status 501 also sets the exception kind `unimplemented`. Pages are positions in the core's ordered list (`rpc::Page`), so an insert between two pages can shift the boundary by one.
+* A problem crosses the wire inside the exception text behind a marker (`rpc::Problem`), because the contract methods have no error result; status 501 also sets the exception kind `unimplemented`. 
 * The Rust trait with `Unsupported` defaults for each topic lives with the owner program (ADR 0043: trait first); this repo
   holds only the shared types.
+
+## Limits of `rpc`, to close before 1.0
+
+* **Pages:** the cursor is opaque to consumers (a leading version byte, nothing to calculate with). Today it marks a place in the core's ordered list, so an insert or delete between two pages can skip or repeat one entry. Before 1.0 it becomes a stable key (sort value plus id) without a contract change. For messages and `subscribe`, skipped or repeated entries count as errors (strategy session, 2026-11-06).
+* **End of a feed:** a feed ends when the listener fails or the consumer falls more than `FEED_CAPACITY` behind, and the contract has no way to tell the consumer. Needs a contract decision.
+* **Time:** `Timestamp` carries milliseconds and the store microseconds, so two updates within one millisecond look alike to a consumer comparing `updated`. Needs a contract decision.
+* **Message size:** one message above 64 MiB ends the connection with all its capabilities. Servers cut answers (`Page::of_weighted`, `clamp_read`); a client that sends more loses its connection.
 
 ## Open points
 

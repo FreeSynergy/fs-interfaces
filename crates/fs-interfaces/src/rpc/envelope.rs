@@ -78,6 +78,11 @@ pub fn read_envelope(r: wire::Reader<'_>) -> capnp::Result<Envelope> {
     e.audience = list(r.get_audience()?)?;
     e.context = optional(r.get_context()?)?;
     e.in_reply_to = optional(r.get_in_reply_to()?)?;
+    if !r.has_published() || !r.has_updated() {
+        return Err(capnp::Error::failed(
+            "envelope without published or updated".into(),
+        ));
+    }
     e.published = from_millis(r.get_published()?.get_unix_millis())?;
     e.updated = from_millis(r.get_updated()?.get_unix_millis())?;
     e.sensitive = list(r.get_sensitive()?)?;

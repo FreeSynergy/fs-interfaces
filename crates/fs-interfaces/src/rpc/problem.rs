@@ -48,7 +48,7 @@ impl Problem {
         let text = format!(
             "{MARKER}{}{SEPARATOR}{}{SEPARATOR}{}{SEPARATOR}{}",
             self.status,
-            self.problem_type,
+            self.problem_type.replace(SEPARATOR, " "),
             self.title.replace(SEPARATOR, " "),
             self.detail.replace(SEPARATOR, " "),
         );
@@ -62,7 +62,12 @@ impl Problem {
     /// The problem inside an RPC error, if it carries one.
     #[must_use]
     pub fn from_error(error: &Error) -> Option<Self> {
-        let (_, rest) = error.extra.split_once(MARKER)?;
+        // The RPC layer may put this prefix in front; foreign text that only contains the marker is no problem.
+        let mut text = error.extra.as_str();
+        while let Some(rest) = text.strip_prefix("remote exception: ") {
+            text = rest;
+        }
+        let rest = text.strip_prefix(MARKER)?;
         let mut parts = rest.splitn(4, SEPARATOR);
         let status = parts.next()?.parse().ok()?;
         Some(Self {

@@ -1,13 +1,20 @@
-//! One page of an ordered result.
+//! One page of an ordered result, and what fits into one message.
 //!
-//! The contracts page with an opaque `Cursor`; the cores answer whole ordered lists. Here the cursor
-//! is the position in that list. An object inserted or removed between two pages can therefore move
-//! the boundary by one; a core that pages itself replaces this.
+//! The contracts page with an opaque `Cursor`: a consumer only hands back what it got. Today it marks
+//! a place in the core's ordered list, so an object inserted or removed between two pages can move
+//! the boundary by one. Before 1.0 it becomes a stable key (`DESIGN.md`); the leading version byte
+//! lets both forms be told apart without a contract change.
 //!
 //! Pattern: Iterator (external, resumable through the cursor).
 
 /// Page size of the servers.
 pub const DEFAULT_PAGE_SIZE: usize = 100;
+/// Largest message the RPC layer reads (`ReaderOptions::default`); a larger one ends the connection.
+pub const MAX_MESSAGE_BYTES: usize = 64 * 1024 * 1024;
+/// Largest payload a server puts into one answer, leaving room for the framing.
+pub const MAX_PAGE_BYTES: usize = 32 * 1024 * 1024;
+
+const CURSOR_V1: u8 = 1;
 
 /// One page and the cursor of the next one (empty = this was the last).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,17 +29,39 @@ impl<T> Page<T> {
     /// Cut the page at `cursor` (empty = start) out of the whole ordered list.
     ///
     /// # Errors
-    /// The cursor is not one this code handed out.
+    /// The cursor is not one this code handed out, or `size` is zero.
     pub fn of(all: Vec<T>, cursor: &[u8], size: usize) -> capnp::Result<Self> {
+        Self::of_weighted(all, cursor, size, |_| 0)
+    }
+
+    /// Like [`Page::of`], and the page also ends before `weight` of its items passes
+    /// [`MAX_PAGE_BYTES`]. A page always holds at least one item, so paging always advances.
+    ///
+    /// # Errors
+    /// The cursor is not one this code handed out, or `size` is zero.
+    pub fn of_weighted(
+        all: Vec<T>,
+        cursor: &[u8],
+        size: usize,
+        weight: impl Fn(&T) -> usize,
+    ) -> capnp::Result<Self> {
+        if size == 0 {
+            return Err(capnp::Error::failed("page size is zero".into()));
+        }
         let start = position(cursor)?;
         let total = all.len();
-        let items: Vec<T> = all.into_iter().skip(start).take(size).collect();
+        let mut items = Vec::new();
+        let mut bytes = 0usize;
+        for item in all.into_iter().skip(start).take(size) {
+            bytes = bytes.saturating_add(weight(&item));
+            if bytes > MAX_PAGE_BYTES && !items.is_empty() {
+                break;
+            }
+            items.push(item);
+        }
         let reached = start.saturating_add(items.len());
         let next = if reached < total && !items.is_empty() {
-            u64::try_from(reached)
-                .unwrap_or(u64::MAX)
-                .to_le_bytes()
-                .to_vec()
+            encode(reached)
         } else {
             Vec::new()
         };
@@ -40,13 +69,27 @@ impl<T> Page<T> {
     }
 }
 
+/// The length a `Blob.read` really answers: what a client asked for, up to what fits a message.
+#[must_use]
+pub fn clamp_read(length: u32) -> u32 {
+    length.min(u32::try_from(MAX_PAGE_BYTES).unwrap_or(u32::MAX))
+}
+
+fn encode(place: usize) -> Vec<u8> {
+    let mut out = vec![CURSOR_V1];
+    out.extend_from_slice(&u64::try_from(place).unwrap_or(u64::MAX).to_le_bytes());
+    out
+}
+
 fn position(cursor: &[u8]) -> capnp::Result<usize> {
     if cursor.is_empty() {
         return Ok(0);
     }
-    let bytes: [u8; 8] = cursor
-        .try_into()
-        .map_err(|_| capnp::Error::failed("invalid cursor".into()))?;
-    usize::try_from(u64::from_le_bytes(bytes))
-        .map_err(|_| capnp::Error::failed("invalid cursor".into()))
+    let invalid = || capnp::Error::failed("invalid cursor".into());
+    let (&version, rest) = cursor.split_first().ok_or_else(invalid)?;
+    let bytes: [u8; 8] = rest.try_into().map_err(|_| invalid())?;
+    if version != CURSOR_V1 {
+        return Err(invalid());
+    }
+    usize::try_from(u64::from_le_bytes(bytes)).map_err(|_| invalid())
 }
