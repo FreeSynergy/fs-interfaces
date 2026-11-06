@@ -33,7 +33,7 @@ interface), ADR 0040 (pure-Rust Cap'n Proto compiler, generated code committed).
 | `hub.capnp` | Hub: register, activity log, sessions | `fs-hub` | `fs-hub-client` (1 of 2) | draft 0.1 |
 | `people.capnp` | People, relations, roles, AI marking (JSContact) | `fs-people` | none yet | draft 0.1 |
 | `groups.capnp` | Groups, nesting, membership, invitations, delegation; directories that mirror them | `fs-groups` | none yet | draft 0.1 |
-| `files.capnp` | Files, folders, resumable upload; backends that keep the bytes | `fs-files` | none yet | draft 0.8, provisional |
+| `files.capnp` | Files, folders, resumable upload; backends that keep the bytes | `fs-files` | none yet | draft 0.9, provisional |
 | `events.capnp` | Events (JSCalendar `Event`), instances, invitations | `fs-calendar` | none yet | draft 0.1 |
 | `places.capnp` | Places (GeoJSON); sources of map tiles | `fs-maps` | none yet | draft 0.1 |
 | `texts.capnp` | Texts: text + layers, links | `fs-wiki` | none yet | draft 0.1 |

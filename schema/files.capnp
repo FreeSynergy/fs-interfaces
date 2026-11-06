@@ -188,12 +188,13 @@ interface Sharing {
 struct BlobInfo {
   size     @0 :UInt64;
   checksum @1 :Text;               # may be empty from `stat`: hashing a whole blob to answer a size question is wrong
+  modified @2 :Int64;              # last change, ns since the epoch; 0 = the backend has none (S3). A rename keeps it.
 }
 
 interface BlobBackend {
   supportReport @0 () -> (report :SupportReport);
   put    @1 (key :Text, offset :UInt64, data :Data) -> ();                       # blob.write
-  commit @2 (key :Text) -> (info :BlobInfo);                                     # blob.write
+  commit @2 (key :Text) -> (info :BlobInfo);                                     # blob.write; on a backend that keeps real names it never replaces (name-conflict)
   get    @3 (key :Text, offset :UInt64, length :UInt32) -> (data :Data);         # blob.read; may answer fewer bytes than asked, empty = the end
   stat   @4 (key :Text) -> (found :Bool, info :BlobInfo);                        # blob.read
   delete @5 (key :Text) -> ();                                                   # blob.delete
@@ -207,6 +208,8 @@ interface BlobBackend {
   makeDir @11 (path :Text, parents :Bool) -> ();                                 # blob.rename: without `parents` an existing path is a name-conflict
   removeDir @12 (path :Text) -> ();                                              # blob.rename: only an empty folder; missing is fine
   scan    @13 (dir :Text) -> (items :List(Scanned));                             # blob.scan: one level, sorted by name; empty = the top
+  has     @14 (spot :Spot) -> (found :Bool);                                     # blob.read: is something at this spot (bytes left in the trash by a crash)
+  sweepPending @15 (keep :List(Text), olderThanSecs :UInt64) -> (removed :UInt32); # blob.delete: pending blobs not in `keep` and older than that: leftovers of a crash
 }
 
 # Where a blob is. `pending` and `trash` are inside the program's own hidden folder: never a user file.
