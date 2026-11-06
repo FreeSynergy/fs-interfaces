@@ -13545,11 +13545,19 @@ pub mod memberships {
             pub fn has_group(&self) -> bool {
                 !self.reader.get_pointer_field(0).is_null()
             }
+            #[inline]
+            pub fn get_cursor(self) -> ::capnp::Result<crate::common_capnp::cursor::Reader<'a>> {
+                ::capnp::traits::FromPointerReader::get_from_pointer(&self.reader.get_pointer_field(1), ::core::option::Option::None)
+            }
+            #[inline]
+            pub fn has_cursor(&self) -> bool {
+                !self.reader.get_pointer_field(1).is_null()
+            }
         }
 
         pub struct Builder<'a> { builder: ::capnp::private::layout::StructBuilder<'a> }
         impl <> ::capnp::traits::HasStructSize for Builder<'_,>  {
-            const STRUCT_SIZE: ::capnp::private::layout::StructSize = ::capnp::private::layout::StructSize { data: 0, pointers: 1 };
+            const STRUCT_SIZE: ::capnp::private::layout::StructSize = ::capnp::private::layout::StructSize { data: 0, pointers: 2 };
         }
         impl <> ::capnp::traits::HasTypeId for Builder<'_,>  {
             const TYPE_ID: u64 = _private::TYPE_ID;
@@ -13615,6 +13623,22 @@ pub mod memberships {
             pub fn has_group(&self) -> bool {
                 !self.builder.is_pointer_field_null(0)
             }
+            #[inline]
+            pub fn get_cursor(self) -> ::capnp::Result<crate::common_capnp::cursor::Builder<'a>> {
+                ::capnp::traits::FromPointerBuilder::get_from_pointer(self.builder.get_pointer_field(1), ::core::option::Option::None)
+            }
+            #[inline]
+            pub fn set_cursor(&mut self, value: crate::common_capnp::cursor::Reader<'_>) -> ::capnp::Result<()> {
+                ::capnp::traits::SetterInput::set_pointer_builder(self.builder.reborrow().get_pointer_field(1), value, false)
+            }
+            #[inline]
+            pub fn init_cursor(self, ) -> crate::common_capnp::cursor::Builder<'a> {
+                ::capnp::traits::FromPointerBuilder::init_pointer(self.builder.get_pointer_field(1), 0)
+            }
+            #[inline]
+            pub fn has_cursor(&self) -> bool {
+                !self.builder.is_pointer_field_null(1)
+            }
         }
 
         pub struct Pipeline { _typeless: ::capnp::any_pointer::Pipeline }
@@ -13627,20 +13651,23 @@ pub mod memberships {
             pub fn get_group(&self) -> crate::common_capnp::uuid::Pipeline {
                 ::capnp::capability::FromTypelessPipeline::new(self._typeless.get_pointer_field(0))
             }
+            pub fn get_cursor(&self) -> crate::common_capnp::cursor::Pipeline {
+                ::capnp::capability::FromTypelessPipeline::new(self._typeless.get_pointer_field(1))
+            }
         }
         mod _private {
-            pub(crate) static ENCODED_NODE: [::capnp::Word; 34] = [
+            pub(crate) static ENCODED_NODE: [::capnp::Word; 49] = [
                 ::capnp::word(0, 0, 0, 0, 6, 0, 6, 0),
                 ::capnp::word(59, 126, 252, 132, 176, 86, 41, 178),
                 ::capnp::word(25, 0, 0, 0, 1, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(1, 0, 7, 0, 0, 0, 0, 0),
+                ::capnp::word(2, 0, 7, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(21, 0, 0, 0, 58, 1, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(29, 0, 0, 0, 63, 0, 0, 0),
+                ::capnp::word(29, 0, 0, 0, 119, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(103, 114, 111, 117, 112, 115, 46, 99),
@@ -13648,17 +13675,32 @@ pub mod memberships {
                 ::capnp::word(98, 101, 114, 115, 104, 105, 112, 115),
                 ::capnp::word(46, 100, 105, 114, 101, 99, 116, 36),
                 ::capnp::word(80, 97, 114, 97, 109, 115, 0, 0),
-                ::capnp::word(4, 0, 0, 0, 3, 0, 4, 0),
+                ::capnp::word(8, 0, 0, 0, 3, 0, 4, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 1, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(13, 0, 0, 0, 50, 0, 0, 0),
+                ::capnp::word(41, 0, 0, 0, 50, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(8, 0, 0, 0, 3, 0, 1, 0),
-                ::capnp::word(20, 0, 0, 0, 2, 0, 1, 0),
+                ::capnp::word(36, 0, 0, 0, 3, 0, 1, 0),
+                ::capnp::word(48, 0, 0, 0, 2, 0, 1, 0),
+                ::capnp::word(1, 0, 0, 0, 1, 0, 0, 0),
+                ::capnp::word(0, 0, 1, 0, 1, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(45, 0, 0, 0, 58, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(40, 0, 0, 0, 3, 0, 1, 0),
+                ::capnp::word(52, 0, 0, 0, 2, 0, 1, 0),
                 ::capnp::word(103, 114, 111, 117, 112, 0, 0, 0),
                 ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(170, 255, 204, 129, 122, 252, 160, 138),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(99, 117, 114, 115, 111, 114, 0, 0),
+                ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(22, 56, 231, 62, 133, 200, 88, 226),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
@@ -13668,6 +13710,7 @@ pub mod memberships {
             pub(crate) fn get_field_types(index: u16) -> ::capnp::introspect::Type {
                 match index {
                     0 => <crate::common_capnp::uuid::Owned as ::capnp::introspect::Introspect>::introspect(),
+                    1 => <crate::common_capnp::cursor::Owned as ::capnp::introspect::Introspect>::introspect(),
                     _ => ::capnp::introspect::panic_invalid_field_index(index),
                 }
             }
@@ -13681,9 +13724,9 @@ pub mod memberships {
                 MEMBERS_BY_DISCRIMINANT,
                 MEMBERS_BY_NAME
             );
-            pub(crate) static NONUNION_MEMBERS : &[u16] = &[0];
+            pub(crate) static NONUNION_MEMBERS : &[u16] = &[0,1];
             pub(crate) static MEMBERS_BY_DISCRIMINANT : &[u16] = &[];
-            pub(crate) static MEMBERS_BY_NAME : &[u16] = &[0];
+            pub(crate) static MEMBERS_BY_NAME : &[u16] = &[1,0];
             pub(crate) const TYPE_ID: u64 = 0xb229_56b0_84fc_7e3b;
         }
     }
@@ -13757,11 +13800,19 @@ pub mod memberships {
             pub fn has_items(&self) -> bool {
                 !self.reader.get_pointer_field(0).is_null()
             }
+            #[inline]
+            pub fn get_next(self) -> ::capnp::Result<crate::common_capnp::cursor::Reader<'a>> {
+                ::capnp::traits::FromPointerReader::get_from_pointer(&self.reader.get_pointer_field(1), ::core::option::Option::None)
+            }
+            #[inline]
+            pub fn has_next(&self) -> bool {
+                !self.reader.get_pointer_field(1).is_null()
+            }
         }
 
         pub struct Builder<'a> { builder: ::capnp::private::layout::StructBuilder<'a> }
         impl <> ::capnp::traits::HasStructSize for Builder<'_,>  {
-            const STRUCT_SIZE: ::capnp::private::layout::StructSize = ::capnp::private::layout::StructSize { data: 0, pointers: 1 };
+            const STRUCT_SIZE: ::capnp::private::layout::StructSize = ::capnp::private::layout::StructSize { data: 0, pointers: 2 };
         }
         impl <> ::capnp::traits::HasTypeId for Builder<'_,>  {
             const TYPE_ID: u64 = _private::TYPE_ID;
@@ -13827,6 +13878,22 @@ pub mod memberships {
             pub fn has_items(&self) -> bool {
                 !self.builder.is_pointer_field_null(0)
             }
+            #[inline]
+            pub fn get_next(self) -> ::capnp::Result<crate::common_capnp::cursor::Builder<'a>> {
+                ::capnp::traits::FromPointerBuilder::get_from_pointer(self.builder.get_pointer_field(1), ::core::option::Option::None)
+            }
+            #[inline]
+            pub fn set_next(&mut self, value: crate::common_capnp::cursor::Reader<'_>) -> ::capnp::Result<()> {
+                ::capnp::traits::SetterInput::set_pointer_builder(self.builder.reborrow().get_pointer_field(1), value, false)
+            }
+            #[inline]
+            pub fn init_next(self, ) -> crate::common_capnp::cursor::Builder<'a> {
+                ::capnp::traits::FromPointerBuilder::init_pointer(self.builder.get_pointer_field(1), 0)
+            }
+            #[inline]
+            pub fn has_next(&self) -> bool {
+                !self.builder.is_pointer_field_null(1)
+            }
         }
 
         pub struct Pipeline { _typeless: ::capnp::any_pointer::Pipeline }
@@ -13836,20 +13903,23 @@ pub mod memberships {
             }
         }
         impl Pipeline  {
+            pub fn get_next(&self) -> crate::common_capnp::cursor::Pipeline {
+                ::capnp::capability::FromTypelessPipeline::new(self._typeless.get_pointer_field(1))
+            }
         }
         mod _private {
-            pub(crate) static ENCODED_NODE: [::capnp::Word; 38] = [
+            pub(crate) static ENCODED_NODE: [::capnp::Word; 53] = [
                 ::capnp::word(0, 0, 0, 0, 6, 0, 6, 0),
                 ::capnp::word(168, 76, 60, 153, 208, 240, 60, 243),
                 ::capnp::word(25, 0, 0, 0, 1, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(1, 0, 7, 0, 0, 0, 0, 0),
+                ::capnp::word(2, 0, 7, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(21, 0, 0, 0, 66, 1, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(29, 0, 0, 0, 63, 0, 0, 0),
+                ::capnp::word(29, 0, 0, 0, 119, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(103, 114, 111, 117, 112, 115, 46, 99),
@@ -13857,14 +13927,21 @@ pub mod memberships {
                 ::capnp::word(98, 101, 114, 115, 104, 105, 112, 115),
                 ::capnp::word(46, 100, 105, 114, 101, 99, 116, 36),
                 ::capnp::word(82, 101, 115, 117, 108, 116, 115, 0),
-                ::capnp::word(4, 0, 0, 0, 3, 0, 4, 0),
+                ::capnp::word(8, 0, 0, 0, 3, 0, 4, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 1, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(13, 0, 0, 0, 50, 0, 0, 0),
+                ::capnp::word(41, 0, 0, 0, 50, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(8, 0, 0, 0, 3, 0, 1, 0),
-                ::capnp::word(36, 0, 0, 0, 2, 0, 1, 0),
+                ::capnp::word(36, 0, 0, 0, 3, 0, 1, 0),
+                ::capnp::word(64, 0, 0, 0, 2, 0, 1, 0),
+                ::capnp::word(1, 0, 0, 0, 1, 0, 0, 0),
+                ::capnp::word(0, 0, 1, 0, 1, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(61, 0, 0, 0, 42, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(56, 0, 0, 0, 3, 0, 1, 0),
+                ::capnp::word(68, 0, 0, 0, 2, 0, 1, 0),
                 ::capnp::word(105, 116, 101, 109, 115, 0, 0, 0),
                 ::capnp::word(14, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
@@ -13877,10 +13954,19 @@ pub mod memberships {
                 ::capnp::word(14, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(110, 101, 120, 116, 0, 0, 0, 0),
+                ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(22, 56, 231, 62, 133, 200, 88, 226),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
             ];
             pub(crate) fn get_field_types(index: u16) -> ::capnp::introspect::Type {
                 match index {
                     0 => <::capnp::struct_list::Owned<crate::groups_capnp::membership::Owned> as ::capnp::introspect::Introspect>::introspect(),
+                    1 => <crate::common_capnp::cursor::Owned as ::capnp::introspect::Introspect>::introspect(),
                     _ => ::capnp::introspect::panic_invalid_field_index(index),
                 }
             }
@@ -13894,9 +13980,9 @@ pub mod memberships {
                 MEMBERS_BY_DISCRIMINANT,
                 MEMBERS_BY_NAME
             );
-            pub(crate) static NONUNION_MEMBERS : &[u16] = &[0];
+            pub(crate) static NONUNION_MEMBERS : &[u16] = &[0,1];
             pub(crate) static MEMBERS_BY_DISCRIMINANT : &[u16] = &[];
-            pub(crate) static MEMBERS_BY_NAME : &[u16] = &[0];
+            pub(crate) static MEMBERS_BY_NAME : &[u16] = &[0,1];
             pub(crate) const TYPE_ID: u64 = 0xf33c_f0d0_993c_4ca8;
         }
     }
@@ -13970,11 +14056,19 @@ pub mod memberships {
             pub fn has_group(&self) -> bool {
                 !self.reader.get_pointer_field(0).is_null()
             }
+            #[inline]
+            pub fn get_cursor(self) -> ::capnp::Result<crate::common_capnp::cursor::Reader<'a>> {
+                ::capnp::traits::FromPointerReader::get_from_pointer(&self.reader.get_pointer_field(1), ::core::option::Option::None)
+            }
+            #[inline]
+            pub fn has_cursor(&self) -> bool {
+                !self.reader.get_pointer_field(1).is_null()
+            }
         }
 
         pub struct Builder<'a> { builder: ::capnp::private::layout::StructBuilder<'a> }
         impl <> ::capnp::traits::HasStructSize for Builder<'_,>  {
-            const STRUCT_SIZE: ::capnp::private::layout::StructSize = ::capnp::private::layout::StructSize { data: 0, pointers: 1 };
+            const STRUCT_SIZE: ::capnp::private::layout::StructSize = ::capnp::private::layout::StructSize { data: 0, pointers: 2 };
         }
         impl <> ::capnp::traits::HasTypeId for Builder<'_,>  {
             const TYPE_ID: u64 = _private::TYPE_ID;
@@ -14040,6 +14134,22 @@ pub mod memberships {
             pub fn has_group(&self) -> bool {
                 !self.builder.is_pointer_field_null(0)
             }
+            #[inline]
+            pub fn get_cursor(self) -> ::capnp::Result<crate::common_capnp::cursor::Builder<'a>> {
+                ::capnp::traits::FromPointerBuilder::get_from_pointer(self.builder.get_pointer_field(1), ::core::option::Option::None)
+            }
+            #[inline]
+            pub fn set_cursor(&mut self, value: crate::common_capnp::cursor::Reader<'_>) -> ::capnp::Result<()> {
+                ::capnp::traits::SetterInput::set_pointer_builder(self.builder.reborrow().get_pointer_field(1), value, false)
+            }
+            #[inline]
+            pub fn init_cursor(self, ) -> crate::common_capnp::cursor::Builder<'a> {
+                ::capnp::traits::FromPointerBuilder::init_pointer(self.builder.get_pointer_field(1), 0)
+            }
+            #[inline]
+            pub fn has_cursor(&self) -> bool {
+                !self.builder.is_pointer_field_null(1)
+            }
         }
 
         pub struct Pipeline { _typeless: ::capnp::any_pointer::Pipeline }
@@ -14052,20 +14162,23 @@ pub mod memberships {
             pub fn get_group(&self) -> crate::common_capnp::uuid::Pipeline {
                 ::capnp::capability::FromTypelessPipeline::new(self._typeless.get_pointer_field(0))
             }
+            pub fn get_cursor(&self) -> crate::common_capnp::cursor::Pipeline {
+                ::capnp::capability::FromTypelessPipeline::new(self._typeless.get_pointer_field(1))
+            }
         }
         mod _private {
-            pub(crate) static ENCODED_NODE: [::capnp::Word; 35] = [
+            pub(crate) static ENCODED_NODE: [::capnp::Word; 50] = [
                 ::capnp::word(0, 0, 0, 0, 6, 0, 6, 0),
                 ::capnp::word(0, 63, 62, 76, 197, 141, 47, 141),
                 ::capnp::word(25, 0, 0, 0, 1, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(1, 0, 7, 0, 0, 0, 0, 0),
+                ::capnp::word(2, 0, 7, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(21, 0, 0, 0, 82, 1, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(33, 0, 0, 0, 63, 0, 0, 0),
+                ::capnp::word(33, 0, 0, 0, 119, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(103, 114, 111, 117, 112, 115, 46, 99),
@@ -14074,17 +14187,32 @@ pub mod memberships {
                 ::capnp::word(46, 101, 102, 102, 101, 99, 116, 105),
                 ::capnp::word(118, 101, 36, 80, 97, 114, 97, 109),
                 ::capnp::word(115, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(4, 0, 0, 0, 3, 0, 4, 0),
+                ::capnp::word(8, 0, 0, 0, 3, 0, 4, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 1, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(13, 0, 0, 0, 50, 0, 0, 0),
+                ::capnp::word(41, 0, 0, 0, 50, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(8, 0, 0, 0, 3, 0, 1, 0),
-                ::capnp::word(20, 0, 0, 0, 2, 0, 1, 0),
+                ::capnp::word(36, 0, 0, 0, 3, 0, 1, 0),
+                ::capnp::word(48, 0, 0, 0, 2, 0, 1, 0),
+                ::capnp::word(1, 0, 0, 0, 1, 0, 0, 0),
+                ::capnp::word(0, 0, 1, 0, 1, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(45, 0, 0, 0, 58, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(40, 0, 0, 0, 3, 0, 1, 0),
+                ::capnp::word(52, 0, 0, 0, 2, 0, 1, 0),
                 ::capnp::word(103, 114, 111, 117, 112, 0, 0, 0),
                 ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(170, 255, 204, 129, 122, 252, 160, 138),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(99, 117, 114, 115, 111, 114, 0, 0),
+                ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(22, 56, 231, 62, 133, 200, 88, 226),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
@@ -14094,6 +14222,7 @@ pub mod memberships {
             pub(crate) fn get_field_types(index: u16) -> ::capnp::introspect::Type {
                 match index {
                     0 => <crate::common_capnp::uuid::Owned as ::capnp::introspect::Introspect>::introspect(),
+                    1 => <crate::common_capnp::cursor::Owned as ::capnp::introspect::Introspect>::introspect(),
                     _ => ::capnp::introspect::panic_invalid_field_index(index),
                 }
             }
@@ -14107,9 +14236,9 @@ pub mod memberships {
                 MEMBERS_BY_DISCRIMINANT,
                 MEMBERS_BY_NAME
             );
-            pub(crate) static NONUNION_MEMBERS : &[u16] = &[0];
+            pub(crate) static NONUNION_MEMBERS : &[u16] = &[0,1];
             pub(crate) static MEMBERS_BY_DISCRIMINANT : &[u16] = &[];
-            pub(crate) static MEMBERS_BY_NAME : &[u16] = &[0];
+            pub(crate) static MEMBERS_BY_NAME : &[u16] = &[1,0];
             pub(crate) const TYPE_ID: u64 = 0x8d2f_8dc5_4c3e_3f00;
         }
     }
@@ -14183,11 +14312,19 @@ pub mod memberships {
             pub fn has_items(&self) -> bool {
                 !self.reader.get_pointer_field(0).is_null()
             }
+            #[inline]
+            pub fn get_next(self) -> ::capnp::Result<crate::common_capnp::cursor::Reader<'a>> {
+                ::capnp::traits::FromPointerReader::get_from_pointer(&self.reader.get_pointer_field(1), ::core::option::Option::None)
+            }
+            #[inline]
+            pub fn has_next(&self) -> bool {
+                !self.reader.get_pointer_field(1).is_null()
+            }
         }
 
         pub struct Builder<'a> { builder: ::capnp::private::layout::StructBuilder<'a> }
         impl <> ::capnp::traits::HasStructSize for Builder<'_,>  {
-            const STRUCT_SIZE: ::capnp::private::layout::StructSize = ::capnp::private::layout::StructSize { data: 0, pointers: 1 };
+            const STRUCT_SIZE: ::capnp::private::layout::StructSize = ::capnp::private::layout::StructSize { data: 0, pointers: 2 };
         }
         impl <> ::capnp::traits::HasTypeId for Builder<'_,>  {
             const TYPE_ID: u64 = _private::TYPE_ID;
@@ -14253,6 +14390,22 @@ pub mod memberships {
             pub fn has_items(&self) -> bool {
                 !self.builder.is_pointer_field_null(0)
             }
+            #[inline]
+            pub fn get_next(self) -> ::capnp::Result<crate::common_capnp::cursor::Builder<'a>> {
+                ::capnp::traits::FromPointerBuilder::get_from_pointer(self.builder.get_pointer_field(1), ::core::option::Option::None)
+            }
+            #[inline]
+            pub fn set_next(&mut self, value: crate::common_capnp::cursor::Reader<'_>) -> ::capnp::Result<()> {
+                ::capnp::traits::SetterInput::set_pointer_builder(self.builder.reborrow().get_pointer_field(1), value, false)
+            }
+            #[inline]
+            pub fn init_next(self, ) -> crate::common_capnp::cursor::Builder<'a> {
+                ::capnp::traits::FromPointerBuilder::init_pointer(self.builder.get_pointer_field(1), 0)
+            }
+            #[inline]
+            pub fn has_next(&self) -> bool {
+                !self.builder.is_pointer_field_null(1)
+            }
         }
 
         pub struct Pipeline { _typeless: ::capnp::any_pointer::Pipeline }
@@ -14262,20 +14415,23 @@ pub mod memberships {
             }
         }
         impl Pipeline  {
+            pub fn get_next(&self) -> crate::common_capnp::cursor::Pipeline {
+                ::capnp::capability::FromTypelessPipeline::new(self._typeless.get_pointer_field(1))
+            }
         }
         mod _private {
-            pub(crate) static ENCODED_NODE: [::capnp::Word; 39] = [
+            pub(crate) static ENCODED_NODE: [::capnp::Word; 54] = [
                 ::capnp::word(0, 0, 0, 0, 6, 0, 6, 0),
                 ::capnp::word(230, 119, 228, 206, 47, 78, 251, 209),
                 ::capnp::word(25, 0, 0, 0, 1, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(1, 0, 7, 0, 0, 0, 0, 0),
+                ::capnp::word(2, 0, 7, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(21, 0, 0, 0, 90, 1, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(33, 0, 0, 0, 63, 0, 0, 0),
+                ::capnp::word(33, 0, 0, 0, 119, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(103, 114, 111, 117, 112, 115, 46, 99),
@@ -14284,14 +14440,21 @@ pub mod memberships {
                 ::capnp::word(46, 101, 102, 102, 101, 99, 116, 105),
                 ::capnp::word(118, 101, 36, 82, 101, 115, 117, 108),
                 ::capnp::word(116, 115, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(4, 0, 0, 0, 3, 0, 4, 0),
+                ::capnp::word(8, 0, 0, 0, 3, 0, 4, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 1, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(13, 0, 0, 0, 50, 0, 0, 0),
+                ::capnp::word(41, 0, 0, 0, 50, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-                ::capnp::word(8, 0, 0, 0, 3, 0, 1, 0),
-                ::capnp::word(36, 0, 0, 0, 2, 0, 1, 0),
+                ::capnp::word(36, 0, 0, 0, 3, 0, 1, 0),
+                ::capnp::word(64, 0, 0, 0, 2, 0, 1, 0),
+                ::capnp::word(1, 0, 0, 0, 1, 0, 0, 0),
+                ::capnp::word(0, 0, 1, 0, 1, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(61, 0, 0, 0, 42, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(56, 0, 0, 0, 3, 0, 1, 0),
+                ::capnp::word(68, 0, 0, 0, 2, 0, 1, 0),
                 ::capnp::word(105, 116, 101, 109, 115, 0, 0, 0),
                 ::capnp::word(14, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
@@ -14304,10 +14467,19 @@ pub mod memberships {
                 ::capnp::word(14, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
                 ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(110, 101, 120, 116, 0, 0, 0, 0),
+                ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(22, 56, 231, 62, 133, 200, 88, 226),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(16, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
+                ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
             ];
             pub(crate) fn get_field_types(index: u16) -> ::capnp::introspect::Type {
                 match index {
                     0 => <::capnp::struct_list::Owned<crate::groups_capnp::effective_member::Owned> as ::capnp::introspect::Introspect>::introspect(),
+                    1 => <crate::common_capnp::cursor::Owned as ::capnp::introspect::Introspect>::introspect(),
                     _ => ::capnp::introspect::panic_invalid_field_index(index),
                 }
             }
@@ -14321,9 +14493,9 @@ pub mod memberships {
                 MEMBERS_BY_DISCRIMINANT,
                 MEMBERS_BY_NAME
             );
-            pub(crate) static NONUNION_MEMBERS : &[u16] = &[0];
+            pub(crate) static NONUNION_MEMBERS : &[u16] = &[0,1];
             pub(crate) static MEMBERS_BY_DISCRIMINANT : &[u16] = &[];
-            pub(crate) static MEMBERS_BY_NAME : &[u16] = &[0];
+            pub(crate) static MEMBERS_BY_NAME : &[u16] = &[0,1];
             pub(crate) const TYPE_ID: u64 = 0xd1fb_4e2f_cee4_77e6;
         }
     }
@@ -20169,7 +20341,7 @@ pub mod directory_group {
             ::capnp::word(229, 27, 153, 187, 177, 156, 55, 179),
             ::capnp::word(4, 0, 7, 0, 0, 0, 0, 0),
             ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-            ::capnp::word(53, 29, 0, 0, 7, 30, 0, 0),
+            ::capnp::word(47, 30, 0, 0, 1, 31, 0, 0),
             ::capnp::word(21, 0, 0, 0, 226, 0, 0, 0),
             ::capnp::word(33, 0, 0, 0, 7, 0, 0, 0),
             ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
@@ -22803,7 +22975,7 @@ pub(crate) static ENCODED_NODE: [::capnp::Word; 30] = [
     ::capnp::word(229, 27, 153, 187, 177, 156, 55, 179),
     ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
     ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-    ::capnp::word(37, 34, 0, 0, 80, 34, 0, 0),
+    ::capnp::word(31, 35, 0, 0, 74, 35, 0, 0),
     ::capnp::word(21, 0, 0, 0, 186, 0, 0, 0),
     ::capnp::word(29, 0, 0, 0, 7, 0, 0, 0),
     ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
@@ -22874,7 +23046,7 @@ pub(crate) static ENCODED_NODE: [::capnp::Word; 33] = [
     ::capnp::word(229, 27, 153, 187, 177, 156, 55, 179),
     ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
     ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-    ::capnp::word(181, 34, 0, 0, 240, 34, 0, 0),
+    ::capnp::word(175, 35, 0, 0, 234, 35, 0, 0),
     ::capnp::word(21, 0, 0, 0, 210, 0, 0, 0),
     ::capnp::word(33, 0, 0, 0, 7, 0, 0, 0),
     ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
@@ -23158,7 +23330,7 @@ pub mod parent_request {
             ::capnp::word(229, 27, 153, 187, 177, 156, 55, 179),
             ::capnp::word(4, 0, 7, 0, 0, 0, 0, 0),
             ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
-            ::capnp::word(242, 34, 0, 0, 180, 35, 0, 0),
+            ::capnp::word(236, 35, 0, 0, 174, 36, 0, 0),
             ::capnp::word(21, 0, 0, 0, 218, 0, 0, 0),
             ::capnp::word(33, 0, 0, 0, 7, 0, 0, 0),
             ::capnp::word(0, 0, 0, 0, 0, 0, 0, 0),
