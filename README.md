@@ -32,17 +32,19 @@ interface), ADR 0040 (pure-Rust Cap'n Proto compiler, generated code committed).
 | `messenger.capnp` | Messages | `fs-messenger` | none yet | draft 0.1 |
 | `hub.capnp` | Hub: register, activity log, sessions | `fs-hub` | `fs-hub-client` (1 of 2) | draft 0.1 |
 | `people.capnp` | People, relations, roles, AI marking (JSContact) | `fs-people` | none yet | draft 0.1 |
+| `groups.capnp` | Groups, nesting, membership, invitations, delegation; directories that mirror them | `fs-groups` | none yet | draft 0.1 |
+| `files.capnp` | Files, folders, resumable upload; backends that keep the bytes | `fs-files` | none yet | draft 0.1, provisional |
 
 Each schema file starts with a header naming status, owner and consumers.
 
 ## Use
 
 ```toml
-fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.2.0" }
+fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.3.0" }
 ```
 
 ```rust
-use fs_interfaces::{common_capnp, tasks_capnp, messenger_capnp, hub_capnp, people_capnp};
+use fs_interfaces::{common_capnp, tasks_capnp, messenger_capnp, hub_capnp, people_capnp, groups_capnp, files_capnp};
 use fs_interfaces::{Capabilities, Unsupported};
 ```
 

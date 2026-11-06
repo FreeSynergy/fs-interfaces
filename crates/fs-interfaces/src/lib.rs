@@ -8,6 +8,8 @@
 //! * [`messenger_capnp`] - messages (owner `fs-messenger`)
 //! * [`hub_capnp`] - hub (owner `fs-hub`)
 //! * [`people_capnp`] - people and roles (owner `fs-people`)
+//! * [`groups_capnp`] - groups, and directories that mirror them (owner `fs-groups`)
+//! * [`files_capnp`] - files, and backends that keep the bytes (owner `fs-files`)
 //!
 //! [`provider`] holds the Rust side of the provider rule: [`Unsupported`] and [`Capabilities`].
 //!
@@ -20,6 +22,12 @@
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod common_capnp;
+#[rustfmt::skip]
+#[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
+pub mod files_capnp;
+#[rustfmt::skip]
+#[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
+pub mod groups_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod hub_capnp;

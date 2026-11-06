@@ -7,7 +7,15 @@
 
 use capnp_compiler::CompileCommand;
 
-const SCHEMAS: [&str; 5] = ["common", "tasks", "messenger", "hub", "people"];
+const SCHEMAS: [&str; 7] = [
+    "common",
+    "tasks",
+    "messenger",
+    "hub",
+    "people",
+    "groups",
+    "files",
+];
 
 fn main() {
     let mut cmd = CompileCommand::new();
