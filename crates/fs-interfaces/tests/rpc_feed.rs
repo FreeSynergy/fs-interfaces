@@ -49,8 +49,8 @@ async fn settle() {
     tokio::time::sleep(Duration::from_millis(50)).await;
 }
 
-async fn deleted(_: u32) -> Option<Notice> {
-    Some(Notice::Deleted(ObjectId::new()))
+async fn deleted(_: u32) -> Result<Option<Notice>, String> {
+    Ok(Some(Notice::Deleted(ObjectId::new())))
 }
 
 async fn local<F: Future<Output = ()>>(test: F) {
@@ -64,7 +64,7 @@ async fn every_event_arrives_and_a_skipped_one_does_not() {
         let client: change_listener::Client = new_client(listener.clone());
         let (tx, rx) = change_channel();
         let _subscription = forward(rx, (), client, |n: u32| async move {
-            (n != 1).then(|| Notice::Deleted(ObjectId::new()))
+            Ok((n != 1).then(|| Notice::Deleted(ObjectId::new())))
         });
         for n in 0..3 {
             tx.send(n);
@@ -204,6 +204,30 @@ async fn a_source_that_closes_is_told_too() {
                 .as_deref()
                 .unwrap()
                 .contains("closed")
+        );
+    })
+    .await;
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn a_change_that_cannot_be_told_ends_the_feed_and_says_so() {
+    local(async {
+        let listener = Listener::default();
+        let client: change_listener::Client = new_client(listener.clone());
+        let (tx, rx) = change_channel();
+        let _subscription = forward(rx, (), client, |_: u32| async {
+            Err::<Option<Notice>, _>("store is gone".to_string())
+        });
+        tx.send(1);
+        settle().await;
+        assert_eq!(listener.seen.get(), 0);
+        assert!(
+            listener
+                .ended
+                .borrow()
+                .as_deref()
+                .unwrap()
+                .contains("store is gone")
         );
     })
     .await;

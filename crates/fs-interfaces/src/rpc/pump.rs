@@ -13,10 +13,10 @@ pub(super) async fn pump<E, F, Fut>(
     feed: ChangeReceiver<E>,
     listener: &change_listener::Client,
     resolve: F,
-) -> &'static str
+) -> String
 where
     F: Fn(E) -> Fut,
-    Fut: Future<Output = Option<Notice>>,
+    Fut: Future<Output = Result<Option<Notice>, String>>,
 {
     let ChangeReceiver {
         mut events,
@@ -27,13 +27,13 @@ where
         let event = if overflowed {
             match events.try_recv() {
                 Ok(event) => event,
-                Err(_) => return BEHIND,
+                Err(_) => return BEHIND.into(),
             }
         } else {
             tokio::select! {
                 event = events.recv() => match event {
                     Some(event) => event,
-                    None => return "the source closed",
+                    None => return "the source closed".into(),
                 },
                 () = overflow.notified() => {
                     overflowed = true;
@@ -42,8 +42,10 @@ where
                 }
             }
         };
-        let Some(notice) = resolve(event).await else {
-            continue;
+        let notice = match resolve(event).await {
+            Ok(Some(notice)) => notice,
+            Ok(None) => continue,
+            Err(why) => return format!("a change could not be told: {why}"),
         };
         let mut request = listener.change_request();
         write_change(request.get().init_change(), &notice);
@@ -53,7 +55,7 @@ where
             tokio::select! {
                 sent = &mut sending => {
                     if sent.is_err() {
-                        return FAILED;
+                        return FAILED.into();
                     }
                     continue;
                 }
@@ -65,8 +67,8 @@ where
         }
         match tokio::time::timeout(FEED_STALL, &mut sending).await {
             Ok(Ok(())) => {}
-            Ok(Err(_)) => return FAILED,
-            Err(_) => return BEHIND,
+            Ok(Err(_)) => return FAILED.into(),
+            Err(_) => return BEHIND.into(),
         }
     }
 }

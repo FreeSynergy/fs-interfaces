@@ -27,6 +27,26 @@ fn optional(r: capnp::text::Reader<'_>) -> capnp::Result<Option<String>> {
     Ok((!s.is_empty()).then_some(s))
 }
 
+/// About what the envelope weighs in a message, for [`Page::of_weighted`](super::Page::of_weighted).
+#[must_use]
+pub fn envelope_weight(e: &Envelope) -> usize {
+    let text = |t: &Option<String>| t.as_deref().map_or(0, str::len);
+    let list = |l: &[String]| l.iter().map(|s| s.len() + 8).sum::<usize>();
+    256 + e.object_type.len()
+        + e.name.len()
+        + text(&e.iri)
+        + text(&e.attributed_to)
+        + text(&e.context)
+        + text(&e.in_reply_to)
+        + text(&e.describes)
+        + list(&e.to)
+        + list(&e.cc)
+        + list(&e.bto)
+        + list(&e.bcc)
+        + list(&e.audience)
+        + list(&e.sensitive)
+}
+
 /// Write the envelope of an object.
 pub fn write_envelope(mut out: wire::Builder<'_>, e: &Envelope) {
     write_object_id(out.reborrow().init_id(), e.id);

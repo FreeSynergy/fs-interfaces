@@ -15,7 +15,8 @@ use tokio::net::{UnixListener, UnixStream};
 /// `$XDG_RUNTIME_DIR/freesynergy/<program>.sock`, the same place for every program.
 #[must_use]
 pub fn default_socket(program: &str) -> Option<PathBuf> {
-    let dir = std::env::var_os("XDG_RUNTIME_DIR")?;
+    // An empty variable counts as unset (XDG Base Directory).
+    let dir = std::env::var_os("XDG_RUNTIME_DIR").filter(|d| !d.is_empty())?;
     Some(
         PathBuf::from(dir)
             .join("freesynergy")

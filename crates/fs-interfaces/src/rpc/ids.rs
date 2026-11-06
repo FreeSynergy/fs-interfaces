@@ -7,6 +7,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use fs_store::ObjectId;
 use uuid::Uuid;
 
+use super::problem::invalid_request;
 use crate::common_capnp::uuid as wire;
 
 /// Write a uuid (`None` = all zero).
@@ -33,8 +34,8 @@ pub fn write_object_id(out: wire::Builder<'_>, id: ObjectId) {
 /// # Errors
 /// The id is all zero or not a valid object id.
 pub fn read_object_id(r: wire::Reader<'_>) -> capnp::Result<ObjectId> {
-    let id = read_uuid(r).ok_or_else(|| capnp::Error::failed("id is missing".into()))?;
-    ObjectId::from_uuid(id).map_err(super::failed)
+    let id = read_uuid(r).ok_or_else(|| invalid_request("id is missing"))?;
+    ObjectId::from_uuid(id).map_err(|e| invalid_request(e.to_string()))
 }
 
 /// `DateTime` -> unix milliseconds.
@@ -50,5 +51,5 @@ pub fn to_millis(t: DateTime<Utc>) -> i64 {
 pub fn from_millis(v: i64) -> capnp::Result<DateTime<Utc>> {
     Utc.timestamp_millis_opt(v)
         .single()
-        .ok_or_else(|| capnp::Error::failed(format!("timestamp {v} out of range")))
+        .ok_or_else(|| invalid_request(format!("timestamp {v} out of range")))
 }

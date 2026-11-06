@@ -7,6 +7,8 @@
 //!
 //! Pattern: Iterator (external, resumable through the cursor).
 
+use super::problem::{invalid_request, too_large};
+
 /// Page size of the servers.
 pub const DEFAULT_PAGE_SIZE: usize = 100;
 /// Largest message the RPC layer reads (`ReaderOptions::default`); a larger one ends the connection.
@@ -14,7 +16,37 @@ pub const MAX_MESSAGE_BYTES: usize = 64 * 1024 * 1024;
 /// Largest payload a server puts into one answer, leaving room for the framing.
 pub const MAX_PAGE_BYTES: usize = 32 * 1024 * 1024;
 
+/// Largest single value a server accepts: its answer may carry it about twice (content and
+/// envelope), and that still has to fit.
+pub const MAX_INTAKE_BYTES: usize = MAX_PAGE_BYTES / 2;
+
 const CURSOR_V1: u8 = 1;
+
+/// Refuse a value that could not come back in an answer, before it is stored.
+///
+/// # Errors
+/// `len` is above [`MAX_INTAKE_BYTES`].
+pub fn check_intake(len: usize) -> capnp::Result<()> {
+    if len > MAX_INTAKE_BYTES {
+        return Err(too_large(format!(
+            "{len} bytes, at most {MAX_INTAKE_BYTES} fit"
+        )));
+    }
+    Ok(())
+}
+
+/// Refuse an answer that would end the connection.
+///
+/// # Errors
+/// `len` is above [`MAX_PAGE_BYTES`].
+pub fn check_answer(len: usize) -> capnp::Result<()> {
+    if len > MAX_PAGE_BYTES {
+        return Err(too_large(format!(
+            "the answer has {len} bytes, at most {MAX_PAGE_BYTES} fit"
+        )));
+    }
+    Ok(())
+}
 
 /// One page and the cursor of the next one (empty = this was the last).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -86,7 +118,7 @@ fn position(cursor: &[u8]) -> capnp::Result<usize> {
     if cursor.is_empty() {
         return Ok(0);
     }
-    let invalid = || capnp::Error::failed("invalid cursor".into());
+    let invalid = || invalid_request("invalid cursor");
     let (&version, rest) = cursor.split_first().ok_or_else(invalid)?;
     let bytes: [u8; 8] = rest.try_into().map_err(|_| invalid())?;
     if version != CURSOR_V1 {

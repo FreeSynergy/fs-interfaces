@@ -10,6 +10,11 @@ use capnp::{Error, ErrorKind};
 
 use crate::provider::{UNSUPPORTED_PROBLEM_TYPE, Unsupported};
 
+/// Problem type of [`invalid_request`].
+pub const INVALID_REQUEST: &str = "https://freesynergy.net/problems/invalid-request";
+/// Problem type of [`too_large`].
+pub const TOO_LARGE: &str = "https://freesynergy.net/problems/too-large";
+
 const MARKER: &str = "fs-problem\u{1f}";
 const SEPARATOR: char = '\u{1f}';
 
@@ -103,6 +108,16 @@ pub fn unsupported(not_possible: &Unsupported) -> Error {
         not_possible.status(),
     )
     .into_error()
+}
+
+/// The request itself cannot be accepted: a missing or malformed id, cursor, time or value (422).
+pub fn invalid_request(detail: impl Into<String>) -> Error {
+    Problem::new(INVALID_REQUEST, "Invalid request", detail, 422).into_error()
+}
+
+/// The request or its answer would not fit into one message (413).
+pub fn too_large(detail: impl Into<String>) -> Error {
+    Problem::new(TOO_LARGE, "Too large", detail, 413).into_error()
 }
 
 /// Any other failure of a provider, without a problem type of its own. Not for an RPC error from

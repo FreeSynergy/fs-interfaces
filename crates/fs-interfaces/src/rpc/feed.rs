@@ -108,9 +108,11 @@ impl Drop for Forwarding {
 }
 
 /// Forward `feed` to `listener` until the returned capability is dropped, the listener fails, the
-/// source closes or the consumer falls too far behind; all but the first end with `ended`. `resolve` turns an event into a [`Notice`]; `None` skips it, for
-/// example an object already gone. `program_side` lives as long as the forwarding, usually the core's
-/// own subscription.
+/// source closes, `resolve` fails or the consumer falls too far behind; all but the first end with
+/// `ended`. `resolve` turns an event into a [`Notice`]: `Ok(None)` skips it, for example an object
+/// that is gone by now; an `Err` means the change cannot be told, and telling nothing would leave the
+/// consumer's copy wrong, so it ends the feed. `program_side` lives as long as the forwarding,
+/// usually the core's own subscription.
 pub fn forward<E, F, Fut>(
     feed: ChangeReceiver<E>,
     program_side: impl Any,
@@ -120,7 +122,7 @@ pub fn forward<E, F, Fut>(
 where
     E: 'static,
     F: Fn(E) -> Fut + 'static,
-    Fut: Future<Output = Option<Notice>> + 'static,
+    Fut: Future<Output = Result<Option<Notice>, String>> + 'static,
 {
     let task = tokio::task::spawn_local(async move {
         let why = pump(feed, &listener, resolve).await;

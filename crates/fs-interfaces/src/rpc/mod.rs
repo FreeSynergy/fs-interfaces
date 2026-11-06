@@ -18,19 +18,27 @@
 mod envelope;
 mod feed;
 mod ids;
+mod options;
 mod page;
 mod problem;
 mod pump;
 mod serve;
 mod socket;
 
-pub use envelope::{read_envelope, write_envelope};
+pub use envelope::{envelope_weight, read_envelope, write_envelope};
 pub use feed::{
     ChangeReceiver, ChangeSender, FEED_CAPACITY, FEED_ENDED_PROBLEM_TYPE, FEED_STALL, Notice,
     change_channel, forward, write_change,
 };
 pub use ids::{from_millis, read_object_id, read_uuid, to_millis, write_object_id, write_uuid};
-pub use page::{DEFAULT_PAGE_SIZE, MAX_MESSAGE_BYTES, MAX_PAGE_BYTES, Page, clamp_read};
-pub use problem::{Problem, failed, is_unimplemented, unsupported};
+pub use options::{LOCAL_OWNER, ServerOptions, default_data_dir, prepare_data_dir};
+pub use page::{
+    DEFAULT_PAGE_SIZE, MAX_INTAKE_BYTES, MAX_MESSAGE_BYTES, MAX_PAGE_BYTES, Page, check_answer,
+    check_intake, clamp_read,
+};
+pub use problem::{
+    INVALID_REQUEST, Problem, TOO_LARGE, failed, invalid_request, is_unimplemented, too_large,
+    unsupported,
+};
 pub use serve::{Connection, connect, run_until_signal, serve};
 pub use socket::{BoundSocket, bind_socket, default_socket};

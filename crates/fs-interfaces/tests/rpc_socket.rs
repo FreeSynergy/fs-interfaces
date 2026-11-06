@@ -186,3 +186,31 @@ async fn calls_after_the_connection_was_dropped_fail_instead_of_hanging() {
     })
     .await;
 }
+
+#[test]
+fn options_refuse_what_they_cannot_use() {
+    use fs_interfaces::rpc::ServerOptions;
+    let parse =
+        |args: &[&str]| ServerOptions::parse("x", args.iter().map(std::ffi::OsString::from));
+    let full = ["--socket", "/s", "--data", "/d", "--actor", "me"];
+    let options = parse(&full).unwrap().unwrap();
+    assert_eq!(options.actor, "me");
+    assert_eq!(parse(&["--help"]), Ok(None));
+    assert!(parse(&["--nonsense"]).is_err());
+    assert!(parse(&["--socket"]).is_err());
+    assert!(parse(&["--socket", "--data"]).is_err());
+    assert!(parse(&["--socket", "/s", "--data", "/d", "--actor", ""]).is_err());
+}
+
+#[test]
+fn a_data_directory_is_for_this_user_alone() {
+    use fs_interfaces::rpc::prepare_data_dir;
+    let dir = tempfile::tempdir().unwrap();
+    let fresh = dir.path().join("a").join("b");
+    prepare_data_dir(&fresh).unwrap();
+    let mode = std::fs::metadata(&fresh).unwrap().permissions().mode();
+    assert_eq!(mode & 0o777, 0o700);
+    std::fs::set_permissions(&fresh, PermissionsExt::from_mode(0o755)).unwrap();
+    let refused = prepare_data_dir(&fresh).unwrap_err();
+    assert_eq!(refused.kind(), ErrorKind::PermissionDenied);
+}
