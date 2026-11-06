@@ -119,8 +119,10 @@ interface Memberships {
   # An unknown group id is an error, not an empty answer, in all reads of this interface and Items.
   add       @0 (group :Uuid, member :Member, role :Text) -> (membership :Membership);  # member.add
   remove    @1 (membership :Uuid) -> ();                                         # member.remove
-  direct    @2 (group :Uuid) -> (items :List(Membership));                       # member.read
-  effective @3 (group :Uuid) -> (items :List(EffectiveMember));                  # member.read: through nested groups
+  # direct and effective page like Items.list: empty cursor = start, empty next = the end. A cursor was appended
+  # because otherwise a long list cannot be read at all, and the ids for remove only come from direct.
+  direct    @2 (group :Uuid, cursor :Cursor) -> (items :List(Membership), next :Cursor);        # member.read
+  effective @3 (group :Uuid, cursor :Cursor) -> (items :List(EffectiveMember), next :Cursor);   # member.read: through nested groups
   groupsOf  @4 (person :Text) -> (ids :List(Uuid));                              # member.read: through nested groups
   isMember  @5 (group :Uuid, person :Text) -> (member :Bool);                    # member.read
 }
