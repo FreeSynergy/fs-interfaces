@@ -45,6 +45,12 @@ const changedOutsideProblemType :Text = "https://freesynergy.net/problems/files/
 # callers send 0 = refuse (note: the Rust `copy_file` without `_as` keeps the old keep-both behaviour).
 enum OnConflict { refuse @0; keepBoth @1; }
 
+# Sort order of `list` and `find`. Ties are broken by name, then id. Unset = name ascending.
+# `modified` = the time the record last changed (rename, move, new bytes found by rescan), not the disk's mtime.
+# `size`: a folder counts as 0. `mediaType`: ascending only (descending answers Unsupported); a folder counts as inode/directory.
+enum SortBy { name @0; modified @1; size @2; mediaType @3; }
+struct Sort { by @0 :SortBy; descending @1 :Bool; }
+
 struct File {
   envelope  @0 :Envelope;          # AS2 `Document` (`Image`, `Video`, `Audio` where they apply); envelope.name = the real file name
   mediaType @1 :Text;
@@ -93,7 +99,7 @@ interface Files {
 }
 
 interface Folders {
-  list         @0 (folder :Uuid, cursor :Cursor) -> (page :EntryPage);           # folder.list
+  list         @0 (folder :Uuid, cursor :Cursor, sort :Sort) -> (page :EntryPage);           # folder.list
   createFolder @1 (parent :Uuid, name :Text) -> (folder :Folder);                # folder.create
   renameFolder @2 (id :Uuid, name :Text, onConflict :OnConflict) -> (folder :Folder);                    # folder.rename
   deleteFolder @3 (id :Uuid) -> ();                                              # folder.delete
@@ -136,7 +142,7 @@ interface Transfer {
 }
 
 interface Search {
-  find @0 (filter :FileFilter, cursor :Cursor) -> (page :EntryPage);             # file.search
+  find @0 (filter :FileFilter, cursor :Cursor, sort :Sort) -> (page :EntryPage);             # file.search
 }
 
 interface Backends {
