@@ -7,6 +7,7 @@
 //! * [`tasks_capnp`] - tasks (owner `fs-tasks`)
 //! * [`messenger_capnp`] - messages (owner `fs-messenger`)
 //! * [`hub_capnp`] - hub (owner `fs-hub`)
+//! * [`people_capnp`] - people and roles (owner `fs-people`)
 //!
 //! [`provider`] holds the Rust side of the provider rule: [`Unsupported`] and [`Capabilities`].
 //!
@@ -25,6 +26,9 @@ pub mod hub_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod messenger_capnp;
+#[rustfmt::skip]
+#[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
+pub mod people_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod tasks_capnp;

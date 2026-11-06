@@ -31,17 +31,18 @@ interface), ADR 0040 (pure-Rust Cap'n Proto compiler, generated code committed).
 | `tasks.capnp` | Tasks (JSCalendar `Task`) | `fs-tasks` | `fs-calendar` (1 of 2) | draft 0.1 |
 | `messenger.capnp` | Messages | `fs-messenger` | none yet | draft 0.1 |
 | `hub.capnp` | Hub: register, activity log, sessions | `fs-hub` | `fs-hub-client` (1 of 2) | draft 0.1 |
+| `people.capnp` | People, relations, roles, AI marking (JSContact) | `fs-people` | none yet | draft 0.1 |
 
 Each schema file starts with a header naming status, owner and consumers.
 
 ## Use
 
 ```toml
-fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.1.0" }
+fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.2.0" }
 ```
 
 ```rust
-use fs_interfaces::{common_capnp, tasks_capnp, messenger_capnp, hub_capnp};
+use fs_interfaces::{common_capnp, tasks_capnp, messenger_capnp, hub_capnp, people_capnp};
 use fs_interfaces::{Capabilities, Unsupported};
 ```
 

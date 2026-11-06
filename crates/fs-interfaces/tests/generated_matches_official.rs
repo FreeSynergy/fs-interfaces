@@ -4,7 +4,7 @@
 
 use std::path::{Path, PathBuf};
 
-const SCHEMAS: [&str; 4] = ["common", "tasks", "messenger", "hub"];
+const SCHEMAS: [&str; 5] = ["common", "tasks", "messenger", "hub", "people"];
 
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
