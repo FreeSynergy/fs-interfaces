@@ -48,10 +48,11 @@ Version 0.31.0.
 | `messenger` draft 0.3: `Draft.setSubject`; `MessageSummary.arrival`, `undecrypted`, `signature`, `tooLarge`; `skipped` on both pages; `unknown` as ordinal 0 of `Kind`, `ToolCallState`, `DeliveryState`; revision rule stated in full | done, draft |
 | `files` gains `BlobInfo.modified`, `BlobBackend.has @14`, `sweepPending @15`; `commit` never replaces on a real-names backend | done |
 | `streaming.capnp` (new, owner fs-streaming): stage 1: streams, targets, keys as secrets, check, recording handed over | done, draft, provisional |
+| `rpc`: an item too large for any message no longer blocks what is behind it (`Problem::next`), error texts are cut at 64 KiB, `run_until_signal` waits for `run_to_end` work, `prepare_data_dir` answers the canonical path | done, version 0.31.0 |
 | Generated Rust with `capnp-compiler` v0.1.0 + `capnpc` 0.27 | done; byte-identical to `capnpc-embedded` 0.2 output (tested) |
 | Rust helpers `Unsupported`, `Capabilities` with wire round trips | done |
 | `rpc` (feature): socket with lock file, connection, problems, envelope, pages, feed | done, draft |
-| Tests | 2 oracle, 3 provider, 17 `rpc`, 1 doc test |
+| Tests | 2 oracle, 3 provider, 39 `rpc`, 1 doc test |
 | Interfaces at 1.0 | none; the draft -> 1.0 gate needs two independent consumers per interface |
 
 ## Decisions
@@ -71,7 +72,23 @@ Version 0.31.0.
 
 * **Pages:** the cursor is opaque to consumers (a leading version byte, nothing to calculate with). Today it marks a place in the core's ordered list, so an insert or delete between two pages can skip or repeat one entry. Before 1.0 it becomes a stable key (sort value plus id) without a contract change. For messages and `subscribe`, skipped or repeated entries count as errors (strategy session, 2026-11-06).
 * **Time:** `Timestamp` carries milliseconds and the store microseconds, so two updates within one millisecond look alike to a consumer comparing `updated`. Needs a contract decision.
-* **Message size:** one message above 64 MiB ends the connection with all its capabilities. Servers cut answers (`Page::of_weighted`, `clamp_read`; a single item above the limit still goes out, one such item ends that connection); a client that sends more loses its connection.
+* **Message size:** one message above 64 MiB ends the connection with all its capabilities. Servers cut answers: pages at 32 MiB (`Page::of_weighted`), reads (`clamp_read`), error texts at 64 KiB (`MAX_DETAIL_BYTES`). A single item above 32 MiB comes alone on its page, up to 63 MiB (`MAX_ITEM_BYTES`, a message less 1 MiB). Above that it cannot be sent: the call answers `too-large` with a cursor past it in the error text (`Problem::next`, stated on `Cursor` in `common.capnp`), so a consumer can skip on. A client that sends more than a message loses its connection.
+* **Read limits:** `serve_with` and `connect_with` stay, because `fs-hub` will use them. They set what that end reads; `Page`, `check_answer`, `check_intake` and `clamp_read` stay capped at the default.
+* **Stopping:** after a signal `run_until_signal` waits up to 30 s (`FINISH_TIMEOUT`) for `run_to_end` work and then exits with an error naming what is left. It keeps the socket and the lock during the wait. Other method calls are still cancelled, and new `run_to_end` work is refused as `disconnected`.
+
+## What a program now refuses at the start
+
+`bind_socket` and `prepare_data_dir` refuse to start (`PermissionDenied`) when an ancestor of the socket or data directory is group- or world-writable and not sticky, or is owned by another user who is not root. Someone else could swap the directory otherwise. This hits setups that used to run:
+
+* a `$HOME` of 0775, as some systems create it for user-private groups; the default data directory lies below it;
+* a project directory shared with a group (0775 or 2775) holding `--data` or `--socket`;
+* a directory below the home of another user, or on a mount owned by a service user.
+
+The remedy is `chmod g-w` on the directory the message names, or another `--data` or `--socket`. Sticky directories such as `/tmp` stay allowed.
+
+## Tags not to use
+
+`fs-interfaces` v0.18.0 to v0.24.0 for `rpc`, superseded because of these findings: an oversized item makes all behind it unreadable, or an item above a message ends the connection; an error text has no size limit, so one bad request ends the connection; a signal cancels writes under way. Their contracts are fine; only the feature `rpc` should not be used.
 
 ## Open points
 

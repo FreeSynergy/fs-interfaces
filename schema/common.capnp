@@ -12,7 +12,11 @@
 
 struct Uuid      { hi @0 :UInt64; lo @1 :UInt64; }          # UUIDv7 (ADR 0027)
 struct Timestamp { unixMillis @0 :Int64; }
-struct Cursor    { opaque @0 :Data; }                       # pagination; empty = start / end
+# Pagination; empty = start / end. An item too large for any message cannot be delivered: the call
+# answers the problem `too-large`, and its error text carries a cursor past the item (in Rust
+# `rpc::Problem::next`, read by `Problem::from_error`; none if nothing is behind it). A consumer that hands
+# it back skips that item and reads on. A smaller item above the usual page size comes alone on its page.
+struct Cursor    { opaque @0 :Data; }
 struct Problem   {                                          # RFC 9457 shape
   type   @0 :Text;
   title  @1 :Text;

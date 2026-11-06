@@ -7,7 +7,7 @@
 //!
 //! Pattern: Iterator (external, resumable through the cursor).
 
-use super::problem::{invalid_request, too_large};
+use super::problem::{Problem, TOO_LARGE, invalid_request, too_large};
 
 /// Page size of the servers.
 pub const DEFAULT_PAGE_SIZE: usize = 100;
@@ -15,6 +15,10 @@ pub const DEFAULT_PAGE_SIZE: usize = 100;
 pub const MAX_MESSAGE_BYTES: usize = 64 * 1024 * 1024;
 /// Largest payload a server puts into one answer, leaving room for the framing.
 pub const MAX_PAGE_BYTES: usize = 32 * 1024 * 1024;
+
+/// Largest single item a page carries, alone: a message, less a margin for the framing and the
+/// structure around the item. Above this the item cannot be sent at all.
+pub const MAX_ITEM_BYTES: usize = MAX_MESSAGE_BYTES - 1024 * 1024;
 
 /// Largest single value a server accepts: its answer may carry it about twice (content and
 /// envelope), and that still has to fit.
@@ -67,11 +71,13 @@ impl<T> Page<T> {
     }
 
     /// Like [`Page::of`], and the page also ends before `weight` of its items passes
-    /// [`MAX_PAGE_BYTES`]. A page holds at least one item, so paging advances; an item that does not
-    /// fit alone is refused, since sending it would end the connection.
+    /// [`MAX_PAGE_BYTES`]. An item above that goes alone, up to [`MAX_ITEM_BYTES`], so paging advances.
+    /// An item above that cannot be sent, since it would end the connection: the answer is a
+    /// [`TOO_LARGE`] problem whose [`Problem::next`] is the cursor past it (none if it was the last),
+    /// so what is behind it stays readable.
     ///
     /// # Errors
-    /// The cursor is not one this code handed out, `size` is zero, or the next item alone is too large.
+    /// The cursor is not one this code handed out, `size` is zero, or the next item cannot be sent.
     pub fn of_weighted(
         all: Vec<T>,
         cursor: &[u8],
@@ -86,16 +92,27 @@ impl<T> Page<T> {
         let mut items = Vec::new();
         let mut bytes = 0usize;
         for item in all.into_iter().skip(start).take(size) {
-            bytes = bytes.saturating_add(weight(&item));
-            if bytes > MAX_PAGE_BYTES {
-                if items.is_empty() {
-                    return Err(too_large(format!(
-                        "one item of {bytes} bytes, at most {MAX_PAGE_BYTES} fit"
-                    )));
-                }
+            let heavy = weight(&item);
+            bytes = bytes.saturating_add(heavy);
+            let full = bytes > MAX_PAGE_BYTES;
+            if full && !items.is_empty() {
                 break;
             }
+            if heavy > MAX_ITEM_BYTES {
+                let behind = start.saturating_add(1);
+                return Err(Problem::new(
+                    TOO_LARGE,
+                    "Too large",
+                    format!("one item of {heavy} bytes, at most {MAX_ITEM_BYTES} fit"),
+                    413,
+                )
+                .with_next((behind < total).then(|| encode(behind)))
+                .into_error());
+            }
             items.push(item);
+            if full {
+                break;
+            }
         }
         let reached = start.saturating_add(items.len());
         let next = if reached < total && !items.is_empty() {

@@ -17,9 +17,15 @@ use tokio::net::UnixStream;
 use tokio::sync::oneshot;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
+use super::finish::{FINISH_TIMEOUT, finish_underway};
 use super::socket::{BoundSocket, bind_socket};
 
-/// What a connection reads at most, for programs whose single objects are larger than the default.
+/// What this end of a connection reads at most in one message; the default is
+/// [`MAX_MESSAGE_BYTES`](super::MAX_MESSAGE_BYTES). It says nothing about what the other end reads, so
+/// a message above the default needs a higher limit on the receiving end, and for an answer that is
+/// the client. [`Page`](super::Page), [`check_answer`](super::check_answer) and the other limits of this
+/// module do not follow it: they stay capped at the default, and a program that answers more must cut
+/// its answers itself.
 pub type ReadLimits = ReaderOptions;
 
 /// Pause after the system ran out of descriptors or memory, instead of spinning on `accept`.
@@ -60,6 +66,15 @@ pub async fn serve(
 /// As for [`serve`].
 pub async fn serve_with(
     socket: BoundSocket,
+    bootstrap: Client,
+    shutdown: impl Future<Output = ()>,
+    limits: ReadLimits,
+) -> io::Result<()> {
+    accept_until(&socket, bootstrap, shutdown, limits).await
+}
+
+async fn accept_until(
+    socket: &BoundSocket,
     bootstrap: Client,
     shutdown: impl Future<Output = ()>,
     limits: ReadLimits,
@@ -144,10 +159,12 @@ pub async fn connect_with<C: FromClientHook>(
 
 /// A program's main loop: bind `socket` first, so a second start never touches the data of the first;
 /// then serve what `open` builds until Ctrl-C or SIGTERM. Connections wait in the backlog meanwhile.
+/// After the signal it waits up to [`FINISH_TIMEOUT`] for [`run_to_end`](super::run_to_end) work, and
+/// holds the socket and its lock until then, so a successor cannot open the same data during the wait.
 /// Runs its own single-threaded runtime and `LocalSet`.
 ///
 /// # Errors
-/// The runtime, the socket or `open` failed.
+/// The runtime, the socket or `open` failed, or work under way did not finish in time.
 pub fn run_until_signal<F, Fut>(socket: &Path, open: F) -> io::Result<()>
 where
     F: FnOnce() -> Fut,
@@ -167,6 +184,9 @@ where
                 _ = term.recv() => {}
             }
         };
-        serve(bound, bootstrap, stop).await
+        let served = accept_until(&bound, bootstrap, stop, ReadLimits::default()).await;
+        let finished = finish_underway(FINISH_TIMEOUT).await;
+        drop(bound);
+        served.and(finished)
     })
 }

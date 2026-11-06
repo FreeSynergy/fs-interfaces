@@ -19,7 +19,7 @@ pub const LOCAL_OWNER: &str = "https://local.invalid/users/owner";
 pub struct ServerOptions {
     /// The socket to listen on.
     pub socket: PathBuf,
-    /// The data directory. Pass it through [`prepare_data_dir`] before use.
+    /// The data directory. Pass it through [`prepare_data_dir`] and use what that answers.
     pub data: PathBuf,
     /// IRI of the acting person, written to the log. Not a verified identity.
     pub actor: String,
@@ -37,20 +37,24 @@ pub fn default_data_dir(program: &str) -> Option<PathBuf> {
     Some(base.join("freesynergy").join(program))
 }
 
-/// Create the data directory for this user alone; refuse one that others can reach.
+/// Create the data directory for this user alone; refuse one that others can reach, or one below a
+/// directory that others could swap. Answers the canonical path, the one that was checked and is the
+/// one to use.
 ///
 /// # Errors
 /// Others have access (`PermissionDenied`), or the file system refuses.
-pub fn prepare_data_dir(dir: &Path) -> io::Result<()> {
+pub fn prepare_data_dir(dir: &Path) -> io::Result<PathBuf> {
     create_private(dir)?;
-    let meta = std::fs::metadata(dir)?;
+    let dir = dir.canonicalize()?;
+    let meta = std::fs::metadata(&dir)?;
     if meta.uid() != rustix::process::geteuid().as_raw() || meta.mode() & 0o077 != 0 {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
             format!("{} must belong to this user alone (0700)", dir.display()),
         ));
     }
-    check_ancestors(&dir.canonicalize()?)
+    check_ancestors(&dir)?;
+    Ok(dir)
 }
 
 impl ServerOptions {

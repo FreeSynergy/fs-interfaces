@@ -3,8 +3,8 @@
 
 use fs_interfaces::common_capnp::{change, envelope};
 use fs_interfaces::rpc::{
-    DEFAULT_PAGE_SIZE, MAX_PAGE_BYTES, Notice, Page, Problem, TOO_LARGE, clamp_read, read_envelope,
-    read_uuid, write_change, write_envelope,
+    DEFAULT_PAGE_SIZE, MAX_MESSAGE_BYTES, MAX_PAGE_BYTES, Notice, Page, Problem, TOO_LARGE,
+    clamp_read, read_envelope, read_uuid, write_change, write_envelope,
 };
 use fs_store::Envelope;
 
@@ -125,7 +125,7 @@ fn an_envelope_without_its_times_is_refused_not_dated_1970() {
 #[test]
 fn heavy_pages_end_early_and_an_item_too_large_is_refused() {
     let weigh = |n: &usize| *n;
-    let all = vec![MAX_PAGE_BYTES - 1, 2, MAX_PAGE_BYTES * 2, 1];
+    let all = vec![MAX_PAGE_BYTES - 1, 2, MAX_MESSAGE_BYTES, 1];
     let first = Page::of_weighted(all.clone(), &[], 10, weigh).unwrap();
     assert_eq!(first.items, [MAX_PAGE_BYTES - 1]);
     let second = Page::of_weighted(all.clone(), &first.next, 10, weigh).unwrap();
@@ -135,6 +135,12 @@ fn heavy_pages_end_early_and_an_item_too_large_is_refused() {
     assert_eq!(
         problem.problem_type, TOO_LARGE,
         "better refused than the connection ended"
+    );
+    let behind = Page::of_weighted(all, &problem.next.unwrap(), 10, weigh).unwrap();
+    assert_eq!(
+        behind.items,
+        [1],
+        "the cursor in the problem skips exactly that item"
     );
     assert_eq!(clamp_read(u32::MAX) as usize, MAX_PAGE_BYTES);
     assert_eq!(clamp_read(7), 7);

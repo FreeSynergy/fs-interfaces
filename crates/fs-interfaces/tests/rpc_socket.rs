@@ -207,7 +207,17 @@ fn a_data_directory_is_for_this_user_alone() {
     use fs_interfaces::rpc::prepare_data_dir;
     let dir = tempfile::tempdir().unwrap();
     let fresh = dir.path().join("a").join("b");
-    prepare_data_dir(&fresh).unwrap();
+    assert_eq!(
+        prepare_data_dir(&fresh).unwrap(),
+        fresh.canonicalize().unwrap()
+    );
+    let through = dir.path().join("link");
+    std::os::unix::fs::symlink(dir.path().join("a"), &through).unwrap();
+    assert_eq!(
+        prepare_data_dir(&through.join("b")).unwrap(),
+        fresh.canonicalize().unwrap(),
+        "the path that was checked, not the one through the link"
+    );
     let mode = std::fs::metadata(&fresh).unwrap().permissions().mode();
     assert_eq!(mode & 0o777, 0o700);
     std::fs::set_permissions(&fresh, PermissionsExt::from_mode(0o755)).unwrap();

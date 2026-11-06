@@ -4,7 +4,12 @@
 //! a [`Problem`] travels inside the text behind a marker and comes back typed on the other side; a
 //! consumer never has to read an error message to tell "name taken" from "not possible".
 //!
+//! An error too large for one message would end the connection instead of answering, so every text
+//! that leaves here is cut to [`MAX_DETAIL_BYTES`].
+//!
 //! Pattern: Adapter — [`Problem`] <-> `capnp::Error`.
+
+use std::fmt::Write as _;
 
 use capnp::{Error, ErrorKind};
 
@@ -14,6 +19,9 @@ use crate::provider::{UNSUPPORTED_PROBLEM_TYPE, Unsupported};
 pub const INVALID_REQUEST: &str = "https://freesynergy.net/problems/invalid-request";
 /// Problem type of [`too_large`].
 pub const TOO_LARGE: &str = "https://freesynergy.net/problems/too-large";
+
+/// Most bytes of a problem's texts and of [`failed`], cut on a character boundary.
+pub const MAX_DETAIL_BYTES: usize = 64 * 1024;
 
 const MARKER: &str = "fs-problem\u{1f}";
 const SEPARATOR: char = '\u{1f}';
@@ -29,6 +37,36 @@ pub struct Problem {
     pub detail: String,
     /// HTTP-like status.
     pub status: u16,
+    /// Cursor past what could not be sent, so a consumer can read on; `None` if nothing is behind it.
+    /// Lives in the error text only: the wire `Problem` has no such member.
+    pub next: Option<Vec<u8>>,
+}
+
+/// The longest start of `text` of at most [`MAX_DETAIL_BYTES`].
+fn capped(text: &str) -> &str {
+    let mut end = text.len().min(MAX_DETAIL_BYTES);
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    &text[..end]
+}
+
+fn to_hex(bytes: &[u8]) -> String {
+    let mut text = String::with_capacity(bytes.len() * 2);
+    for b in bytes {
+        let _ = write!(text, "{b:02x}");
+    }
+    text
+}
+
+fn from_hex(text: &str) -> Option<Vec<u8>> {
+    if !text.is_ascii() || !text.len().is_multiple_of(2) {
+        return None;
+    }
+    (0..text.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&text[i..i + 2], 16).ok())
+        .collect()
 }
 
 impl Problem {
@@ -44,19 +82,34 @@ impl Problem {
             title: title.into(),
             detail: detail.into(),
             status,
+            next: None,
         }
     }
 
-    /// This problem as an RPC error. Status 501 becomes the exception kind `unimplemented`.
+    /// This problem with a cursor past what could not be sent.
+    #[must_use]
+    pub fn with_next(mut self, next: Option<Vec<u8>>) -> Self {
+        self.next = next;
+        self
+    }
+
+    /// This problem as an RPC error, its texts cut to [`MAX_DETAIL_BYTES`]. Status 501 becomes the
+    /// exception kind `unimplemented`.
     #[must_use]
     pub fn into_error(self) -> Error {
-        let text = format!(
+        let clean = |text: &str| capped(text).replace(SEPARATOR, " ");
+        let mut text = format!(
             "{MARKER}{}{SEPARATOR}{}{SEPARATOR}{}{SEPARATOR}{}",
             self.status,
-            self.problem_type.replace(SEPARATOR, " "),
-            self.title.replace(SEPARATOR, " "),
-            self.detail.replace(SEPARATOR, " "),
+            clean(&self.problem_type),
+            clean(&self.title),
+            clean(&self.detail),
         );
+        // Last, and only if there is one: a text without it reads as before.
+        if let Some(next) = &self.next {
+            text.push(SEPARATOR);
+            text.push_str(&to_hex(next));
+        }
         if self.status == 501 {
             Error::unimplemented(text)
         } else {
@@ -73,21 +126,22 @@ impl Problem {
             text = rest;
         }
         let rest = text.strip_prefix(MARKER)?;
-        let mut parts = rest.splitn(4, SEPARATOR);
+        let mut parts = rest.splitn(5, SEPARATOR);
         let status = parts.next()?.parse().ok()?;
         Some(Self {
             problem_type: parts.next()?.to_string(),
             title: parts.next()?.to_string(),
             detail: parts.next()?.to_string(),
             status,
+            next: parts.next().and_then(from_hex),
         })
     }
 
-    /// Fill a wire `Problem`.
+    /// Fill a wire `Problem`, its detail cut to [`MAX_DETAIL_BYTES`]. `next` stays behind.
     pub fn write(&self, mut out: crate::common_capnp::problem::Builder<'_>) {
         out.set_type(self.problem_type.as_str());
         out.set_title(self.title.as_str());
-        out.set_detail(self.detail.as_str());
+        out.set_detail(capped(&self.detail));
         out.set_status(self.status);
     }
 
@@ -101,6 +155,7 @@ impl Problem {
             title: r.get_title()?.to_string()?,
             detail: r.get_detail()?.to_string()?,
             status: r.get_status(),
+            next: None,
         })
     }
 
@@ -134,9 +189,10 @@ pub fn too_large(detail: impl Into<String>) -> Error {
 }
 
 /// Any other failure of a provider, without a problem type of its own. Not for an RPC error from
-/// elsewhere: a program that passes one on returns it unchanged, or its problem is lost.
+/// elsewhere: a program that passes one on returns it unchanged, or its problem is lost. The text is
+/// cut to [`MAX_DETAIL_BYTES`].
 pub fn failed(error: impl std::fmt::Display) -> Error {
-    Error::failed(error.to_string())
+    Error::failed(capped(&error.to_string()).to_string())
 }
 
 /// `true` if the error is of the kind `unimplemented`, also without a [`Problem`] inside: a method
