@@ -227,7 +227,7 @@ checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
 name = "fs-interfaces"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "capnp",
  "capnp-compiler",
@@ -511,7 +511,7 @@ dependencies = [
 
 [[package]]
 name = "regenerate"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "capnp-compiler",
  "capnpc",

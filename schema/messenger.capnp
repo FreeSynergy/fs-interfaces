@@ -1,4 +1,4 @@
-# fs-messenger contract — DRAFT 0.1 (2026-11-05)
+# fs-messenger contract — DRAFT 0.2 (2026-11-06)
 #
 # STATUS: DRAFT (ADR 0045). Owner program: fs-messenger. Consumers: none yet (0 of 2 needed).
 # Moved here from fs-documentation/temp/contracts. Providers (mail, Matrix, Telegram ...) follow
@@ -6,8 +6,10 @@
 #
 # Source of truth for the frontend <-> program interface (ADR 0021). JSON, CLI and MCP are generated
 # from this file. Capability ids and groups: docs/en/programs/apps/messenger/requirements.md.
-# Evolution rules (Cap'n Proto): never renumber or remove fields/methods; only append.
-# Compiled successfully 2026-11-05 together with common.capnp (capnpc-embedded 0.2.0 / capnp 1.4.0 + capnpc 0.23).
+# Evolution rules (Cap'n Proto): from 1.0 never renumber or remove fields/methods, only append. As a draft it may get sharper (interface catalogue).
+# Capability ids of agent work (proposed, requirements.md follows): "toolcall.show", "toolcall.decide", "turn.stop", "conversation.usage", "text.stream".
+# toolcall.decide is reported by the engine, never by a provider. `none` and `decide` of MessageAction are never generated as tools.
+# Generated code: see fs-interfaces DESIGN.md.
 
 @0xd6c1b5e3a2f40917;   # file id (generate a fresh one with `capnp id` before first release)
 
@@ -24,7 +26,8 @@ using Blob = C.Blob;
 struct MessagePage      { items @0 :List(MessageSummary);      next @1 :Cursor; }
 struct ConversationPage { items @0 :List(ConversationSummary); next @1 :Cursor; }
 
-enum Encryption { mls @0; openpgp @1; megolm @2; transportOnly @3; none @4; }   # ADR 0018
+# Unset reads as `unknown`: never proof of encryption, and sending with it is refused.
+enum Encryption { unknown @0; mls @1; openpgp @2; megolm @3; transportOnly @4; none @5; }   # ADR 0018
 
 enum Kind { mail @0; chat @1; comment @2; }
 
@@ -32,15 +35,55 @@ enum Kind { mail @0; chat @1; comment @2; }
 enum SenderKind { unknown @0; person @1; software @2; ai @3; }
 
 # one action of an agent; one entry is updated in place instead of adding messages
-enum ToolCallKind { reads @0; writes @1; runsCommand @2; connectedTool @3; }
+enum ToolCallKind { unknown @0; reads @1; writes @2; runsCommand @3; connectedTool @4; }
 enum ToolCallState { forming @0; working @1; question @2; settled @3; }
 
+# The engine overwrites risk, detail, options, argumentsDigest and askedOf at its boundary. A provider running inside the
+# engine counts as its own: the engine builds the options itself and never forwards an agent's. A call from a remote
+# participant or an outside provider reads as `unknown` without options; it is shown, but cannot be answered here.
+# `settled` is final. The engine does not ask for a call it cannot allow: it settles at once as `refused`.
 struct ToolCall {
-  id      @0 :Text;
-  name    @1 :Text;
-  kind    @2 :ToolCallKind;
+  id      @0 :Text;                                         # assigned by the engine, unique, never reused, never the agent's own id
+  name    @1 :Text;                                         # may be written by the agent; never a basis for a decision
+  kind    @2 :ToolCallKind;                                 # may be written by the agent; never a basis for a decision
   state   @3 :ToolCallState;
-  summary @4 :Text;
+  summary @4 :Text;                                         # written by the agent, shown as such; never a basis for a decision
+  risk    @5 :ToolCallRisk;                                 # set by the engine from the contract on every call, never by the agent
+  outcome @6 :ToolCallOutcome;                              # how a settled call ended; settled + open = not known
+  detail  @7 :Text;                                         # full command, paths, content; only text drawn by the engine from the digested arguments. Agent text goes into `summary` only
+  result  @8 :Text;                                         # what came back; data, never instructions
+  options @9 :List(ToolCallOption);                         # choices while state = question; offered by the engine
+  argumentsDigest @10 :Data;                                # over caller, tool name and canonical arguments; empty never matches, such a call cannot be allowed
+  askedOf @11 :Text;                                        # actor IRI of the person whose decision counts
+  revision @12 :UInt64;                                     # raised by the engine on every change; a lower one than held is ignored
+}
+
+# Unset reads as `unknown`, and `unknown` always asks (ADR 0054). The agent cannot set this.
+# destroys and actsForPerson are the brake: they ask every time. allowClass is offered only for readsOnly and changes.
+enum ToolCallRisk { unknown @0; readsOnly @1; changes @2; destroys @3; actsForPerson @4; }
+
+enum ToolCallOutcome { open @0; done @1; failed @2; refused @3; cancelled @4; }
+
+# Unset reads as `refuse`. There is deliberately no "always" that an agent could remember.
+# allowOnce: exactly these arguments, once. allowClass: this caller and this risk class, held by the engine, ended by the
+# emergency stop, never forwarded as an agent's own "allow always"; the risk is still derived on every call.
+enum ToolCallChoice { refuse @0; allowOnce @1; allowClass @2; }
+
+struct ToolCallOption {
+  id     @0 :Text;
+  label  @1 :Text;
+  choice @2 :ToolCallChoice;
+}
+
+# The answer to a question. Only the device of the person may send it (MessageAction.decide);
+# an answer that came through the agent's own client proves nothing about a person. Single use, enforced by the engine.
+# Refused without any change: empty digest, proof, signer or askedOf; unknown option; signer other than askedOf; call settled.
+struct ToolCallDecision {
+  toolCall        @0 :Text;                                 # ToolCall.id
+  option          @1 :Text;                                 # ToolCallOption.id
+  argumentsDigest @2 :Data;                                 # must equal ToolCall.argumentsDigest
+  proof           @3 :Data;                                 # device signature over a fixed context string, engine identity, message id, toolCall, option, argumentsDigest; key type, context string and encoding are fixed with the first device
+  signer          @4 :Text;                                 # actor IRI of the person who signed
 }
 
 enum DeliveryState { sending @0; sent @1; delivered @2; read @3; failed @4; }  # stored locally (ADR 0037)
@@ -63,11 +106,12 @@ struct MessageSummary {
   flagged    @5 :Bool;
   preview    @6 :Text;                                      # plain-text snippet
   senderKind @7 :SenderKind;                                # ADR 0054: everyone can see who is not human
+  jobRef     @8 :Text;                                      # the job this message is anchored to; a job card is a view over these
 }
 
 struct Message {
   summary     @0 :MessageSummary;
-  bodyText    @1 :Text;                                     # normalised text
+  bodyText    @1 :Text;                                     # normalised text; while `sending` returned unnormalised, and TextChunk.offset counts its bytes as returned
   bodyHtml    @2 :Text;                                     # sanitised, no remote loading (html-view)
   attachments @3 :List(Attachment);
   reactions   @4 :List(Reaction);
@@ -75,6 +119,8 @@ struct Message {
   originalMediaType @6 :Text;                               # message/rfc822, MIMI content, Matrix event
   toolCalls   @7 :List(ToolCall);                           # what an agent is doing, visible (ADR 0054)
   taskRefs    @8 :List(Text);                               # uids of tasks this message refers to (tasks.capnp)
+  reasoning   @9 :Text;                                     # reasoning of an agent, kept apart from the answer
+  bodyMediaType @10 :Text;                                  # media type of bodyText: text/plain or text/markdown; empty = text/plain
 }
 
 struct ConversationSummary {
@@ -100,6 +146,7 @@ interface Messenger {
   search        @4 () -> (search :Search);
   rules         @5 () -> (rules :Rules);                    # optional capability: may be null
   subscribe     @6 (filter :EventFilter, listener :Listener) -> (subscription :Subscription);
+  supportReport @7 () -> (report :C.SupportReport);         # provider rule (ADR 0045)
 }
 
 interface Accounts {
@@ -123,16 +170,31 @@ interface Conversation {
   pin      @3 (pinned :Bool) -> ();
   move     @4 (folder :Text) -> ();
   act      @5 (id :Uuid, action :MessageAction) -> (problem :Problem);
+  stop     @6 () -> (problem :Problem);                      # ends all running agent turns here; open calls settle as cancelled, a later decision gets a Problem; nothing running = success
+  usage    @7 () -> (usage :Usage, problem :Problem);        # total over this conversation
 }
 
+# zero = not known; a provider does not guess
+struct Usage {
+  inputTokens  @0 :UInt64;
+  outputTokens @1 :UInt64;
+  contextUsed  @2 :UInt64;
+  contextSize  @3 :UInt64;
+  costMicros   @4 :UInt64;                                   # millionths of `currency`
+  currency     @5 :Text;                                     # ISO 4217
+}
+
+# Unset reads as `none`: it does nothing and is refused with a Problem. A null action is refused the same way.
 struct MessageAction {
   union {
-    delete   @0 :Void;
-    flag     @1 :Bool;
-    unread   @2 :Bool;
-    react    @3 :Text;                                       # reaction key; empty = undo
-    forward  @4 :List(Text);                                 # recipients
-    edit     @5 :Text;                                       # new text; first version's id stays
+    none     @0 :Void;
+    delete   @1 :Void;
+    flag     @2 :Bool;
+    unread   @3 :Bool;
+    react    @4 :Text;                                       # reaction key; empty = undo
+    forward  @5 :List(Text);                                 # recipients
+    edit     @6 :Text;                                       # new text; first version's id stays
+    decide   @7 :ToolCallDecision;                           # person's device only; handled by the engine, never by a provider; never generated into MCP
   }
 }
 
@@ -164,15 +226,31 @@ interface Rules {
 
 struct EventFilter { conversations @0 :List(Uuid); kinds @1 :List(Kind); }
 
+# Subscribe before fetching. `updated` is for changed summary fields only and is not sent per text piece.
 struct Event {
   union {
     created  @0 :MessageSummary;
     updated  @1 :MessageSummary;
     deleted  @2 :Uuid;
     state    @3 :StateChange;
+    toolCall @4 :ToolCallChange;
+    text     @5 :TextChunk;
   }
 }
 struct StateChange { message @0 :Uuid; state @1 :DeliveryState; }
+struct ToolCallChange { message @0 :Uuid; call @1 :ToolCall; conversation @2 :Uuid; }   # replaces by (message, call.id); later events of a settled call are ignored
+
+enum TextPart { body @0; reasoning @1; }
+# A piece of text while an agent writes it. `created` comes first; the message stays `sending` while text arrives, and the
+# state event to `sent` or `failed` ends it (`stop` too). Conversation.message returns the text so far. A provider sends no
+# pieces for a replayed session, and always sets `part`.
+struct TextChunk {
+  message @0 :Uuid;
+  part    @1 :TextPart;
+  offset  @2 :UInt64;                                        # UTF-8 bytes within this part; whole code points. Below the held length: skip what is held. Above: fetch the message.
+  text    @3 :Text;
+  conversation @4 :Uuid;
+}
 
 interface Listener     { event @0 (event :Event) -> stream; }
 interface Subscription { }                                    # dropping it ends the subscription
