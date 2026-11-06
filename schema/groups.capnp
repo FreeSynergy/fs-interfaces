@@ -108,7 +108,8 @@ interface Items {
 }
 
 interface Memberships {
-  # A group joins a group through Items.addParent, one home for nesting; add refuses a group member.
+  # A group joins a group through Items.requestParent and approveParent (the parent consents), one home for
+  # nesting; add refuses a group member.
   # An unknown group id is an error, not an empty answer, in all reads of this interface and Items.
   add       @0 (group :Uuid, member :Member, role :Text) -> (membership :Membership);  # member.add
   remove    @1 (membership :Uuid) -> ();                                         # member.remove
@@ -143,8 +144,8 @@ interface Delegations {
 struct DirectoryGroup {
   id      @0 :Uuid;                # the group id of fs-groups
   name    @1 :Text;
-  members @2 :List(Text);          # direct people
-  nested  @3 :List(Uuid);          # direct groups
+  members @2 :List(Text);          # people listed in the group: direct, and for a child that is not nested the people of its subtree
+  nested  @3 :List(Uuid);          # child groups nested in it (only where both pass up and nothing forbids it)
 }
 
 interface GroupDirectory {
