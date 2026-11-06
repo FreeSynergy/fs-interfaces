@@ -47,6 +47,9 @@ struct Membership {
   group  @1 :Uuid;
   member @2 :Member;
   role   @3 :Text;                 # role id of people.capnp; empty = plain member
+  # false when the role is a configured admin role and the person is an agent or not known to be a human
+  # (ADR 0056): the entry is on record but counts for nothing. A reader that does not know the field sees false.
+  inForce @4 :Bool;
 }
 
 # which group a person belongs to, and through whom
@@ -74,6 +77,9 @@ struct Delegation {
   group  @1 :Uuid;
   holder @2 :Member;
   right  @3 :Right;
+  # false for manage held by a person who is an agent or not known to be a human (ADR 0056): on record,
+  # but mayDo does not count it. A reader that does not know the field sees false.
+  inForce @4 :Bool;
 }
 
 interface Groups {
@@ -175,3 +181,6 @@ struct ParentRequest {
   requester @3 :Text;              # who asked (IRI of the acting person)
   state     @4 :RequestState;
 }
+
+# NOTE (provisional): the report of a synchronisation (what was created, left out, unreadable, looped) is
+# not part of this contract; no method returns it yet. When a server exposes it, it appends it here.

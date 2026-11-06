@@ -18,7 +18,7 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 
 ## State
 
-Version 0.30.0.
+Version 0.31.0.
 
 | Area | State |
 |---|---|
@@ -39,6 +39,7 @@ Version 0.30.0.
 | `files` gains `Folders.getFolder @16` | done |
 | `files` gains `Transfer.pendingUploads @3` and `UploadInfo` | done |
 | `groups` gains parent consent (`Items.requestParent @13`, `approveParent`, `declineParent`, `parentRequests`, `ParentRequest`, `RequestState`; `addParent @6` superseded), `Invitations.acceptProved @5`, `GroupDirectory.directoryId @5` (all provisional) | done, version 0.19.0 |
+| `groups` gains `inForce @4` on `Membership` and `Delegation` (ADR 0056: false = on record but not counted; an unaware reader sees false) | done, version 0.31.0 |
 | `surveys.capnp` (new, owner fs-surveys): surveys, anonymous ballots released in batches, methods, widening, decisions linked to tasks | done, draft, provisional (no frontends analysed) |
 | `messenger` (draft 0.2, ACP and MCP analysis, ADR 0054; ordinal 0 of `Encryption`, `MessageAction`, `ToolCallKind` renumbered to a harmless value): `ToolCall` gains `risk`, `outcome`, `detail`, `result`, `options`, `argumentsDigest`, `askedOf`, `revision`; `ToolCallDecision` with `signer`; `MessageAction.decide`; events `toolCall` and `text`; `Message.reasoning`, `bodyMediaType`; `MessageSummary.jobRef`; `Conversation.stop`, `usage`; `Messenger.supportReport` | done, draft |
 | `history.capnp` (new, owner fs-history): entries, filter, digest, forget | done, draft, provisional |
