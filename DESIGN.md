@@ -18,7 +18,7 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 
 ## State
 
-Version 0.28.0.
+Version 0.29.0.
 
 | Area | State |
 |---|---|
@@ -46,6 +46,7 @@ Version 0.28.0.
 | `whiteboard.capnp` (new, owner fs-whiteboard): boards, elements, merge per property, undo per editor | done, draft, provisional |
 | `messenger` draft 0.3: `Draft.setSubject`; `MessageSummary.arrival`, `undecrypted`, `signature`, `tooLarge`; `skipped` on both pages; `unknown` as ordinal 0 of `Kind`, `ToolCallState`, `DeliveryState`; revision rule stated in full | done, draft |
 | `files` gains `BlobInfo.modified`, `BlobBackend.has @14`, `sweepPending @15`; `commit` never replaces on a real-names backend | done |
+| `streaming.capnp` (new, owner fs-streaming): stage 1: streams, targets, keys as secrets, check, recording handed over | done, draft, provisional |
 | Generated Rust with `capnp-compiler` v0.1.0 + `capnpc` 0.27 | done; byte-identical to `capnpc-embedded` 0.2 output (tested) |
 | Rust helpers `Unsupported`, `Capabilities` with wire round trips | done |
 | `rpc` (feature): socket with lock file, connection, problems, envelope, pages, feed | done, draft |

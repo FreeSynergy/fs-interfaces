@@ -7,7 +7,7 @@
 
 use capnp_compiler::CompileCommand;
 
-const SCHEMAS: [&str; 14] = [
+const SCHEMAS: [&str; 15] = [
     "common",
     "tasks",
     "messenger",
@@ -22,6 +22,7 @@ const SCHEMAS: [&str; 14] = [
     "history",
     "resources",
     "whiteboard",
+    "streaming",
 ];
 
 fn main() {
