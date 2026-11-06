@@ -28,6 +28,7 @@
 using C = import "common.capnp";
 using Uuid = C.Uuid;
 using Cursor = C.Cursor;
+using Timestamp = C.Timestamp;
 using Envelope = C.Envelope;
 using Blob = C.Blob;
 using SupportReport = C.SupportReport;
@@ -80,6 +81,12 @@ struct FileFilter {
   mediaType @1 :Text;              # prefix, e.g. "image/"
   folder    @2 :Uuid;
   trashed   @3 :Bool;              # true = search the trash instead, so a frontend can offer restore
+  minSize   @4 :UInt64;            # bytes, inclusive; a folder counts as 0
+  maxSize   @5 :Int64 = -1;        # bytes, inclusive; -1 = no limit
+  modifiedAfter  @6 :Timestamp;    # inclusive; the record's last change (see SortBy.modified); unset = no limit
+  modifiedBefore @7 :Timestamp;    # exclusive
+  createdAfter   @8 :Timestamp;    # inclusive; when the file was created or taken over by a rescan
+  createdBefore  @9 :Timestamp;    # exclusive
 }
 
 struct BackendInfo {
