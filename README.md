@@ -43,7 +43,7 @@ Each schema file starts with a header naming status, owner and consumers.
 ## Use
 
 ```toml
-fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.5.0" }
+fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.6.0" }
 ```
 
 ```rust

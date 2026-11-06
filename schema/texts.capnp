@@ -46,4 +46,5 @@ interface Texts {
   importText @11 (path :Text, mediaType :Text, text :Text) -> (entry :TextEntry);    # text.import: an outside change is a normal edit
   exportText @12 (id :Uuid, mediaType :Text) -> (text :Text);                    # text.export
   subscribe  @13 (listener :ChangeListener) -> (subscription :Subscription);     # text.subscribe
+  moveFolder @14 (prefix :Text, path :Text) -> (moved :List(TextEntry));          # text.move: the text at `prefix` (if any) and every `prefix/...` move along; links follow; a clash below refuses all, nothing written
 }
