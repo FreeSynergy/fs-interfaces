@@ -23,6 +23,9 @@ struct Place {
 
 struct PlacePage { items @0 :List(Place); next @1 :Cursor; }
 
+# Degrees, WGS84. `west > east` is not an error: the box crosses the antimeridian, it is the range
+# from `west` to 180 plus the range from -180 to `east`. 180 and -180 are one meridian: a box ending at
+# one also finds what touches the other. A place that is only a pole is found at every longitude.
 struct BBox { west @0 :Float64; south @1 :Float64; east @2 :Float64; north @3 :Float64; }
 
 interface Places {
