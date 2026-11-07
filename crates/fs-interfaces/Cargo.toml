@@ -10,7 +10,7 @@ repository.workspace = true
 [features]
 # The shared server and client side of every contract: Unix socket, RPC system, envelope on the wire,
 # RFC 9457 problems as RPC errors, pages, change feed. Pulls in the runtime; contracts alone do not.
-rpc = ["dep:capnp-rpc", "dep:tokio", "dep:tokio-util", "dep:futures", "dep:fs-store", "dep:chrono", "dep:uuid", "dep:rustix"]
+rpc = ["dep:capnp-rpc", "dep:tokio", "dep:tokio-util", "dep:futures", "dep:fs-objects", "dep:chrono", "dep:uuid", "dep:rustix"]
 
 [dependencies]
 capnp = "0.27"
@@ -18,7 +18,7 @@ capnp-rpc = { version = "0.27", optional = true }
 tokio = { version = "1", features = ["rt", "net", "sync", "macros", "signal", "time"], optional = true }
 tokio-util = { version = "0.7", features = ["compat", "rt"], optional = true }
 futures = { version = "0.3", optional = true }
-fs-store = { git = "https://github.com/FreeSynergy/fs-store", tag = "v0.4.0", optional = true }
+fs-objects = { git = "https://github.com/FreeSynergy/fs-objects", tag = "v0.5.0", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"], optional = true }
 uuid = { version = "1", optional = true }
 rustix = { version = "1", features = ["process"], optional = true }

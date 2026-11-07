@@ -4,7 +4,7 @@
 //! all-zero `Uuid` means "none".
 
 use chrono::{DateTime, TimeZone, Utc};
-use fs_store::ObjectId;
+use fs_objects::ObjectId;
 use uuid::Uuid;
 
 use super::problem::invalid_request;

@@ -7,7 +7,7 @@ use fs_interfaces::rpc::client::problems::{
     Failure, PROBLEM_BASE, first_number, local_type, object_id_in, unsupported_of,
     without_store_prefix,
 };
-use fs_store::ObjectId;
+use fs_objects::ObjectId;
 
 fn problem(kind: &str, detail: &str, status: u16) -> Problem {
     Problem::new(kind, "T", detail, status)
