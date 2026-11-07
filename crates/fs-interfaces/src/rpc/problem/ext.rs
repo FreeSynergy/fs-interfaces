@@ -1,14 +1,15 @@
 //! Extension members of a problem: the limits and the typed readers.
 //!
 //! Pattern: none (limits and readers of [`Problem`]). An extension is a (key, value) pair of plain
-//! text that is admitted whole or not at all, so whatever a [`Problem`] holds can always be sent.
+//! text that is admitted whole or not at all, so what [`admitted`] lets through can always be sent, on both ways out. A hand-filled
+//! `extensions` field is limited when it leaves.
 
 use super::Problem;
 use super::wire::{MAX_DETAIL_BYTES, clean};
 
 /// Most extension entries of one problem.
 pub const MAX_EXTENSIONS: usize = 64;
-/// Longest key in bytes, cut on a character boundary.
+/// Longest key in bytes; a longer key is left out, not cut.
 pub const MAX_KEY_BYTES: usize = 64;
 
 /// The entry that `key` and `value` become when added to `existing`: separators replaced, nothing
@@ -28,10 +29,22 @@ pub(super) fn admit(
     (total <= MAX_DETAIL_BYTES).then(|| (clean(key), clean(value)))
 }
 
+/// What of `entries` can be sent: each one in turn through [`admit`], so the order decides and
+/// what does not fit is left out. Both ways out (error text and wire `Problem`) use this.
+pub(super) fn admitted(entries: &[(String, String)]) -> Vec<(String, String)> {
+    let mut out: Vec<(String, String)> = Vec::new();
+    for (key, value) in entries {
+        if let Some(entry) = admit(&out, key, value) {
+            out.push(entry);
+        }
+    }
+    out
+}
+
 impl Problem {
     /// This problem with one more extension. A key may repeat (a list). Separators in key and
     /// value become spaces; an entry beyond the limits ([`MAX_EXTENSIONS`], [`MAX_KEY_BYTES`], all
-    /// texts together [`MAX_DETAIL_BYTES`]) is cut, or left out if even its key does not fit.
+    /// texts together [`MAX_DETAIL_BYTES`]) is left out whole, never cut.
     #[must_use]
     pub fn with_ext(mut self, key: &str, value: &str) -> Self {
         if let Some(entry) = admit(&self.extensions, key, value) {

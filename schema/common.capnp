@@ -24,9 +24,9 @@ struct Problem   {                                          # RFC 9457 shape
   title  @1 :Text;
   detail @2 :Text;
   status @3 :UInt16;
-  # Documentation of the shape: in Rust the extensions travel in the error text like `next`
-  # (`rpc::Problem::extensions`, `Problem::with_ext`), at most 64 entries, keys of at most 64 bytes,
-  # all texts together at most 64 KiB; `Problem::write` and `read` fill and read this member too.
+  # In Rust (`rpc::Problem::extensions`, `Problem::with_ext`) the extensions travel in the error
+  # text like `next` and in this member too; at most 64 entries, keys of at most 64 bytes, all
+  # texts together at most 64 KiB, an entry that does not fit is left out whole.
   extensions @4 :List(Extension);
 }
 

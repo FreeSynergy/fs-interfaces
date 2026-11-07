@@ -106,7 +106,7 @@ impl<T> Page<T> {
                 let behind = start.saturating_add(1);
                 let detail = format!("one item of {heavy} bytes, at most {MAX_ITEM_BYTES} fit");
                 let next = (behind < total).then(|| encode(behind));
-                // With a cursor no extensions: a reader before 0.37 would lose the cursor, and the
+                // With a cursor no extensions: a reader before 0.39 would lose the cursor, and the
                 // numbers are in the detail anyway.
                 let problem = if next.is_some() {
                     Problem::new(TOO_LARGE, "Too large", detail, 413)

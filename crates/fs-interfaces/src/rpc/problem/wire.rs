@@ -17,7 +17,7 @@ use std::fmt::Write as _;
 use capnp::Error;
 
 use super::Problem;
-use super::ext::admit;
+use super::ext::{admit, admitted};
 
 /// Most bytes of a problem's texts and of `failed`, cut on a character boundary.
 pub const MAX_DETAIL_BYTES: usize = 64 * 1024;
@@ -83,12 +83,7 @@ impl Problem {
             text.push(SEPARATOR);
             text.push_str(&to_hex(next));
         }
-        let mut admitted: Vec<(String, String)> = Vec::new();
-        for (key, value) in &self.extensions {
-            if let Some(entry) = admit(&admitted, key, value) {
-                admitted.push(entry);
-            }
-        }
+        let admitted = admitted(&self.extensions);
         for (key, value) in &admitted {
             let _ = write!(text, "{SEPARATOR}{EXT_PREFIX}{key}{INNER}{value}");
         }

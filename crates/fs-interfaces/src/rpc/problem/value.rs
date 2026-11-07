@@ -4,7 +4,8 @@
 //! through the limits of `ext`. The `with_*` methods are plain chained setters, not the Builder
 //! pattern of `coding.md` §2 (there is no `build` step and nothing to validate at the end).
 
-use super::{MAX_EXTENSIONS, TOO_LARGE, capped, keys};
+use super::ext::admitted;
+use super::{TOO_LARGE, capped, keys};
 use crate::provider::UNSUPPORTED_PROBLEM_TYPE;
 
 /// One RFC 9457 problem (`Problem` in `common.capnp`).
@@ -23,7 +24,7 @@ pub struct Problem {
     pub next: Option<Vec<u8>>,
     /// RFC 9457 extension members as (key, value), in order; a key may repeat (a list). Read them
     /// with [`Problem::ext`], [`Problem::ext_u64`], [`Problem::ext_all`]; the standard keys are in
-    /// [`keys`]. Lives in the error text only, like `next`. Fill with [`Problem::with_ext`] so the
+    /// [`keys`]. Travels in the error text and in the wire `Problem`. Fill with [`Problem::with_ext`] so the
     /// limits hold. Extensions are statements of the server: a client checks `id` against what it
     /// asked for before it acts on it.
     pub extensions: Vec<(String, String)>,
@@ -68,9 +69,9 @@ impl Problem {
         out.set_title(self.title.as_str());
         out.set_detail(capped(&self.detail));
         out.set_status(self.status);
-        let shown = &self.extensions[..self.extensions.len().min(MAX_EXTENSIONS)];
+        let shown = admitted(&self.extensions);
         let mut list = out.init_extensions(u32::try_from(shown.len()).unwrap_or(0));
-        for (i, (key, value)) in (0..).zip(shown) {
+        for (i, (key, value)) in (0..).zip(&shown) {
             let mut entry = list.reborrow().get(i);
             entry.set_key(key.as_str());
             entry.set_value(value.as_str());

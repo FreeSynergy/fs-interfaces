@@ -2,8 +2,10 @@
 //!
 //! Pattern: none, constants. The names are fixed so every server fills them the same way and a
 //! client reads a fact by key instead of taking a sentence apart (`coding.md` §2a). A key outside
-//! this list is allowed; it belongs to the type URI of the problem that uses it. Extensions are
-//! statements of the server: a client checks [`ID`] against what it asked for before it acts on it.
+//! this list is allowed; it belongs to the type URI of the problem that uses it. The standard keys have no priority, the entries that come first are
+//! admitted and later ones may be left out at the limits. `size` and `limit` are left out of a
+//! `too-large` that carries a cursor on purpose (the numbers are in the detail), so a client does
+//! not rely on them in general. Extensions are statements of the server: a client checks [`ID`] against what it asked for before it acts on it.
 
 /// The object the problem is about, as the text of its id (an `ObjectId`, the canonical form).
 /// At most once. Example: the task that was not found, the person whose name is taken.
