@@ -15,7 +15,7 @@ fn problem(kind: &str, detail: &str, status: u16) -> Problem {
 
 #[test]
 fn a_problem_in_an_error_comes_back_typed() {
-    let p = problem(&format!("{PROBLEM_BASE}people/conflict"), "name taken", 409);
+    let p = problem(&format!("{PROBLEM_BASE}thing/conflict"), "name taken", 409);
     assert_eq!(Failure::of(&p.clone().into_error()), Failure::Problem(p));
 }
 
@@ -49,8 +49,8 @@ fn foreign_text_that_only_contains_the_marker_is_no_problem() {
 
 #[test]
 fn the_local_type_loses_the_base_and_a_foreign_type_stays_whole() {
-    let ours = problem(&format!("{PROBLEM_BASE}people/not-found"), "", 404);
-    assert_eq!(local_type(&ours), "people/not-found");
+    let ours = problem(&format!("{PROBLEM_BASE}thing/missing"), "", 404);
+    assert_eq!(local_type(&ours), "thing/missing");
     let theirs = problem("https://example.org/x", "", 400);
     assert_eq!(local_type(&theirs), "https://example.org/x");
 }
