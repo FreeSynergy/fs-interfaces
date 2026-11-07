@@ -1,0 +1,11 @@
+# Risk marks for history.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[History]
+capabilities = "read"
+digest = "read"
+forget = "destructive"
+get = "read"
+subscribe = "read"
+supportReport = "read"
+timeline = "read"

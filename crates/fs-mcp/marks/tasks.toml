@@ -1,0 +1,24 @@
+# Risk marks for tasks.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Items]
+assign = "change"
+assignLabel = "change"
+create = "add"
+createRelation = "add"
+delete = "destructive"
+edit = "change"
+editIf = "change"
+exportIcs = "read"
+get = "read"
+getByUid = "read"
+importIcs = "add"
+list = "read"
+query = "read"
+
+[Tasks]
+boards = "read"
+capabilities = "read"
+items = "read"
+subscribe = "read"
+supportReport = "read"

@@ -1,0 +1,57 @@
+# Risk marks for surveys.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Credential]
+none = "acts-in-name"
+person = "acts-in-name"
+proof = "acts-in-name"
+token = { risk = "excluded", reason = "a token is a secret (ADR 0021)" }
+
+[Decisions]
+get = "read"
+linkTask = "change"
+list = "read"
+ofTask = "read"
+record = "acts-in-name"
+unlinkTask = "destructive"
+
+[Designer]
+addQuestion = "add"
+archive = "change"
+classify = "change"
+close = "change"
+create = "add"
+delete = "destructive"
+edit = "change"
+editQuestion = "change"
+get = "read"
+invite = "acts-in-name"
+list = "read"
+moveQuestion = "change"
+publish = "acts-in-name"
+removeQuestion = "destructive"
+reopen = "change"
+setConditions = "change"
+widen = "change"
+
+[Respond]
+challenge = "read"
+open = "read"
+resume = "read"
+save = "acts-in-name"
+submit = "acts-in-name"
+
+[Results]
+evaluate = "read"
+export = "read"
+filter = "read"
+summary = "read"
+
+[Surveys]
+capabilities = "read"
+decisions = "read"
+designer = "read"
+respond = "read"
+results = "read"
+subscribe = "read"
+supportReport = "read"

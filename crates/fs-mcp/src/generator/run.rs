@@ -7,9 +7,9 @@
 
 use std::collections::HashSet;
 
-use crate::{Blocklist, Catalog, Contract, Error, Index, Interface, Left, RiskSource, Target, Why};
 use super::api::ToolGenerator;
 use super::facts::{self, Facts};
+use crate::{Blocklist, Catalog, Contract, Error, Index, Interface, Left, RiskSource, Target, Why};
 
 /// The stage 1 generator.
 pub struct Generator<'a> {
@@ -44,7 +44,10 @@ impl Run<'_> {
             return self.leave(owner, Why::Blocked(why));
         }
         if self.facts.is_callback(file, &iface.name) {
-            return self.leave(owner, Why::NotACall("a listener: the caller hands it in, events become a resource"));
+            return self.leave(
+                owner,
+                Why::NotACall("a listener: the caller hands it in, events become a resource"),
+            );
         }
         let root = !self.facts.is_returned(file, &iface.name);
         for m in &iface.methods {
@@ -74,7 +77,8 @@ impl ToolGenerator for Generator<'_> {
             }
         }
         out.tools.sort_by(|a, b| a.name.cmp(&b.name));
-        out.resources.sort_by(|a, b| a.uri_template.cmp(&b.uri_template));
+        out.resources
+            .sort_by(|a, b| a.uri_template.cmp(&b.uri_template));
         out.left_out.sort_by(|a, b| a.target.cmp(&b.target));
         out.unmarked.sort();
         out.unmarked.dedup();

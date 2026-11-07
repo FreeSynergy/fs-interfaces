@@ -45,6 +45,7 @@ impl ResourceTemplate {
             "description": self.description,
             "_meta": { META_KEY: {
                 "risk": self.risk.as_str(),
+                "needsRelease": true,
                 "askAlways": self.risk.asks_always(),
                 "unmarked": self.unmarked,
                 "source": self.source.as_str(),

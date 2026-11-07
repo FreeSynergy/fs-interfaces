@@ -4,15 +4,16 @@
 
 use serde_json::{Value, json};
 
-use super::variant::Variant;
 use super::run::Run;
+use super::variant::Variant;
 use crate::{Field, Interface, Method, SchemaBuilder, Target, Tool};
 
 const NO_DOC: &str = "(the contract has no comment on this)";
 
 pub(super) fn lower_first(s: &str) -> String {
     let mut c = s.chars();
-    c.next().map_or_else(String::new, |f| f.to_lowercase().chain(c).collect())
+    c.next()
+        .map_or_else(String::new, |f| f.to_lowercase().chain(c).collect())
 }
 
 impl Run<'_> {
@@ -22,7 +23,20 @@ impl Run<'_> {
             return self.leave(target, crate::Why::Blocked(why));
         }
         if m.streaming {
-            return self.leave(target, crate::Why::NotACall("a stream: events become a resource"));
+            return self.leave(
+                target,
+                crate::Why::NotACall("a stream: events become a resource"),
+            );
+        }
+        // An exclusion on the method holds for every union member it would be split into.
+        if let Some(k) = self
+            .g
+            .risk
+            .mark(&target)
+            .filter(|k| k.class == crate::RiskClass::Excluded)
+        {
+            let why = k.reason.unwrap_or_else(|| "marked excluded".to_owned());
+            return self.leave(target, crate::Why::Marked(why));
         }
         if !self.facts.callback_params(m).is_empty() {
             return self.events_resource(file, &iface.name, m, root);
@@ -33,20 +47,33 @@ impl Run<'_> {
     }
 
     fn tool(&mut self, file: &str, iface: &Interface, m: &Method, v: &Variant, root: bool) {
-        let Some(verdict) = self.vet(file, &iface.name, m, &v.target, &v.inputs) else { return };
+        let Some(verdict) = self.vet(file, &iface.name, m, v) else {
+            return;
+        };
         if verdict.mark.as_ref().is_some_and(|k| k.resource) {
             return self.blob_resource(file, &iface.name, m, v, root, &verdict);
         }
         let base = format!("{file}.{}.{}", lower_first(&iface.name), m.name);
-        let name = verdict.mark.as_ref().and_then(|k| k.capability.clone()).unwrap_or_else(|| match &v.member {
-            Some(member) => format!("{base}.{member}"),
-            None => base,
-        });
+        let name = verdict
+            .mark
+            .as_ref()
+            .and_then(|k| k.capability.clone())
+            .unwrap_or_else(|| match &v.member {
+                Some(member) => format!("{base}.{member}"),
+                None => base,
+            });
         let handle_of = (!root).then(|| iface.name.clone());
-        let docs: Vec<&str> = [m.doc.as_str(), v.member_doc.as_str()].into_iter().filter(|d| !d.is_empty()).collect();
+        let docs: Vec<&str> = [m.doc.as_str(), v.member_doc.as_str()]
+            .into_iter()
+            .filter(|d| !d.is_empty())
+            .collect();
         self.out.tools.push(Tool {
             name,
-            description: if docs.is_empty() { NO_DOC.to_owned() } else { docs.join("\n") },
+            description: if docs.is_empty() {
+                NO_DOC.to_owned()
+            } else {
+                docs.join("\n")
+            },
             input_schema: self.input_schema(&v.inputs, handle_of.as_deref()),
             output_schema: self.output_schema(&m.results),
             risk: verdict.class,

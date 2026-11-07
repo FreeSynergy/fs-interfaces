@@ -4,10 +4,34 @@
 //! Pattern: none (a pure function over word lists). Trait: none.
 
 const NAME_WORDS: &[&str] = &[
-    "secret", "secrets", "password", "passwords", "passwd", "passphrase", "pass", "token", "tokens", "key",
-    "keys", "credential", "credentials", "apikey", "private", "seed", "otp", "auth", "cookie",
+    "secret",
+    "secrets",
+    "password",
+    "passwords",
+    "passwd",
+    "passphrase",
+    "pass",
+    "token",
+    "tokens",
+    "key",
+    "keys",
+    "credential",
+    "credentials",
+    "apikey",
+    "private",
+    "seed",
+    "otp",
+    "auth",
+    "cookie",
 ];
-const DOC_WORDS: &[&str] = &["secret", "secrets", "password", "passphrase", "credential", "credentials"];
+const DOC_WORDS: &[&str] = &[
+    "secret",
+    "secrets",
+    "password",
+    "passphrase",
+    "credential",
+    "credentials",
+];
 
 fn words(s: &str) -> Vec<String> {
     let mut out = Vec::new();

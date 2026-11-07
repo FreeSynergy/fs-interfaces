@@ -1,0 +1,30 @@
+# Risk marks for streaming.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Streaming]
+capabilities = "read"
+streams = "read"
+subscribe = "read"
+supportReport = "read"
+
+[Streams]
+addTarget = { risk = "excluded", reason = "takes or returns a key that is a secret (streaming.capnp header, ADR 0021)" }
+check = "acts-in-name"
+create = { risk = "excluded", reason = "takes or returns a key that is a secret (streaming.capnp header, ADR 0021)" }
+delete = "destructive"
+editTarget = "change"
+get = "read"
+list = "read"
+removeTarget = "destructive"
+rename = "change"
+rotateKey = { risk = "excluded", reason = "takes or returns a key that is a secret (streaming.capnp header, ADR 0021)" }
+setRecording = "change"
+setTargetEnabled = "change"
+setTargetKey = { risk = "excluded", reason = "takes or returns a key that is a secret (streaming.capnp header, ADR 0021)" }
+status = "read"
+stop = "change"
+targets = "read"
+
+[release]
+"CheckResult.key" = "only the verdict of the check (KeyCheck), not the key"
+"Target.hasKey" = "only says whether a key is set; the key itself is never read back (streaming.capnp header)"

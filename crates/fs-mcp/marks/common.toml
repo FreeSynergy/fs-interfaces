@@ -1,0 +1,6 @@
+# Risk marks for common.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Blob]
+read = { risk = "read", resource = true }
+size = { risk = "read", resource = true }

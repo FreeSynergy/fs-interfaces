@@ -1,0 +1,20 @@
+# Risk marks for texts.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Texts]
+backlinks = "read"
+create = "add"
+delete = "destructive"
+edit = "change"
+editIf = "change"
+exportText = "read"
+find = "read"
+get = "read"
+getByPath = "read"
+importText = "add"
+links = "read"
+list = "read"
+move = "change"
+moveFolder = "change"
+subscribe = "read"
+supportReport = "read"

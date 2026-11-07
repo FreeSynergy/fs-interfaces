@@ -1,0 +1,69 @@
+# Risk marks for files.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Backends]
+add = { risk = "excluded", reason = "storage configuration (may hold credentials): an admin task, an agent is never admin (ADR 0056)" }
+list = "read"
+remove = { risk = "excluded", reason = "storage configuration (may hold credentials): an admin task, an agent is never admin (ADR 0056)" }
+
+[BlobBackend]
+commit = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+delete = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+discard = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+get = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+has = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+inspect = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+makeDir = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+naming = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+pending = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+publish = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+put = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+relocate = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+removeDir = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+scan = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+stat = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+supportReport = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+sweepPending = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+
+[Files]
+backends = "read"
+folders = "read"
+search = "read"
+sharing = "read"
+subscribe = "read"
+supportReport = "read"
+transfer = "read"
+
+[Folders]
+classify = "change"
+copyFile = "add"
+createFolder = "add"
+deleteFolder = "destructive"
+emptyTrash = "destructive"
+get = "read"
+getFolder = "read"
+list = "read"
+moveFile = "change"
+moveFolder = "change"
+purge = "destructive"
+renameFile = "change"
+renameFolder = "change"
+rescan = "change"
+restore = "change"
+restoreTo = "change"
+trash = "destructive"
+
+[Search]
+find = "read"
+
+[Transfer]
+open = "read"
+pendingUploads = "read"
+resumeUpload = "add"
+startUpload = "add"
+
+[Upload]
+abort = "destructive"
+finish = "add"
+received = "read"
+write = "add"

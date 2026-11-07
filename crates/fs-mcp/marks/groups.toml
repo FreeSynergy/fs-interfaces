@@ -1,0 +1,59 @@
+# Risk marks for groups.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Delegations]
+grant = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+list = "read"
+mayDo = "read"
+revoke = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+
+[GroupDirectory]
+apply = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+directoryId = "read"
+list = "read"
+read = "read"
+remove = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+supportReport = "read"
+
+[Groups]
+delegations = "read"
+invitations = "read"
+items = "read"
+memberships = "read"
+subscribe = "read"
+supportReport = "read"
+
+[Invitations]
+accept = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+acceptProved = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+decline = "destructive"
+invite = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+list = "read"
+revoke = "destructive"
+
+[Items]
+addParent = "change"
+ancestors = "read"
+approveParent = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+children = "read"
+create = "add"
+declineParent = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+delete = "destructive"
+descendants = "read"
+get = "read"
+list = "read"
+parentRequests = "read"
+parents = "read"
+removeParent = "destructive"
+rename = "change"
+requestParent = "acts-in-name"
+setKind = "change"
+setRightFlow = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+
+[Memberships]
+add = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+direct = "read"
+effective = "read"
+groupsOf = "read"
+isMember = "read"
+remove = "destructive"

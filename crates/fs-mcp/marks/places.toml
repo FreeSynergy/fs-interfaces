@@ -1,0 +1,19 @@
+# Risk marks for places.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Places]
+create = "add"
+delete = "destructive"
+findByName = "read"
+get = "read"
+list = "read"
+subscribe = "read"
+supportReport = "read"
+tiles = "read"
+update = "change"
+within = "read"
+
+[TileSource]
+id = "read"
+supportReport = "read"
+tile = "read"

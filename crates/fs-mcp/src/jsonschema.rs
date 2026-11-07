@@ -23,7 +23,10 @@ impl<'a> SchemaBuilder<'a> {
     /// A builder that follows struct references through `index`.
     #[must_use]
     pub fn new(index: &'a Index<'a>) -> Self {
-        Self { index, defs: BTreeMap::new() }
+        Self {
+            index,
+            defs: BTreeMap::new(),
+        }
     }
 
     /// Schema of one type. A capability is a string handle (flat tools, ADR 0021 extension).
@@ -50,7 +53,9 @@ impl<'a> SchemaBuilder<'a> {
     fn struct_ref(&mut self, n: &TypeName) -> Value {
         let key = def_key(n);
         if !self.defs.contains_key(&key) {
-            let Some(def) = self.index.struct_def(n) else { return json!({}) };
+            let Some(def) = self.index.struct_def(n) else {
+                return json!({});
+            };
             self.defs.insert(key.clone(), json!({}));
             let body = self.object(&def.fields.iter().collect::<Vec<_>>(), &def.doc);
             self.defs.insert(key.clone(), body);
@@ -78,8 +83,11 @@ impl<'a> SchemaBuilder<'a> {
         if !doc.is_empty() {
             obj["description"] = doc.into();
         }
-        let alternatives: Vec<Value> =
-            fields.iter().filter(|f| f.in_union).map(|f| json!({"required": [f.name]})).collect();
+        let alternatives: Vec<Value> = fields
+            .iter()
+            .filter(|f| f.in_union)
+            .map(|f| json!({"required": [f.name]}))
+            .collect();
         if !alternatives.is_empty() {
             obj["oneOf"] = alternatives.into();
         }

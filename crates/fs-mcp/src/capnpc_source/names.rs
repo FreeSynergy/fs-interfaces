@@ -28,7 +28,11 @@ pub(super) fn stem(filename: &str) -> String {
 
 impl<'a> Tables<'a> {
     pub(super) fn build(req: code_generator_request::Reader<'a>) -> Result<Self, Error> {
-        let mut t = Self { nodes: HashMap::new(), names: HashMap::new(), docs: HashMap::new() };
+        let mut t = Self {
+            nodes: HashMap::new(),
+            names: HashMap::new(),
+            docs: HashMap::new(),
+        };
         for n in req.get_nodes()? {
             t.nodes.insert(n.get_id(), n);
         }
@@ -38,7 +42,8 @@ impl<'a> Tables<'a> {
                 .iter()
                 .map(|m| text(m.get_doc_comment()?))
                 .collect::<Result<Vec<_>, _>>()?;
-            t.docs.insert(info.get_id(), (text(info.get_doc_comment()?)?, members));
+            t.docs
+                .insert(info.get_id(), (text(info.get_doc_comment()?)?, members));
         }
         for file in req.get_requested_files()? {
             let file_stem = stem(&text(file.get_filename()?)?);
@@ -48,11 +53,19 @@ impl<'a> Tables<'a> {
     }
 
     fn name_nested(&mut self, id: u64, file: &str, prefix: &str) -> Result<(), Error> {
-        let Some(node) = self.nodes.get(&id).copied() else { return Ok(()) };
+        let Some(node) = self.nodes.get(&id).copied() else {
+            return Ok(());
+        };
         for nested in node.get_nested_nodes()? {
             let name = format!("{prefix}{}", text(nested.get_name()?)?);
             let nid = nested.get_id();
-            self.names.insert(nid, TypeName { file: file.to_owned(), name: name.clone() });
+            self.names.insert(
+                nid,
+                TypeName {
+                    file: file.to_owned(),
+                    name: name.clone(),
+                },
+            );
             self.name_nested(nid, file, &format!("{name}."))?;
         }
         Ok(())
@@ -62,7 +75,13 @@ impl<'a> Tables<'a> {
     pub(super) fn type_name(&self, id: u64) -> TypeName {
         self.names.get(&id).cloned().unwrap_or_else(|| TypeName {
             file: "?".to_owned(),
-            name: self.nodes.get(&id).and_then(|n| n.get_display_name().ok()).and_then(|d| d.to_str().ok()).unwrap_or("?").to_owned(),
+            name: self
+                .nodes
+                .get(&id)
+                .and_then(|n| n.get_display_name().ok())
+                .and_then(|d| d.to_str().ok())
+                .unwrap_or("?")
+                .to_owned(),
         })
     }
 
@@ -71,6 +90,9 @@ impl<'a> Tables<'a> {
     }
 
     pub(super) fn member_doc(&self, id: u64, index: usize) -> String {
-        self.docs.get(&id).and_then(|d| d.1.get(index).cloned()).unwrap_or_default()
+        self.docs
+            .get(&id)
+            .and_then(|d| d.1.get(index).cloned())
+            .unwrap_or_default()
     }
 }

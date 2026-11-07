@@ -26,13 +26,21 @@ impl Blocklist {
                     "decide",
                     "toolcall.decide: only the person's device decides; an accept through the agent's client proves no person (ADR 0054)",
                 ),
-                e("MessageAction", "none", "does nothing and is refused; never a tool"),
+                e(
+                    "MessageAction",
+                    "none",
+                    "does nothing and is refused; never a tool",
+                ),
                 (
                     Target::owner(SCHEMA, "Guard"),
                     "the Guard is the brake itself; an agent never reaches it (ADR 0054)",
                 ),
                 e("Messenger", "guard", "gives access to the Guard"),
-                e("AccountSetup", "secret", "a secret would pass through the model (ADR 0021)"),
+                e(
+                    "AccountSetup",
+                    "secret",
+                    "a secret would pass through the model (ADR 0021)",
+                ),
             ],
         }
     }
@@ -46,7 +54,10 @@ impl Blocklist {
     /// Why `target` is blocked, if it is.
     #[must_use]
     pub fn reason(&self, target: &Target) -> Option<&'static str> {
-        self.entries.iter().find(|(t, _)| t == target).map(|(_, r)| *r)
+        self.entries
+            .iter()
+            .find(|(t, _)| t == target)
+            .map(|(_, r)| *r)
     }
 
     /// All blocked targets, for tests that check each one stays out.

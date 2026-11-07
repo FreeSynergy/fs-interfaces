@@ -100,3 +100,7 @@ The remedy is `chmod g-w` on the directory the message names, or another `--data
 
 * Owner of `common.capnp` (`fs-store` is proposed in ADR 0050).
 * More topics from the catalogue (people, groups, events, files ...) as their owners write drafts.
+
+## fs-mcp
+
+The MCP tool generator (stage 1, lists only) lives in `crates/fs-mcp`; see its `DESIGN.md`.

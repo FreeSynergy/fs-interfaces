@@ -22,11 +22,20 @@ impl Run<'_> {
     pub(super) fn variants(&self, file: &str, iface: &str, m: &Method) -> Vec<Variant> {
         let whole = Target::item(file, iface, &m.name);
         let expandable = m.params.iter().enumerate().find_map(|(ix, p)| match &p.ty {
-            TypeRef::Struct(n) => self.index.struct_def(n).filter(|s| s.is_pure_union()).map(|s| (ix, n, s)),
+            TypeRef::Struct(n) => self
+                .index
+                .struct_def(n)
+                .filter(|s| s.is_pure_union())
+                .map(|s| (ix, n, s)),
             _ => None,
         });
         let Some((ix, name, def)) = expandable else {
-            return vec![Variant { target: whole, member: None, member_doc: String::new(), inputs: m.params.clone() }];
+            return vec![Variant {
+                target: whole,
+                member: None,
+                member_doc: String::new(),
+                inputs: m.params.clone(),
+            }];
         };
         def.fields
             .iter()
@@ -35,7 +44,12 @@ impl Run<'_> {
                 if member.ty == TypeRef::Void {
                     inputs.remove(ix);
                 } else {
-                    inputs[ix] = Field { ty: member.ty.clone(), doc: member.doc.clone(), in_union: false, ..inputs[ix].clone() };
+                    inputs[ix] = Field {
+                        name: member.name.clone(),
+                        ty: member.ty.clone(),
+                        doc: member.doc.clone(),
+                        in_union: false,
+                    };
                 }
                 Variant {
                     target: Target::item(&name.file, &def.name, &member.name),

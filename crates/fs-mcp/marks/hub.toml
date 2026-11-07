@@ -1,0 +1,13 @@
+# Risk marks for hub.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Hub]
+programs = "read"
+proposals = "read"
+register = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+
+[Session]
+ack = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+pull = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+push = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+subscribe = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }

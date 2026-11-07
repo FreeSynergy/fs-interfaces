@@ -14,7 +14,10 @@ pub(crate) struct Facts {
 }
 
 fn key(file: &str, name: &str) -> TypeName {
-    TypeName { file: file.to_owned(), name: name.to_owned() }
+    TypeName {
+        file: file.to_owned(),
+        name: name.to_owned(),
+    }
 }
 
 impl Facts {
@@ -26,9 +29,18 @@ impl Facts {
                 callbacks.extend(m.params.iter().flat_map(|f| f.ty.interfaces()).cloned());
                 returned.extend(m.results.iter().flat_map(|f| f.ty.interfaces()).cloned());
             }
-            returned.extend(c.structs.iter().flat_map(|s| &s.fields).flat_map(|f| f.ty.interfaces()).cloned());
+            returned.extend(
+                c.structs
+                    .iter()
+                    .flat_map(|s| &s.fields)
+                    .flat_map(|f| f.ty.interfaces())
+                    .cloned(),
+            );
         }
-        Self { callbacks, returned }
+        Self {
+            callbacks,
+            returned,
+        }
     }
 
     /// Handed in by the caller as a parameter: a listener.
@@ -42,7 +54,14 @@ impl Facts {
     }
 
     pub(crate) fn callback_params<'m>(&self, m: &'m crate::Method) -> Vec<&'m crate::Field> {
-        m.params.iter().filter(|f| f.ty.interfaces().iter().any(|n| self.callbacks.contains(*n))).collect()
+        m.params
+            .iter()
+            .filter(|f| {
+                f.ty.interfaces()
+                    .iter()
+                    .any(|n| self.callbacks.contains(*n))
+            })
+            .collect()
     }
 }
 
@@ -55,7 +74,11 @@ pub(crate) fn stale(contracts: &[Contract], risk: &dyn RiskSource) -> Vec<Target
             for m in &i.methods {
                 known.insert(Target::item(&c.file, &i.name, &m.name));
                 for p in m.params.iter().chain(&m.results) {
-                    known.insert(Target::item(&c.file, &i.name, &format!("{}.{}", m.name, p.name)));
+                    known.insert(Target::item(
+                        &c.file,
+                        &i.name,
+                        &format!("{}.{}", m.name, p.name),
+                    ));
                 }
             }
         }
@@ -66,7 +89,11 @@ pub(crate) fn stale(contracts: &[Contract], risk: &dyn RiskSource) -> Vec<Target
             }
         }
     }
-    let mut out: Vec<Target> = risk.targets().into_iter().filter(|t| !known.contains(t)).collect();
+    let mut out: Vec<Target> = risk
+        .targets()
+        .into_iter()
+        .filter(|t| !known.contains(t))
+        .collect();
     out.sort();
     out
 }

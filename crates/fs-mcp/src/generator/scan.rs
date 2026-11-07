@@ -12,11 +12,20 @@ use crate::{Field, Target, TypeName, TypeRef, Why};
 
 impl Run<'_> {
     /// First problem found in `fields` (a tool's parameters or results) or in anything they reach.
-    pub(super) fn scan(&self, file: &str, iface: &str, method: &str, fields: &[&Field]) -> Option<Why> {
+    pub(super) fn scan(
+        &self,
+        file: &str,
+        iface: &str,
+        method: &str,
+        fields: &[&Field],
+    ) -> Option<Why> {
         let mut seen = HashSet::new();
         for f in fields {
             let target = Target::item(file, iface, &format!("{method}.{}", f.name));
-            if let Some(why) = self.check(&target, &f.name, &f.doc).or_else(|| self.walk(&f.ty, &mut seen)) {
+            if let Some(why) = self
+                .check(&target, &f.name, &f.doc)
+                .or_else(|| self.walk(&f.ty, &mut seen))
+            {
                 return Some(why);
             }
         }
@@ -29,7 +38,9 @@ impl Run<'_> {
             return Some(Why::Blocked(why));
         }
         let looks = name_looks_secret(name) || doc_looks_secret(doc);
-        (looks && self.g.risk.release(target).is_none()).then(|| Why::SecretSuspect { path: target.to_string() })
+        (looks && self.g.risk.release(target).is_none()).then(|| Why::SecretSuspect {
+            path: target.to_string(),
+        })
     }
 
     fn walk(&self, ty: &TypeRef, seen: &mut HashSet<TypeName>) -> Option<Why> {

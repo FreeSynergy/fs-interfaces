@@ -1,0 +1,65 @@
+# Risk marks for messenger.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Accounts]
+add = { risk = "excluded", reason = "takes a secret (AccountSetup.secret) that would pass through the model (ADR 0021)" }
+list = "read"
+remove = "destructive"
+
+[Compose]
+draft = "add"
+
+[Conversation]
+markRead = "change"
+message = "read"
+messages = "read"
+move = "change"
+pin = "change"
+stop = "change"
+usage = "read"
+
+[Conversations]
+list = "read"
+nextUnread = "read"
+open = "read"
+
+[Draft]
+attach = "add"
+discard = "destructive"
+encryptionPlan = "read"
+save = "add"
+send = { risk = "acts-in-name", capability = "message.send" }
+setRecipients = "change"
+setSubject = "change"
+setText = "change"
+
+[MessageAction]
+delete = "destructive"
+edit = "acts-in-name"
+flag = "change"
+forward = "acts-in-name"
+react = "acts-in-name"
+unread = "change"
+
+[Messenger]
+accounts = "read"
+capabilities = "read"
+compose = "read"
+conversations = "read"
+rules = "read"
+search = "read"
+subscribe = "read"
+supportReport = "read"
+
+[Rules]
+list = "read"
+set = "acts-in-name"
+
+[Search]
+query = "read"
+
+[release]
+"Draft.encryptionPlan.missingKeys" = "addresses without a key, not key material"
+"Reaction.key" = "a reaction key such as an emoji, not key material"
+"Usage.inputTokens" = "a count of language-model tokens, not an access token"
+"Usage.outputTokens" = "a count of language-model tokens, not an access token"

@@ -1,0 +1,47 @@
+# Risk marks for people.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[People]
+persons = "read"
+roles = "read"
+subscribe = "read"
+supportReport = "read"
+
+[Persons]
+addToList = "add"
+confirmSame = "change"
+create = "add"
+createList = "add"
+delete = "destructive"
+exportText = "read"
+findByDescribes = "read"
+findByEmail = "read"
+findByPhone = "read"
+get = "read"
+getByUid = "read"
+importText = "add"
+linkedTo = "read"
+list = "read"
+listMembers = "read"
+listsOf = "read"
+proposals = "read"
+relate = "add"
+relations = "read"
+removeFromList = "destructive"
+unlinkSame = "destructive"
+unrelate = "destructive"
+update = "change"
+updateIf = "change"
+
+[Roles]
+assign = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+define = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+get = "read"
+isAi = "read"
+list = "read"
+loadConfig = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+markAi = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+peopleWith = "read"
+rolesOf = "read"
+unassign = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
+undefine = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }

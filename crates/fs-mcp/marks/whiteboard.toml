@@ -1,0 +1,43 @@
+# Risk marks for whiteboard.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[BoardEditor]
+add = "add"
+addPage = "add"
+align = "change"
+bounds = "read"
+copy = "add"
+delete = "destructive"
+elements = "read"
+export = "read"
+get = "read"
+getElement = "read"
+group = "change"
+move = "change"
+movePage = "change"
+redo = "change"
+removePage = "destructive"
+reorder = "change"
+rotate = "change"
+setEnd = "change"
+setFrame = "change"
+setLocked = "change"
+setParent = "change"
+setStyle = "change"
+setText = "change"
+undo = "change"
+ungroup = "change"
+
+[Boards]
+create = "add"
+delete = "destructive"
+import = "add"
+list = "read"
+open = "read"
+rename = "change"
+
+[Whiteboard]
+boards = "read"
+capabilities = "read"
+subscribe = "read"
+supportReport = "read"

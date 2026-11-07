@@ -1,0 +1,25 @@
+# Risk marks for events.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Events]
+invitations = "read"
+items = "read"
+subscribe = "read"
+supportReport = "read"
+
+[Invitations]
+history = "read"
+invite = "acts-in-name"
+respond = "acts-in-name"
+
+[Items]
+create = "add"
+delete = "destructive"
+exportText = "read"
+get = "read"
+getByUid = "read"
+importText = "add"
+list = "read"
+occurrences = "read"
+update = "change"
+updateIf = "change"

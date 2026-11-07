@@ -1,0 +1,57 @@
+# Risk marks for resources.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Capacities]
+allocations = "read"
+answer = "acts-in-name"
+groupLoad = "read"
+load = "read"
+mine = "read"
+propose = "acts-in-name"
+proposed = "read"
+remove = "destructive"
+set = "change"
+shareWithGroup = "change"
+sharedGroups = "read"
+withdraw = "acts-in-name"
+
+[Items]
+create = "add"
+delete = "destructive"
+edit = "change"
+get = "read"
+list = "read"
+setQuantity = "change"
+
+[Needs]
+close = "change"
+create = "add"
+decide = "acts-in-name"
+delete = "destructive"
+edit = "change"
+get = "read"
+list = "read"
+offer = "acts-in-name"
+offers = "read"
+withdraw = "acts-in-name"
+
+[Reservations]
+cancel = "destructive"
+change = "change"
+confirm = "acts-in-name"
+decline = "acts-in-name"
+finish = "change"
+free = "read"
+get = "read"
+ofHolder = "read"
+ofResource = "read"
+request = "acts-in-name"
+
+[Resources]
+capabilities = "read"
+capacity = "read"
+items = "read"
+needs = "read"
+reservations = "read"
+subscribe = "read"
+supportReport = "read"
