@@ -6,7 +6,7 @@ use fs_interfaces::rpc::{
     DEFAULT_PAGE_SIZE, MAX_MESSAGE_BYTES, MAX_PAGE_BYTES, Notice, Page, Problem, TOO_LARGE,
     clamp_read, read_envelope, read_uuid, write_change, write_envelope,
 };
-use fs_store::Envelope;
+use fs_objects::Envelope;
 
 fn roundtrip_envelope(e: &Envelope) -> Envelope {
     let mut msg = capnp::message::Builder::new_default();
