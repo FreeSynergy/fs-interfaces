@@ -44,9 +44,9 @@ fn union_members_become_one_tool_each() {
     let marks = FakeMarks::everything_read();
     let c = Generator::new(&marks, Blocklist::standard()).generate(&messenger_like()).unwrap();
     let n = names(&c);
-    assert!(n.contains(&"msg.conversation.act.delete".to_owned()));
-    assert!(n.contains(&"msg.conversation.act.flag".to_owned()));
-    assert!(!n.iter().any(|x| x == "msg.conversation.act"), "the union method itself is not a tool");
+    assert!(n.contains(&"messenger.conversation.act.delete".to_owned()));
+    assert!(n.contains(&"messenger.conversation.act.flag".to_owned()));
+    assert!(!n.iter().any(|x| x == "messenger.conversation.act"), "the union method itself is not a tool");
 }
 
 #[test]
@@ -111,9 +111,9 @@ fn capability_id_names_the_tool_and_handles_are_flat_arguments() {
     assert_eq!(send.risk, RiskClass::ActsInName);
     assert_eq!(send.handle_of.as_deref(), Some("Draft"));
     assert_eq!(send.input_schema["properties"]["handle"]["type"], "string");
-    let root = c.tools.iter().find(|t| t.name == "msg.messenger.capabilities").unwrap();
+    let root = c.tools.iter().find(|t| t.name == "messenger.messenger.capabilities").unwrap();
     assert!(root.handle_of.is_none() && root.input_schema["properties"].get("handle").is_none());
-    let open = c.tools.iter().find(|t| t.name == "msg.conversations.open").unwrap();
+    let open = c.tools.iter().find(|t| t.name == "messenger.conversations.open").unwrap();
     assert_eq!(open.output_schema["properties"]["conversation"]["x-fs-handle"], "Conversation");
 }
 

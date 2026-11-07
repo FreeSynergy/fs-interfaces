@@ -9,7 +9,7 @@ use fs_mcp::{
     TypeRef,
 };
 
-pub const FILE: &str = "msg";
+pub const FILE: &str = "messenger";
 
 pub fn name(n: &str) -> TypeName {
     TypeName { file: FILE.into(), name: n.into() }
@@ -48,6 +48,7 @@ pub fn messenger_like() -> Vec<Contract> {
                 method("conversations", vec![], vec![field("conversations", iface("Conversations"))]),
                 method("subscribe", vec![field("filter", TypeRef::Text), field("listener", iface("Listener"))],
                        vec![field("subscription", iface("Subscription"))]),
+                method("draft", vec![], vec![field("draft", iface("Draft"))]),
                 method("guard", vec![], vec![field("guard", iface("Guard"))]),
             ]),
             interface("Conversations", vec![
@@ -105,7 +106,7 @@ impl FakeMarks {
         let mut m = Self::default();
         for (o, i) in [
             ("Messenger", "capabilities"), ("Messenger", "conversations"), ("Messenger", "subscribe"),
-            ("Messenger", "guard"), ("Conversations", "open"), ("Guard", "allow"), ("Accounts", "add"),
+            ("Messenger", "guard"), ("Messenger", "draft"), ("Conversations", "open"), ("Guard", "allow"), ("Accounts", "add"),
             ("MessageAction", "none"), ("MessageAction", "delete"), ("MessageAction", "flag"),
             ("MessageAction", "decide"), ("Draft", "send"),
         ] {

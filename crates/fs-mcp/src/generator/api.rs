@@ -1,10 +1,10 @@
 //! The generator's interface.
 //!
-//! Pattern: Strategy (and Template method inside the implementation, see `build`). Trait: [`ToolGenerator`].
+//! Pattern: Strategy (the implementation is [`crate::Generator`]). Trait: [`ToolGenerator`].
 
 use crate::{Catalog, Contract, Error};
 
-/// Turns contracts into a catalog of tools and resource templates. Pure: it runs nothing.
+/// Turns contracts into a catalog. Pure: it runs nothing.
 pub trait ToolGenerator {
     /// Generate.
     ///

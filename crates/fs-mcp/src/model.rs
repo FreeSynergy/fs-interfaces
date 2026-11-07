@@ -47,6 +47,18 @@ pub enum TypeRef {
     Any,
 }
 
+impl TypeRef {
+    /// Every capability type inside this type (lists included).
+    #[must_use]
+    pub fn interfaces(&self) -> Vec<&TypeName> {
+        match self {
+            Self::Interface(n) => vec![n],
+            Self::List(inner) => inner.interfaces(),
+            _ => vec![],
+        }
+    }
+}
+
 /// A struct field, union member, method parameter or method result.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Field {

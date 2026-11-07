@@ -35,3 +35,21 @@ impl fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+impl From<capnp::Error> for Error {
+    fn from(e: capnp::Error) -> Self {
+        Self::Reflect(e.to_string())
+    }
+}
+
+impl From<std::str::Utf8Error> for Error {
+    fn from(e: std::str::Utf8Error) -> Self {
+        Self::Reflect(e.to_string())
+    }
+}
+
+impl From<capnp::NotInSchema> for Error {
+    fn from(e: capnp::NotInSchema) -> Self {
+        Self::Reflect(e.to_string())
+    }
+}
