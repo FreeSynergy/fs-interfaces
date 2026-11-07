@@ -2,7 +2,7 @@
 # A method or union member without an entry counts as `unknown` and is listed by the tests.
 
 [BoardEditor]
-add = "add"
+add = { risk = "excluded", reason = "takes an element with a full Envelope (sensitive, to, bcc; ADR 0029) that the generator cannot restrict" }
 addPage = "add"
 align = "change"
 bounds = "read"

@@ -75,7 +75,10 @@ impl Blocklist {
     /// field, in any schema file. Renaming the method that carries it lifts nothing.
     #[must_use]
     pub fn type_reason(&self, name: &str) -> Option<&'static str> {
-        self.types.iter().find(|(n, _)| *n == name).map(|(_, r)| *r)
+        self.types
+            .iter()
+            .find(|(n, _)| name.split('.').any(|part| part == *n))
+            .map(|(_, r)| *r)
     }
 
     /// Why `target` is blocked, if it is.

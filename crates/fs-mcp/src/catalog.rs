@@ -1,6 +1,6 @@
 //! The result of one generator run: what exists, and, as important, what was left out and why.
 //!
-//! Pattern: none (plain data, a report). Trait: none. Every omission is listed, so a missing tool is never
+//! Pattern: Value object (a report). Trait: none. Every omission is listed, so a missing tool is never
 //! unexplained and a forgotten mark is never silent.
 
 use crate::{ResourceTemplate, Target, Tool};

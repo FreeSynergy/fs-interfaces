@@ -110,3 +110,36 @@ fn a_mark_that_names_a_removed_method_is_reported_as_stale() {
         vec![Target::item("messenger", "Draft", "teleport")]
     );
 }
+
+#[test]
+fn review_counterexamples_on_a_copy_of_the_real_schemas() {
+    let extra = "struct Wrap { struct ToolCallDecision { option @0 :Text; } d @0 :ToolCallDecision; }\n\
+        interface LabE { wrapped @0 (w :Wrap) -> (); }\n\
+        interface SecretStore { reveal @0 () -> (text :Text); }\n\
+        interface LabF { open @0 () -> (store :SecretStore); }\n\
+        interface LabG { take @0 (source :C.Blob) -> (); }";
+    let e = Edited::new("review2", extra);
+    let contracts = CapnpcSource::new(&e.0).contracts().unwrap();
+    let c = generate_with(&contracts, &marks(), Blocklist::standard());
+    let tool = |o: &str, m: &str| {
+        c.tools
+            .iter()
+            .any(|t| t.source == Target::item("messenger", o, m))
+    };
+    assert!(
+        !tool("LabE", "wrapped"),
+        "a nested ToolCallDecision got through"
+    );
+    assert!(
+        !tool("SecretStore", "reveal") && !tool("LabF", "open"),
+        "an interface named like a secret got through"
+    );
+    assert!(
+        tool("LabG", "take"),
+        "a handle passed in is an ordinary argument"
+    );
+    assert!(
+        c.resources.iter().all(|r| !r.uri_template.contains("LabG")),
+        "a handle passed in is no listener"
+    );
+}

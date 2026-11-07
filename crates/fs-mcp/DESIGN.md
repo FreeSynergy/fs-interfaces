@@ -58,13 +58,23 @@ Principle (strategy): **what is unclear stays out.** A secret once released cann
      (`IMAPPassword`), in field, parameter, method and **type** names (`LoginCredentials`) and in comments of fields
      and parameters (secret, password, passphrase, credential, token, mnemonic);
    * free-form content: any `Data`, and `Text` named json, config, proof, payload, blob, data;
-   * a structure the index does not hold, and `AnyPointer`: **unclear = out**.
+   * a structure the index does not hold, and `AnyPointer`: **unclear = out**;
+   * type names are compared on every part of a nested path (`Wrap.ToolCallDecision`); comments of structs and
+     interfaces are read too; a capability type is judged by its name, comment, block list and interface mark (its
+     methods are judged when their own tools are made, not through the handle);
+   * words are matched exactly and also as run-together lower-case substrings (`accesstoken`, `authtoken`, `pwd`).
    Each is lifted only by a `[release]` entry for exactly that field (`Owner.name`, `Iface.method.param`, or a type name)
    with a reason. `key` is not released anywhere else.
-4. Admin (ADR 0056) and provider interfaces: whole interfaces are marked `excluded`, reads included: `Delegations`,
-   `Memberships`, groups `Invitations`, `Roles`, files `Backends`, `BlobBackend`, `GroupDirectory`, hub `Session` and
-   `Hub.register`, `Items.addParent`. Streaming methods with keys are out whole.
-5. `resource = true` is accepted only with class `read` (checked when the marks are read) and only on a method that
+4. Admin (ADR 0056) and provider interfaces are excluded **as interfaces**: `"@interface" = { risk = "excluded" }` in the
+   mark file holds for every present and future method, no marks are demanded inside, and **every method that hands out
+   a handle to it is excluded too** (`people.people.roles`, `groups.groups.memberships`, ...). Marked so: `Delegations`,
+   `Memberships`, groups `Invitations`, `Roles`, `Backends`, `Sharing`, `BlobBackend`, `GroupDirectory`, hub `Session`,
+   `TileSource`. Single methods: `Hub.register`, `Items.addParent`/`removeParent`/`approveParent`, `BoardEditor.add`
+   (takes a whole `Envelope` with sensitive/to/bcc, ADR 0029). Streaming methods with keys are out whole.
+5. A **listener** is an interface whose name ends with `Listener` and which a method takes as a parameter. Any other
+   capability passed in is an ordinary handle argument. An events resource needs a mark of class `read`; two equal URIs
+   are an error.
+6. `resource = true` is accepted only with class `read` (checked when the marks are read) and only on a method that
    returns `Data` (checked when generating: otherwise an error).
 
 ## Mark files
@@ -76,11 +86,11 @@ Strict parsing (unknown class, key or shape is an error). Tests: every method/me
 
 ## State
 
-Done: model, traits, schema reader, generator, mark files for all 15 schemas, example `list_tools`. 307 tools, 13 event
+Done: model, traits, schema reader, generator, mark files for all 15 schemas, example `list_tools`. 296 tools, 13 event
 resource templates and 1 blob template from the 15 schemas at this commit.
 Not done (on purpose): any server, bridge, call or handle store; the annotation file `schema/mcp.capnp` and the import of it
 in the other schemas (new contract, needs the consultation rule, other threads are editing `messenger.capnp`); tool grouping
-(problem 12, the messenger alone yields about 36 tools, all schemas 307); the output wrapper that keeps hostile message text apart (problem 11).
+(problem 12, the messenger alone yields about 36 tools, all schemas 296); the output wrapper that keeps hostile message text apart (problem 11).
 
 ## Releases written (each judged by me, to be confirmed)
 
@@ -111,7 +121,12 @@ Left out because not released: `Upload.write`, `Draft.attach`, `Boards.import`, 
 ## Open points / questions for the strategy
 
 1. Final home of the crate. Marks move into annotations after the sprint.
-2. **Size:** 307 tools are a lot for one model (problem 12). Proposal: group by capability and offer a group only after
+2. **Size:** 296 tools are a lot for one model (problem 12). Proposal: group by capability and offer a group only after
    the person releases it; stage 1 only lists.
-3. Releases above are my judgement; `Cursor.opaque` and `Blob.read.data` matter most.
-4. Handle expiry and per-call authorisation (problem 5) need the engine; stage 1 only names the handle's interface.
+3. A release stays valid when a comment changes. Binding it to a hash of type plus comment is possible and not done;
+   until then a changed comment on a released field needs a manual look (noted, not built).
+4. **Contract question:** `surveys.respond.submit.person` takes a person IRI as the credential of a named answer: the
+   caller says who answers. Should the engine fill it from the caller, never from arguments?
+5. The compiler attaches a comment to the previous declaration; several false alarms (Streams) are releases for that
+   reason. A blank line before a comment that belongs to the next declaration would remove them.
+6. Handle expiry and per-call authorisation (problem 5) need the engine; stage 1 only names the handle's interface.

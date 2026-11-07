@@ -1,7 +1,7 @@
 //! Facts about the contracts that the checks need: which interfaces are callbacks, which are roots,
 //! and which marks point at nothing.
 //!
-//! Pattern: none (pure functions over the model). Trait: none (internal).
+//! Pattern: Specification — pure predicates over the model (`is_callback`, `is_returned`, `stale`). Trait: none.
 
 use std::collections::HashSet;
 
@@ -11,6 +11,11 @@ use crate::{Contract, RiskSource, Target, TypeName};
 pub(crate) struct Facts {
     callbacks: HashSet<TypeName>,
     returned: HashSet<TypeName>,
+}
+
+/// The convention of the schemas: a listener is an interface whose name ends with `Listener`.
+pub(crate) fn is_listener_name(name: &str) -> bool {
+    name.ends_with("Listener")
 }
 
 fn key(file: &str, name: &str) -> TypeName {
@@ -26,7 +31,13 @@ impl Facts {
         let mut returned = HashSet::new();
         for c in contracts {
             for m in c.interfaces.iter().flat_map(|i| &i.methods) {
-                callbacks.extend(m.params.iter().flat_map(|f| f.ty.interfaces()).cloned());
+                callbacks.extend(
+                    m.params
+                        .iter()
+                        .flat_map(|f| f.ty.interfaces())
+                        .filter(|n| is_listener_name(&n.name))
+                        .cloned(),
+                );
                 returned.extend(m.results.iter().flat_map(|f| f.ty.interfaces()).cloned());
             }
             returned.extend(
@@ -74,6 +85,20 @@ pub(crate) fn stale(contracts: &[Contract], risk: &dyn RiskSource) -> Vec<Target
             for m in &i.methods {
                 known.insert(Target::item(&c.file, &i.name, &m.name));
                 for p in m.params.iter().chain(&m.results) {
+                    // a union parameter is split into one argument per member, named after the member
+                    if let crate::TypeRef::Struct(n) = &p.ty {
+                        let union = contracts
+                            .iter()
+                            .flat_map(|c| &c.structs)
+                            .find(|s| s.name == n.name && s.is_pure_union());
+                        for u in union.iter().flat_map(|s| &s.fields) {
+                            known.insert(Target::item(
+                                &c.file,
+                                &i.name,
+                                &format!("{}.{}", m.name, u.name),
+                            ));
+                        }
+                    }
                     known.insert(Target::item(
                         &c.file,
                         &i.name,

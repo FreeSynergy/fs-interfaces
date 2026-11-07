@@ -2,18 +2,11 @@
 # A method or union member without an entry counts as `unknown` and is listed by the tests.
 
 [Delegations]
-grant = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-list = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-mayDo = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-revoke = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
+"@interface" = { risk = "excluded", reason = "administration of rights, roles, memberships, sharing or storage: an agent is never admin (ADR 0056); reads here are left out too" }
 
 [GroupDirectory]
-apply = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
-directoryId = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
-list = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
-read = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
-remove = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
-supportReport = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+"@interface" = { risk = "excluded", reason = "provider or mirror interface (identity mirror, storage, tiles, hub protocol), not a capability of a person (ADR 0045, 0047, 0056)" }
+
 
 [Groups]
 delegations = "read"
@@ -24,12 +17,7 @@ subscribe = "read"
 supportReport = "read"
 
 [Invitations]
-accept = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-acceptProved = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-decline = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-invite = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-list = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-revoke = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
+"@interface" = { risk = "excluded", reason = "administration of rights, roles, memberships, sharing or storage: an agent is never admin (ADR 0056); reads here are left out too" }
 
 [Items]
 addParent = { risk = "excluded", reason = "changes how rights flow between groups: administration (ADR 0056)" }
@@ -44,16 +32,11 @@ get = "read"
 list = "read"
 parentRequests = "read"
 parents = "read"
-removeParent = "destructive"
+removeParent = { risk = "excluded", reason = "changes how rights flow between groups: administration (ADR 0056)" }
 rename = "change"
 requestParent = "acts-in-name"
 setKind = "change"
 setRightFlow = { risk = "excluded", reason = "may grant rights or an admin role; an agent is never admin (ADR 0056)" }
 
 [Memberships]
-add = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-direct = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-effective = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-groupsOf = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-isMember = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-remove = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
+"@interface" = { risk = "excluded", reason = "administration of rights, roles, memberships, sharing or storage: an agent is never admin (ADR 0056); reads here are left out too" }

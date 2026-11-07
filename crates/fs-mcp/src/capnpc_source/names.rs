@@ -1,6 +1,6 @@
 //! Which node id is which declared name, and the comments of each node.
 //!
-//! Pattern: Registry — id to (file, name) and id to comment tables, built once per request.
+//! Pattern: none (id lookup tables, built once per request; nothing is looked up by kind). Trait: none.
 //! Trait: none (internal).
 
 use std::collections::HashMap;

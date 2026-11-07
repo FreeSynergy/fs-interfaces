@@ -1,6 +1,6 @@
 //! A resource template: events and files are read as resources, not called as tools (ADR 0021 extension).
 //!
-//! Pattern: none (plain data). Trait: none. Only the list exists in stage 1; there is no server behind it.
+//! Pattern: Value object. Trait: none. Only the list exists in stage 1; there is no server behind it.
 
 use crate::{RiskClass, Target};
 use serde_json::{Value, json};

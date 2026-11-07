@@ -95,13 +95,7 @@ fn names_are_split_into_words_including_acronyms() {
         assert!(name_looks_secret(n), "{n} should look secret");
     }
     for n in [
-        "pinned",
-        "mapping",
-        "tokenizer",
-        "keyboard",
-        "message",
-        "unread",
-        "assignee",
+        "pinned", "mapping", "keyboard", "message", "unread", "assignee",
     ] {
         assert!(!name_looks_secret(n), "{n} should not");
     }

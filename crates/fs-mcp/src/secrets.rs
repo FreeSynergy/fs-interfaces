@@ -14,6 +14,8 @@ const SECRET_WORDS: &[&str] = &[
     "passphrase",
     "passcode",
     "pass",
+    "pwd",
+    "pw",
     "token",
     "tokens",
     "key",
@@ -22,6 +24,7 @@ const SECRET_WORDS: &[&str] = &[
     "credentials",
     "apikey",
     "private",
+    "privkey",
     "seed",
     "otp",
     "totp",
@@ -38,17 +41,53 @@ const SECRET_WORDS: &[&str] = &[
     "mnemonic",
     "signature",
     "proof",
+    "pem",
+    "pkcs",
+    "jwt",
+    "ssh",
+    "pgp",
 ];
+/// Words in a comment. Wider than for names (`key`, `private`), because a comment explains what a field holds.
 const DOC_WORDS: &[&str] = &[
     "secret",
     "secrets",
     "password",
     "passwords",
+    "passwd",
     "passphrase",
+    "passcode",
+    "pwd",
     "credential",
     "credentials",
     "token",
+    "tokens",
     "mnemonic",
+    "key",
+    "keys",
+    "private",
+    "pem",
+    "pkcs",
+    "jwt",
+    "ssh",
+    "apikey",
+];
+/// Run-together, lower-case search for forms the word split cannot see (`accesstoken`, `authtoken`).
+const NEEDLES: &[&str] = &[
+    "secret",
+    "passw",
+    "passphrase",
+    "passcode",
+    "token",
+    "credential",
+    "apikey",
+    "privatekey",
+    "accesskey",
+    "authkey",
+    "secretkey",
+    "cookie",
+    "bearer",
+    "mnemonic",
+    "pwd",
 ];
 const FREE_FORM_WORDS: &[&str] = &["json", "config", "proof", "payload", "blob", "data"];
 
@@ -84,16 +123,22 @@ fn has_word(s: &str, list: &[&str]) -> bool {
     words(s).iter().any(|w| list.contains(&w.as_str()))
 }
 
+/// Exact words, plus the run-together search over the joined lower-case form.
+fn secretish(s: &str, list: &[&str]) -> bool {
+    let ws = words(s);
+    ws.iter().any(|w| list.contains(&w.as_str())) || NEEDLES.iter().any(|n| ws.concat().contains(n))
+}
+
 /// Does an identifier (`publisherKey`, `LoginCredentials`, `IMAPPassword`) contain a secret word?
 #[must_use]
 pub fn name_looks_secret(name: &str) -> bool {
-    has_word(name, SECRET_WORDS)
+    secretish(name, SECRET_WORDS)
 }
 
 /// Does a schema comment say it holds a secret?
 #[must_use]
 pub fn doc_looks_secret(doc: &str) -> bool {
-    has_word(doc, DOC_WORDS)
+    secretish(doc, DOC_WORDS)
 }
 
 /// Is this a place for content the generator cannot judge: `Data` anywhere in the type, or a name such as

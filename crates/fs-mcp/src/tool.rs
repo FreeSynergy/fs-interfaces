@@ -1,6 +1,6 @@
 //! One MCP tool as data, and its wire form.
 //!
-//! Pattern: none (plain data) with a fixed projection (`to_json`). The projection cannot say "read only":
+//! Pattern: Value object with a fixed projection (`to_json`). The projection cannot say "read only":
 //! there is no field for it, `readOnlyHint` is always written as `false`. Trait: none.
 
 use crate::{RiskClass, Target};

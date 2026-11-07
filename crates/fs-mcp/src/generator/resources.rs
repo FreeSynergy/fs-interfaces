@@ -14,7 +14,7 @@ impl Run<'_> {
     /// the caller: it goes through the same screen as a result. A listener nobody defined is a problem.
     fn listener_problem(&self, m: &Method) -> Option<Why> {
         let screen = self.screen();
-        for p in m.params.iter().filter(|p| !p.ty.interfaces().is_empty()) {
+        for p in self.facts.callback_params(m) {
             for n in p.ty.interfaces() {
                 if let Some(why) = self.g.blocklist.type_reason(&n.name) {
                     return Some(Why::Blocked(why));
@@ -38,10 +38,11 @@ impl Run<'_> {
     /// A `subscribe`-like method (it takes a listener): its events are a resource.
     pub(super) fn events_resource(&mut self, file: &str, iface: &str, m: &Method, root: bool) {
         let target = Target::item(file, iface, &m.name);
+        let cb = self.facts.callback_params(m);
         let inputs: Vec<_> = m
             .params
             .iter()
-            .filter(|p| p.ty.interfaces().is_empty())
+            .filter(|p| !cb.iter().any(|c| c.name == p.name))
             .cloned()
             .collect();
         let v = Variant {
@@ -56,6 +57,12 @@ impl Run<'_> {
         let Some(verdict) = self.vet(file, iface, m, &v) else {
             return;
         };
+        if verdict.class != crate::RiskClass::Read {
+            return self.leave(
+                target,
+                Why::Marked("an events resource needs a mark of class read".to_owned()),
+            );
+        }
         let handle = if root {
             String::new()
         } else {

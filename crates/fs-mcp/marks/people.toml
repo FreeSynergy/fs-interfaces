@@ -34,14 +34,4 @@ update = "destructive"
 updateIf = "destructive"
 
 [Roles]
-assign = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-define = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-get = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-isAi = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-list = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-loadConfig = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-markAi = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-peopleWith = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-rolesOf = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-unassign = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
-undefine = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
+"@interface" = { risk = "excluded", reason = "administration of rights, roles, memberships, sharing or storage: an agent is never admin (ADR 0056); reads here are left out too" }

@@ -7,6 +7,8 @@
 //! [Draft]                     # interface or struct of that schema
 //! send = { risk = "acts-in-name", capability = "message.send" }
 //! setText = "change"          # short form: just the class
+//! [Roles]
+//! "@interface" = { risk = "excluded", reason = "admin" }   # all methods, present and future, and every handle to it
 //! [release]                   # a name that looks like a secret but is none, with the reason
 //! "Reaction.key" = "a reaction key, not key material"
 //! ```
@@ -94,7 +96,16 @@ impl MarkFiles {
                     } else {
                         let mark =
                             parse_mark(&value).map_err(|p| bad(format!("{owner}.{name}: {p}")))?;
-                        me.marks.insert(Target::item(file, &owner, &name), mark);
+                        if name == "@interface" {
+                            if mark.class != RiskClass::Excluded {
+                                return Err(bad(format!(
+                                    "{owner}: an interface mark can only exclude"
+                                )));
+                            }
+                            me.marks.insert(Target::owner(file, &owner), mark);
+                        } else {
+                            me.marks.insert(Target::item(file, &owner, &name), mark);
+                        }
                     }
                 }
             }

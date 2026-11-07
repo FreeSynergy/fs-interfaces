@@ -58,3 +58,4 @@ supportReport = "read"
 
 [release]
 "InviteReport.already" = "a list of people invited before; the comment only says that no new token is sent"
+"Designer.invite" = "the comment names the tokens; they never appear in the result (InviteReport) and are sent to the people directly"

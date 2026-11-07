@@ -54,13 +54,42 @@ impl Screen<'_> {
         (looks_free_form(name, ty) && !released()).then(|| Why::FreeForm { path: path() })
     }
 
+    /// An interface as a whole, or as a handle that a tool hands out: blocked by type, marked excluded, or a
+    /// name or comment that looks like a secret and was not released. Its methods are judged when their own
+    /// tools are made.
+    pub(super) fn interface(&self, file: &str, def: &crate::Interface) -> Option<Why> {
+        if let Some(why) = self.blocklist.type_reason(&def.name) {
+            return Some(Why::Blocked(why));
+        }
+        let own = Target::owner(file, &def.name);
+        if let Some(k) = self
+            .risk
+            .mark(&own)
+            .filter(|k| k.class == crate::RiskClass::Excluded)
+        {
+            return Some(Why::Marked(
+                k.reason
+                    .unwrap_or_else(|| "interface marked excluded".to_owned()),
+            ));
+        }
+        let looks = name_looks_secret(&def.name) || doc_looks_secret(&def.doc);
+        (looks && self.risk.release(&own).is_none()).then(|| Why::SecretSuspect {
+            path: own.to_string(),
+        })
+    }
+
     fn walk(&self, ty: &TypeRef, seen: &mut HashSet<TypeName>) -> Option<Why> {
         match ty {
             TypeRef::Any => Some(Why::Unclear {
                 path: "AnyPointer".to_owned(),
             }),
             TypeRef::List(inner) => self.walk(inner, seen),
-            TypeRef::Interface(n) => self.blocklist.type_reason(&n.name).map(Why::Blocked),
+            TypeRef::Interface(n) => match self.index.interface_def(n) {
+                Some(def) => self.interface(&n.file, def),
+                None => Some(Why::Unclear {
+                    path: format!("{}/{}", n.file, n.name),
+                }),
+            },
             TypeRef::Struct(n) if seen.insert(n.clone()) => {
                 if let Some(why) = self.blocklist.type_reason(&n.name) {
                     return Some(Why::Blocked(why));
@@ -71,7 +100,9 @@ impl Screen<'_> {
                     });
                 };
                 let own = Target::owner(&n.file, &def.name);
-                if name_looks_secret(&def.name) && self.risk.release(&own).is_none() {
+                if (name_looks_secret(&def.name) || doc_looks_secret(&def.doc))
+                    && self.risk.release(&own).is_none()
+                {
                     return Some(Why::SecretSuspect {
                         path: own.to_string(),
                     });

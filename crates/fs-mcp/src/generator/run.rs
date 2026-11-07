@@ -53,8 +53,8 @@ impl Run<'_> {
         if let Some(why) = self.g.blocklist.reason(&owner) {
             return self.leave(owner, Why::Blocked(why));
         }
-        if let Some(why) = self.g.blocklist.type_reason(&iface.name) {
-            return self.leave(owner, Why::Blocked(why));
+        if let Some(why) = self.screen().interface(file, iface) {
+            return self.leave(owner, why);
         }
         if self.facts.is_callback(file, &iface.name) {
             return self.leave(
@@ -91,6 +91,12 @@ impl ToolGenerator for Generator<'_> {
         for t in &out.tools {
             if !seen.insert(t.name.clone()) {
                 return Err(Error::DuplicateName(t.name.clone()));
+            }
+        }
+        let mut uris = HashSet::new();
+        for r in &out.resources {
+            if !uris.insert(r.uri_template.clone()) {
+                return Err(Error::DuplicateName(r.uri_template.clone()));
             }
         }
         out.tools.sort_by(|a, b| a.name.cmp(&b.name));
