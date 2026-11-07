@@ -21,6 +21,10 @@ fn admin_and_provider_interfaces_have_no_tool_and_no_handle() {
         "people.people.roles",
         "groups.groups.delegations",
         "groups.groups.memberships",
+        "messenger.accounts",
+        "messenger.messenger.accounts",
+        "events.invitations",
+        "events.events.invitations",
         "groups.groups.invitations",
         "files.files.backends",
         "files.files.sharing",
@@ -88,4 +92,23 @@ fn events_and_blobs_are_resources_and_listeners_are_no_tools() {
         c.tools.iter().all(|t| t.name != "common.blob.read"),
         "bytes are a resource"
     );
+}
+
+#[test]
+fn every_method_of_accounts_and_event_invitations_is_excluded_one_by_one() {
+    let c = real_catalog();
+    for (file, iface) in [("messenger", "Accounts"), ("events", "Invitations")] {
+        let contracts = support::real::contracts();
+        let i = contracts
+            .iter()
+            .filter(|x| x.file == file)
+            .flat_map(|x| &x.interfaces)
+            .find(|i| i.name == iface)
+            .unwrap();
+        assert!(!i.methods.is_empty());
+        for m in &i.methods {
+            let src = fs_mcp::Target::item(file, iface, &m.name);
+            assert!(c.tools.iter().all(|t| t.source != src), "{src} is a tool");
+        }
+    }
 }

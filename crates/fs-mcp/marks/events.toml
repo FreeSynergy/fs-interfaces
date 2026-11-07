@@ -2,15 +2,14 @@
 # A method or union member without an entry counts as `unknown` and is listed by the tests.
 
 [Events]
-invitations = "read"
+invitations = { risk = "excluded", reason = "hands out the Invitations interface: no tools for invitations" }
 items = "read"
 subscribe = "read"
 supportReport = "read"
 
 [Invitations]
-history = "read"
-invite = "acts-in-name"
-respond = "acts-in-name"
+"@interface" = { risk = "excluded", reason = "no tools for invitations; respond takes a free `who` and would answer in the name of another person (ADR 0056)" }
+
 
 [Items]
 create = "add"

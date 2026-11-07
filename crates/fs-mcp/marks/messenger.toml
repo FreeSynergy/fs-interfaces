@@ -2,9 +2,8 @@
 # A method or union member without an entry counts as `unknown` and is listed by the tests.
 
 [Accounts]
-add = { risk = "excluded", reason = "takes a secret (AccountSetup.secret) that would pass through the model (ADR 0021)" }
-list = "read"
-remove = "destructive"
+"@interface" = { risk = "excluded", reason = "managing accounts is administration of rights and access (add takes a secret, remove cuts access, list shows addresses and settings): no tool, reads included (ADR 0056)" }
+
 
 [Compose]
 draft = "add"
@@ -42,7 +41,7 @@ react = "acts-in-name"
 unread = "change"
 
 [Messenger]
-accounts = "read"
+accounts = { risk = "excluded", reason = "hands out the Accounts interface: administration (ADR 0056)" }
 capabilities = "read"
 compose = "read"
 conversations = "read"

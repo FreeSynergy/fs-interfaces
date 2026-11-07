@@ -159,6 +159,10 @@ Left out because not released: `Upload.write`, `Draft.attach`, `Boards.import`, 
 * A listener inside a union or struct, or one whose name lacks `Listener`, is treated as a handle input.
 * The reader leaves out a method whose parameters or results are a **named structure with a group or a union**
   (`m @0 Foo -> Bar`): it is listed as unclear and gets no tool.
+* **Accounts and invitations (strategy decision):** the whole `messenger.Accounts` interface is excluded (add, remove and
+  list; list shows addresses and settings), and the whole `events.Invitations` interface (`invite`, `respond`, `history`).
+  **The contract itself has a problem as soon as real identity exists:** `respond` takes a free `who`, so a caller could
+  answer in the name of another person.
 * `Groups.Follows` (delivering rights between groups) is excluded as an interface.
 
 ## Open points / questions for the strategy

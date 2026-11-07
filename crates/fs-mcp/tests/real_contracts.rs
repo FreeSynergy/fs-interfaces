@@ -55,7 +55,7 @@ fn the_hard_exclusions_are_not_generated() {
     let left = |t: Target| c.left_out.iter().any(|l| l.target == t);
     assert!(left(Target::item("messenger", "MessageAction", "decide")));
     assert!(left(Target::item("messenger", "MessageAction", "none")));
-    assert!(left(Target::item("messenger", "Accounts", "add")));
+    assert!(left(Target::owner("messenger", "Accounts")));
 }
 
 #[test]
@@ -116,7 +116,19 @@ fn without_the_block_list_the_secret_check_still_keeps_the_secret_out() {
     assert!(
         c.left_out
             .iter()
+            .any(|l| l.target == Target::owner("messenger", "Accounts")
+                && matches!(l.why, Why::Marked(_)))
+    );
+    // and with no marks at all, the secret scan alone keeps `Accounts.add` out
+    let bare = generate_with(
+        &contracts(),
+        &MarkFiles::from_sources(&[]).unwrap(),
+        Blocklist::empty(),
+    );
+    assert!(
+        bare.left_out
+            .iter()
             .any(|l| l.target == Target::item("messenger", "Accounts", "add")
-                && matches!(l.why, Why::SecretSuspect { .. } | Why::Marked(_)))
+                && matches!(l.why, Why::SecretSuspect { .. }))
     );
 }
