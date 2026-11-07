@@ -10,7 +10,7 @@
 # provider reports what it can do as a list of `Support`.
 @0xb3f1c2d4e5a69788;
 
-struct Uuid      { hi @0 :UInt64; lo @1 :UInt64; }          # UUIDv7 (ADR 0027)
+struct Uuid      { hi @0 :UInt64; lo @1 :UInt64; }          # 128 bits; ids of objects are UUIDv7 (ADR 0027), other ids may be v4 (e.g. a store's `StoreId`)
 struct Timestamp { unixMillis @0 :Int64; }
 # Pagination; empty = start / end. An item too large for any message cannot be delivered: the call
 # answers the problem `too-large`, and its error text carries a cursor past the item (in Rust
@@ -109,7 +109,7 @@ struct SupportReport {
   provider        @1 :Text;
   entries         @2 :List(Support);
   # Identity of the provider's store (`fs-store` `StoreId`), made once when the store is created.
-  # Empty = not known, e.g. a provider without a store. The id is no secret, but it makes the server
+  # Empty (all bits 0) = not known, e.g. a provider without a store; a v4 id is never 0. The id is no secret, but it makes the server
   # recognisable: it does not travel to the hub or into content unless someone decided so.
   instance        @3 :Uuid;
 }

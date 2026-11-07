@@ -34,10 +34,11 @@ struct Instance {
   overridden @4 :Bool;
 }
 
-# An event that could not be read or expanded and so is missing from `items`: its id and why.
+# Something in an event that could not be read or expanded, or that was cut: the event id, which part, and why.
 struct Damaged {
   id     @0 :Uuid;
-  reason @1 :Text;
+  reason @1 :Text;                 # for an event cut at a bound: starts with `cut: `
+  key    @2 :Text;                 # empty = the whole event; else the key of the damaged exception/instance of a series
 }
 
 enum Response { accept @0; tentativeAccept @1; reject @2; }
@@ -72,9 +73,12 @@ interface Items {
   get         @3 (id :Uuid) -> (found :Bool, event :Event);                      # event.read
   getByUid    @4 (uid :Text) -> (found :Bool, event :Event);                     # event.read
   list        @5 (cursor :Cursor) -> (page :EventPage);                          # event.read
-  # `damaged` names each event that could not be read or expanded (id and reason) and so is missing from `items`.
-  # `cut` is true when `items` was cut short at a bound (instances per event, the answer budget) instead of failing,
-  # e.g. a series of 8 947 occurrences; the caller asks again with a narrower range. A 0.42 server leaves both empty/false.
+  # `damaged` names what could not be read or expanded (event id, `key`, reason). If only one exception of a series
+  # is damaged, its event is in `damaged` AND the rest of that event stays in `items`; a whole event with an empty
+  # `key` is missing from `items`.
+  # `cut` is true when at least one event was cut at a bound (instances per event, the answer budget), e.g. a series
+  # of 8 947 occurrences: `items` is then incomplete instead of the call failing, and `damaged` names the cut events
+  # with a reason starting `cut: `. The caller asks again with a narrower range. A 0.42 server leaves both empty/false.
   occurrences @6 (from :Timestamp, to :Timestamp) -> (items :List(Instance), damaged :List(Damaged), cut :Bool);    # event.occurrences
   importText  @7 (mediaType :Text, text :Text) -> (report :ImportReport);        # event.import
   exportText  @8 (ids :List(Uuid), mediaType :Text) -> (text :Text);             # event.export
