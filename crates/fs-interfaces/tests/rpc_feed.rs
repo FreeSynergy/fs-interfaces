@@ -10,7 +10,7 @@ use capnp_rpc::new_client;
 use fs_interfaces::common_capnp::change_listener;
 use fs_interfaces::rpc::{FEED_CAPACITY, Notice, change_channel, forward};
 use fs_interfaces::rpc::{FEED_ENDED_PROBLEM_TYPE, FEED_STALL};
-use fs_store::ObjectId;
+use fs_objects::ObjectId;
 
 /// Counts changes; can fail on one of them, or never answer at all.
 #[derive(Clone, Default)]

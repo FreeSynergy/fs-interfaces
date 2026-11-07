@@ -5,7 +5,7 @@
 //! readers below take the facts out of its text. Which variant of a program's own error a problem type stands for stays with that program.
 
 use capnp::Error;
-use fs_store::ObjectId;
+use fs_objects::ObjectId;
 
 use crate::Unsupported;
 use crate::rpc::{Problem, is_unimplemented};

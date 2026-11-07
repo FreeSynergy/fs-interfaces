@@ -1,7 +1,7 @@
 # FreeSynergy common contract types — DRAFT 0.2 (2026-11-06)
 #
 # STATUS: DRAFT (ADR 0045: draft -> tested by >= 2 independent consumers -> 1.0 -> only version jumps).
-# Owner program: fs-store (envelope, activity log; proposed in ADR 0050) - shared types for all topics.
+# Owner program: fs-objects (envelope, activity log; proposed in ADR 0050) - shared types for all topics.
 # Consumers: fs-tasks, fs-hub, fs-messenger (contract draft), fs-calendar.
 #
 # Shared by every program contract (ADR 0021). Evolution rules: only append, never renumber.
@@ -108,7 +108,7 @@ struct SupportReport {
   contractVersion @0 :Text;
   provider        @1 :Text;
   entries         @2 :List(Support);
-  # Identity of the provider's store (`fs-store` `StoreId`), made once when the store is created.
+  # Identity of the provider's store (`fs-objects` `StoreId`), made once when the store is created.
   # Empty (all bits 0) = not known, e.g. a provider without a store; a v4 id is never 0. The id is no secret, but it makes the server
   # recognisable: it does not travel to the hub or into content unless someone decided so.
   instance        @3 :Uuid;

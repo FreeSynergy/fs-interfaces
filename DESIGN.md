@@ -19,7 +19,7 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 
 ## State
 
-Version 0.44.0 (`tasks.TaskFilter` gains `term @4` (substring of title and description, case-insensitive, like `PersonFilter.term`) and `open @5` (only needs-action and in-process tasks); append only). Version 0.43.0 (`fs-store` v0.4.0: the break hit programs with feature `rpc` on fs-store v0.2.0 (people, tasks, calendar-server, files, wiki), which could not build with fs-store 0.4 (two `Envelope` types); groups, maps and the hub use fs-interfaces without `rpc` and are not affected; `SupportReport.instance @3` (the store's `StoreId`, empty = not known); `events.Items.occurrences` answers `damaged @1` (struct `Damaged`: id, reason, key) and `cut @2` (items cut short at a bound, no error); `people` comments say "full IRI" for roles; append only). Version 0.42.0 added the workspace crate `fs-mcp`, the MCP tool generator stage 1 (see `crates/fs-mcp/DESIGN.md`).
+Version 0.44.0 (`tasks.TaskFilter` gains `term @4` (substring of title and description, case-insensitive, like `PersonFilter.term`) and `open @5` (only needs-action and in-process tasks); append only). Version 0.43.0 (`fs-objects` v0.4.0: the break hit programs with feature `rpc` on fs-objects v0.2.0 (people, tasks, calendar-server, files, wiki), which could not build with fs-objects 0.4 (two `Envelope` types); groups, maps and the hub use fs-interfaces without `rpc` and are not affected; `SupportReport.instance @3` (the store's `StoreId`, empty = not known); `events.Items.occurrences` answers `damaged @1` (struct `Damaged`: id, reason, key) and `cut @2` (items cut short at a bound, no error); `people` comments say "full IRI" for roles; append only). Version 0.42.0 added the workspace crate `fs-mcp`, the MCP tool generator stage 1 (see `crates/fs-mcp/DESIGN.md`).
 
 | Area | State |
 |---|---|
@@ -98,7 +98,7 @@ The remedy is `chmod g-w` on the directory the message names, or another `--data
 
 ## Open points
 
-* Owner of `common.capnp` (`fs-store` is proposed in ADR 0050).
+* Owner of `common.capnp` (`fs-objects` is proposed in ADR 0050).
 * More topics from the catalogue (people, groups, events, files ...) as their owners write drafts.
 
 ## fs-mcp
