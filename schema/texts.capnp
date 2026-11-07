@@ -21,7 +21,7 @@ struct TextEntry {
   envelope @0 :Envelope;           # AS2 `Article` or `Note`
   path     @1 :Text;               # readable path, e.g. "manual/start"; unique
   document @2 :Text;               # the document as JSON (authoritative content)
-  revision @3 :UInt64;             # counts every write of this text (0.7: for editIf); never goes back, whatever the clock does
+  revision @3 :UInt64;             # changes at every write of this text (for editIf); compare for equality only: it is no counter, so it says nothing about order or number of writes
 }
 
 struct TextPage { items @0 :List(TextEntry); next @1 :Cursor; }
@@ -30,6 +30,8 @@ struct LinkRow {
   source @0 :Uuid;
   target @1 :Text;                 # readable path of the target
   at     @2 :Text;                 # where in the source
+  title  @3 :Text;                 # the link text as written; empty = none
+  internal @4 :Bool;               # true: the target is a text of this provider; false: an outside address
 }
 
 interface Texts {

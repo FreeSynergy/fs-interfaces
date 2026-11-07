@@ -41,6 +41,7 @@ enum Relation {
 struct Task {
   envelope   @0 :Envelope;        # AS2 `Task` envelope (id, iri, name, context "tasks", times)
   jscalendar @1 :Text;            # the JSCalendar 2.0 `Task` as JSON (authoritative content)
+  revision   @2 :UInt64;          # changes at every write (for editIf); compare for equality only, it is no counter
 }
 
 # one page of tasks, ordered by due date (undated last)
@@ -84,6 +85,7 @@ interface Items {
   query          @9  (filter :TaskFilter, cursor :Cursor) -> (page :TaskPage);             # time range, status, label
   importIcs      @10 (text :Text) -> (report :ImportReport);                               # VTODO
   exportIcs      @11 (ids :List(Uuid)) -> (text :Text);
+  editIf         @12 (id :Uuid, revision :UInt64, jscalendar :Text) -> (task :Task);       # task.edit, only if the task still has `revision`; otherwise it fails with a reason starting `conflict:` and writes nothing (compare-and-set; atomic inside one provider process only)
 }
 
 # PLACEHOLDER — declared so the root can hand it out; NOT implemented and without methods yet.

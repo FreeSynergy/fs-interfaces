@@ -32,6 +32,7 @@ struct Person {
   envelope  @0 :Envelope;              # AS2 `Profile` envelope (id, iri, name, context "people")
   jscontact @1 :Text;                  # the JSContact `Card` as JSON (authoritative content)
   roles     @2 :List(RoleAssignment);  # only what the caller may see (ADR 0029)
+  revision  @3 :UInt64;                # changes at every write of the card (for updateIf); compare for equality only, it is no counter
 }
 
 # one page of people in name order
@@ -133,6 +134,7 @@ interface Persons {
   removeFromList @20 (list :Uuid, member :Uuid) -> (person :Person);             # cardgroup.write
   listMembers    @21 (list :Uuid) -> (items :List(Person));                      # cardgroup.read
   listsOf        @22 (member :Uuid) -> (items :List(Person));                    # cardgroup.read
+  updateIf       @23 (id :Uuid, revision :UInt64, jscontact :Text) -> (person :Person);  # person.update, only if the person still has `revision`; otherwise it fails with a reason starting `conflict:` and writes nothing (compare-and-set; atomic inside one provider process only)
 }
 
 interface Roles {

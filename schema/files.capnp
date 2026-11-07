@@ -22,6 +22,13 @@
 #                                    that only the disk sees, e.g. a case-insensitive file system)
 #   invalidNameProblemType      422  the name or path is not acceptable, here or on the disk
 #   changedOutsideProblemType   409  the bytes were changed or removed outside the program; `rescan`
+#   notFoundProblemType         404  the id, upload or path does not exist
+#   conflictProblemType         409  the call clashes with the state (not a name clash), e.g. a change under way
+#   wrongOffsetProblemType      409  an upload write does not start where the backend holds the bytes; ask `received`
+#   invalidProblemType          422  the request is not acceptable and is no name problem (e.g. bad configuration)
+#   encryptionRequiredProblemType 409 the store does not take sensitive files unencrypted
+#   storedDataProblemType       500  stored data cannot be read (not the caller's fault)
+#   backendFailedProblemType    500  the backend failed (disk, network)
 
 @0xc5c37233d97e6465;
 
@@ -38,6 +45,13 @@ using Subscription = C.Subscription;
 const nameConflictProblemType   :Text = "https://freesynergy.net/problems/files/name-conflict";
 const invalidNameProblemType    :Text = "https://freesynergy.net/problems/files/invalid-name";
 const changedOutsideProblemType :Text = "https://freesynergy.net/problems/files/changed-outside";
+const notFoundProblemType       :Text = "https://freesynergy.net/problems/files/not-found";
+const conflictProblemType       :Text = "https://freesynergy.net/problems/files/conflict";
+const wrongOffsetProblemType    :Text = "https://freesynergy.net/problems/files/wrong-offset";
+const invalidProblemType        :Text = "https://freesynergy.net/problems/files/invalid";
+const encryptionRequiredProblemType :Text = "https://freesynergy.net/problems/files/encryption-required";
+const storedDataProblemType     :Text = "https://freesynergy.net/problems/files/stored-data-invalid";
+const backendFailedProblemType  :Text = "https://freesynergy.net/problems/files/backend-failed";
 
 # What to do when the target name is taken, for rename, move, copy and upload. `refuse` (the default, 0)
 # answers a name-conflict Problem and changes nothing. `keepBoth` gives the INCOMING entry a free name:
@@ -126,10 +140,12 @@ interface Folders {
 }
 
 # What `emptyTrash` did. A file that cannot be purged stays in the trash and is listed in `failed`;
-# the others are still purged.
+# the others are still purged. `failed` holds at most 1 398 101 ids (a page of 32 MiB at 24 bytes an id,
+# `rpc::MAX_PAGE_BYTES`); `failedMissing` says how many more failed and are not listed (0 = all listed).
 struct TrashReport {
   purged @0 :UInt32;
   failed @1 :List(Uuid);
+  failedMissing @2 :UInt32;
 }
 
 # What `rescan` found. It deletes nothing and overwrites nothing: files and folders that are on the disk
@@ -166,7 +182,7 @@ interface Transfer {
   startUpload  @0 (folder :Uuid, name :Text, mediaType :Text, onConflict :OnConflict) -> (upload :Upload, id :Text);  # file.upload
   resumeUpload @1 (id :Text) -> (upload :Upload);                                # file.upload
   open         @2 (id :Uuid) -> (blob :Blob);                                    # file.download
-  pendingUploads @3 () -> (items :List(UploadInfo));                             # file.upload: unfinished uploads, oldest first
+  pendingUploads @3 (cursor :Cursor) -> (items :List(UploadInfo), next :Cursor); # file.upload: unfinished uploads, oldest first, paged like the lists (empty cursor = start; empty `next` = the end)
 }
 
 interface Search {
@@ -207,7 +223,7 @@ interface BlobBackend {
   discard @10 (spot :Spot) -> ();                                                # blob.delete: missing is fine
   makeDir @11 (path :Text, parents :Bool) -> ();                                 # blob.rename: without `parents` an existing path is a name-conflict
   removeDir @12 (path :Text) -> ();                                              # blob.rename: only an empty folder; missing is fine
-  scan    @13 (dir :Text) -> (items :List(Scanned));                             # blob.scan: one level, sorted by name; empty = the top
+  scan    @13 (dir :Text, cursor :Cursor) -> (items :List(Scanned), next :Cursor);  # blob.scan: one level, sorted by name; empty dir = the top; paged (empty cursor = start; empty `next` = the end)
   has     @14 (spot :Spot) -> (found :Bool);                                     # blob.read: is something at this spot (bytes left in the trash by a crash)
   sweepPending @15 (keep :List(Text), olderThanSecs :UInt64) -> (removed :UInt32); # blob.delete: pending blobs not in `keep` and older than that: leftovers of a crash
   inspect @16 (spot :Spot) -> (found :Bool, info :BlobInfo);                      # blob.read: size, checksum (read from the bytes) and time of the blob at a spot, e.g. in the trash folder

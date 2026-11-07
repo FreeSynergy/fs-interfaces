@@ -20,6 +20,7 @@ using Subscription = C.Subscription;
 struct Event {
   envelope   @0 :Envelope;         # AS2 `Event` envelope
   jscalendar @1 :Text;             # the JSCalendar 2.0 `Event` as JSON (authoritative content)
+  revision   @2 :UInt64;           # changes at every write (for updateIf); compare for equality only, it is no counter
 }
 
 struct EventPage { items @0 :List(Event); next @1 :Cursor; }
@@ -68,6 +69,7 @@ interface Items {
   occurrences @6 (from :Timestamp, to :Timestamp) -> (items :List(Instance));    # event.occurrences
   importText  @7 (mediaType :Text, text :Text) -> (report :ImportReport);        # event.import
   exportText  @8 (ids :List(Uuid), mediaType :Text) -> (text :Text);             # event.export
+  updateIf    @9 (id :Uuid, revision :UInt64, jscalendar :Text) -> (event :Event);  # event.update, only if the event still has `revision`; otherwise it fails with a reason starting `conflict:` and writes nothing (compare-and-set; atomic inside one provider process only)
 }
 
 interface Invitations {
