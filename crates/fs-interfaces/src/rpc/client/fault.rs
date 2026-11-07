@@ -1,7 +1,7 @@
 //! Why a call got no answer from the server.
 //!
-//! Pattern: Value object — three reasons, each named with the server it was about, so a client maps
-//! it to its own error with one line and the text stays the same in every program.
+//! Pattern: none, a plain data type: three reasons, each named with the server it was
+//! about, so a client maps it to its own error with one line and the text stays the same in every program.
 
 use std::fmt;
 use std::time::Duration;
@@ -14,8 +14,8 @@ pub enum Fault {
         /// The server, as the client names it (`"people"`).
         server: &'static str,
     },
-    /// The call was taken up but ended without an answer (it panicked, or the thread was shut down
-    /// under it).
+    /// The call was taken up but ended without an answer: it panicked, or the connection was closed
+    /// under it (the worker was dropped; a write may then be left half done).
     Interrupted {
         /// The server, as the client names it.
         server: &'static str,

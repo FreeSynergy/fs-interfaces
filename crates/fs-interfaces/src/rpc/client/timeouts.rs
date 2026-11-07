@@ -1,6 +1,7 @@
 //! How long a client waits for a server that says nothing.
 //!
-//! Pattern: Value object — two deadlines with defaults; a caller (or a test) may choose others.
+//! Pattern: none, a plain data type: two deadlines with defaults; a caller (or a test) may
+//! choose others.
 
 use std::time::Duration;
 

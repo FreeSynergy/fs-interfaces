@@ -6,8 +6,9 @@
 //! client is its contract: the capabilities it takes from the root ([`Remote`]), its calls, and the
 //! mapping of a [`Problem`](super::Problem) to the error type of its own program ([`problems`]).
 //!
-//! Pattern: Command. A call becomes a command (a closure that gets the capabilities and answers
-//! through its own channel). Any thread builds it, only the thread of the connection executes it,
+//! Pattern: Command. A call becomes a command (a boxed closure that gets the capabilities and answers
+//! through its own channel; not an enum with `apply`, because the calls differ per contract and the
+//! closure keeps them out of this module). Any thread builds it, only the thread of the connection executes it,
 //! each as a local task, so calls overlap. Why: the capability cannot cross threads, a command can,
 //! and one queue serves any number of callers without a lock. The strategy for the contract is the
 //! trait [`Remote`]; the answer of a command is an RAII guard that answers by itself if the command

@@ -13,6 +13,8 @@ use std::time::Duration;
 
 use capnp_rpc::new_client;
 use fs_interfaces::Capabilities;
+use fs_interfaces::rpc::client::{Fault, Remote, Timeouts, Worker};
+use fs_interfaces::rpc::write_uuid;
 use fs_interfaces::rpc::{Problem, bind_socket, read_uuid, serve};
 use fs_interfaces::tasks_capnp::{items, tasks};
 use tempfile::TempDir;
@@ -146,4 +148,46 @@ impl Drop for TestServer {
             let _ = t.join();
         }
     }
+}
+
+#[derive(Clone)]
+pub struct Tasks {
+    pub items: items::Client,
+}
+
+impl Remote for Tasks {
+    type Root = tasks::Client;
+
+    async fn open(root: tasks::Client) -> Result<(Self, Capabilities), capnp::Error> {
+        let report = root.support_report_request().send().promise.await?;
+        let capabilities = Capabilities::read(report.get()?.get_report()?)?;
+        let items = root.items_request().send().promise.await?;
+        let items = items.get()?.get_items()?;
+        Ok((Self { items }, capabilities))
+    }
+}
+
+pub fn quick() -> Timeouts {
+    Timeouts {
+        connect: Duration::from_millis(300),
+        call: Duration::from_millis(400),
+    }
+}
+
+pub fn block_on<F: Future>(f: F) -> F::Output {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(f)
+}
+
+/// Call `Items.delete` with the probe `id`; the answer is the server's, as an RPC result.
+pub async fn delete(worker: &Worker<Tasks>, id: u128) -> Result<Result<(), capnp::Error>, Fault> {
+    worker
+        .call(move |r: Tasks| async move {
+            let mut request = r.items.delete_request();
+            write_uuid(request.get().init_id(), Some(uuid::Uuid::from_u128(id)));
+            request.send().promise.await.map(|_| ())
+        })
+        .await
 }

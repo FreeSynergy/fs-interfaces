@@ -1,8 +1,14 @@
 //! The thread that owns the Cap'n Proto connection.
 //!
 //! Pattern: Command (see the module above) — a current-thread runtime and a `LocalSet` on a thread of
-//! its own, a queue of commands in, the guard [`Reply`](super::reply::Reply) out. Dropping the
-//! [`Worker`] closes the queue, lets the commands under way finish, closes the connection and joins.
+//! its own, a queue of commands in, the guard [`Reply`](super::reply::Reply) out.
+//!
+//! Dropping the [`Worker`] closes the queue and the connection first: a command under way gets
+//! `Disconnected` from the server's side and ends (a write may be cut half done; the server finishes
+//! what it has begun). Then the drop joins the thread, which waits for every command to end. A command
+//! that waits on nothing from the connection (a timer, a lock) is not cut: the drop then waits for
+//! its call deadline. Dropped on the connection thread itself (a command held the last handle),
+//! nothing is joined.
 
 use std::future::Future;
 use std::io;
@@ -155,13 +161,19 @@ impl<R: Remote> Worker<R> {
 }
 
 impl<R: Remote> Drop for Worker<R> {
-    /// Close the queue, let the commands under way finish, close the connection, join the thread.
+    /// Close the queue and the connection, then join the thread. Commands under way are cut: they
+    /// get `Disconnected`, and a write among them may be left half done. A command that does not wait
+    /// on the connection keeps the drop waiting up to the call deadline. On the connection thread
+    /// itself nothing is joined.
     fn drop(&mut self) {
         // The sender goes with `self.jobs` after this; close the queue first by swapping it out.
         let (closed, _) = unbounded_channel();
         drop(std::mem::replace(&mut self.jobs, closed));
         if let Some(thread) = self.thread.take() {
-            let _ = thread.join();
+            // A command can hold the last handle: then this runs on the thread, which cannot join itself.
+            if thread.thread().id() != std::thread::current().id() {
+                let _ = thread.join();
+            }
         }
     }
 }

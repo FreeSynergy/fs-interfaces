@@ -1,8 +1,8 @@
 //! Reading back a [`Problem`] and the helpers every client needs to do it.
 //!
-//! Pattern: Adapter — the inverse of what a server did in `Problem::into_error`: an RPC error becomes
-//! a [`Failure`] with the problem typed, and the small readers below take the facts out of its
-//! text. Which variant of a program's own error a problem type stands for stays with that program.
+//! Pattern: none, free helper functions. They are the inverse of what a server did in
+//! `Problem::into_error`: an RPC error becomes a [`Failure`] with the problem typed, and the small
+//! readers below take the facts out of its text. Which variant of a program's own error a problem type stands for stays with that program.
 
 use capnp::Error;
 use fs_store::ObjectId;
