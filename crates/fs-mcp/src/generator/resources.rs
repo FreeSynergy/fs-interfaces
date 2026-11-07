@@ -16,14 +16,14 @@ impl Run<'_> {
         let screen = self.screen();
         for p in self.facts.callback_params(m) {
             for n in p.ty.interfaces() {
-                if let Some(why) = self.g.blocklist.type_reason(&n.name) {
-                    return Some(Why::Blocked(why));
-                }
                 let Some(def) = self.index.interface_def(n) else {
                     return Some(Why::Unclear {
                         path: format!("{}/{}", n.file, n.name),
                     });
                 };
+                if let Some(why) = screen.interface(&n.file, def) {
+                    return Some(why);
+                }
                 for lm in &def.methods {
                     let fields: Vec<&Field> = lm.params.iter().collect();
                     if let Some(why) = screen.fields(&n.file, &n.name, &lm.name, &fields) {
@@ -50,6 +50,7 @@ impl Run<'_> {
             member: None,
             member_doc: String::new(),
             inputs,
+            whole: None,
         };
         if let Some(why) = self.listener_problem(m) {
             return self.leave(target, why);

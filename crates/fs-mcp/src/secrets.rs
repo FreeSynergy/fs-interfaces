@@ -46,6 +46,10 @@ const SECRET_WORDS: &[&str] = &[
     "jwt",
     "ssh",
     "pgp",
+    "nonce",
+    "salt",
+    "hmac",
+    "creds",
 ];
 /// Words in a comment. Wider than for names (`key`, `private`), because a comment explains what a field holds.
 const DOC_WORDS: &[&str] = &[
@@ -73,6 +77,12 @@ const DOC_WORDS: &[&str] = &[
 ];
 /// Run-together, lower-case search for forms the word split cannot see (`accesstoken`, `authtoken`).
 const NEEDLES: &[&str] = &[
+    "recoverycode",
+    "backupcode",
+    "resetlink",
+    "magiclink",
+    "webhookurl",
+    "connectionstring",
     "secret",
     "passw",
     "passphrase",

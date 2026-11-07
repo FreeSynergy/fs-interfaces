@@ -25,7 +25,7 @@ delete = "destructive"
 edit = "change"
 editQuestion = "change"
 get = "read"
-invite = "acts-in-name"
+invite = { risk = "excluded", reason = "an invitation to answer: no tool for invitations until the strategy decides (question noted in DESIGN.md)" }
 list = "read"
 moveQuestion = "change"
 publish = "acts-in-name"
@@ -58,4 +58,3 @@ supportReport = "read"
 
 [release]
 "InviteReport.already" = "a list of people invited before; the comment only says that no new token is sent"
-"Designer.invite" = "the comment names the tokens; they never appear in the result (InviteReport) and are sent to the people directly"

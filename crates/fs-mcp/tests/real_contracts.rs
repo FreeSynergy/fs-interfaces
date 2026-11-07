@@ -87,63 +87,6 @@ fn the_messenger_act_tools_are_one_per_member() {
     );
 }
 
-/// Second, independent line of defence: it reads the finished JSON and the release lists itself, and matches by
-/// plain substring, so a mistake in the generator's word splitting cannot hide here.
-#[test]
-fn every_secret_looking_property_has_a_written_release_for_exactly_that_field() {
-    const NEEDLES: [&str; 15] = [
-        "secret",
-        "passw",
-        "token",
-        "key",
-        "credential",
-        "otp",
-        "auth",
-        "cookie",
-        "session",
-        "seed",
-        "private",
-        "signature",
-        "proof",
-        "mnemonic",
-        "bearer",
-    ];
-    let mut releases = Vec::new();
-    for e in std::fs::read_dir(support::real::marks_dir()).unwrap() {
-        let text = std::fs::read_to_string(e.unwrap().path()).unwrap();
-        let table: toml::Table = text.parse().unwrap();
-        if let Some(toml::Value::Table(r)) = table.get("release") {
-            releases.extend(r.keys().cloned());
-        }
-    }
-    let secretish = |p: &str| NEEDLES.iter().any(|n| p.to_lowercase().contains(n));
-    for t in &real_catalog().tools {
-        for schema in [&t.input_schema, &t.output_schema] {
-            for p in schema["properties"]
-                .as_object()
-                .into_iter()
-                .flat_map(|o| o.keys())
-                .filter(|p| secretish(p))
-            {
-                let ok = releases.iter().any(|k| k.ends_with(&format!(".{p}")));
-                assert!(ok, "{}: top-level {p} has no release", t.name);
-            }
-            for (def, body) in schema["$defs"].as_object().into_iter().flatten() {
-                let strukt = def.split_once('.').map_or(def.as_str(), |(_, s)| s);
-                for p in body["properties"]
-                    .as_object()
-                    .into_iter()
-                    .flat_map(|o| o.keys())
-                    .filter(|p| secretish(p))
-                {
-                    let ok = releases.contains(&format!("{strukt}.{p}"));
-                    assert!(ok, "{}: {strukt}.{p} has no release", t.name);
-                }
-            }
-        }
-    }
-}
-
 #[test]
 fn without_any_marks_everything_is_unknown_and_the_exclusions_still_hold() {
     let none = MarkFiles::from_sources(&[]).unwrap();

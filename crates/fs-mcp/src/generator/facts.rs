@@ -30,7 +30,11 @@ impl Facts {
         let mut callbacks = HashSet::new();
         let mut returned = HashSet::new();
         for c in contracts {
-            for m in c.interfaces.iter().flat_map(|i| &i.methods) {
+            for (i, m) in c
+                .interfaces
+                .iter()
+                .flat_map(|i| i.methods.iter().map(move |m| (i, m)))
+            {
                 callbacks.extend(
                     m.params
                         .iter()
@@ -39,6 +43,10 @@ impl Facts {
                         .cloned(),
                 );
                 returned.extend(m.results.iter().flat_map(|f| f.ty.interfaces()).cloned());
+                // what a listener hands to the caller arrives as a handle too: no root
+                if is_listener_name(&i.name) {
+                    returned.extend(m.params.iter().flat_map(|f| f.ty.interfaces()).cloned());
+                }
             }
             returned.extend(
                 c.structs

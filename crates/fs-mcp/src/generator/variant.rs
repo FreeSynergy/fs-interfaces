@@ -16,6 +16,8 @@ pub(super) struct Variant {
     pub member_doc: String,
     /// The arguments of this tool.
     pub inputs: Vec<Field>,
+    /// The union parameter as declared, before it was split; screened as a whole.
+    pub whole: Option<Field>,
 }
 
 impl Run<'_> {
@@ -35,6 +37,7 @@ impl Run<'_> {
                 member: None,
                 member_doc: String::new(),
                 inputs: m.params.clone(),
+                whole: None,
             }];
         };
         def.fields
@@ -56,6 +59,7 @@ impl Run<'_> {
                     member: Some(member.name.clone()),
                     member_doc: member.doc.clone(),
                     inputs,
+                    whole: Some(m.params[ix].clone()),
                 }
             })
             .collect()

@@ -24,7 +24,7 @@ memberships, invitations, backends, hub registration: no tool, not even for read
 | `Target` | Newtype | `file/Owner.name` keys for marks, releases and the block list |
 | `model.rs`, `Tool`, `ResourceTemplate`, `Variant`, `Catalog` | Value object | plain data compared by value |
 | `jsonschema.rs`, `capnpc_source/types.rs` | Visitor | one arm per `TypeRef` / Cap'n Proto type variant, outside the data |
-| `capnpc_source/names.rs` | Registry | node id to declared name and comment |
+| `capnpc_source/names.rs` | none | id lookup tables built once per request; nothing is looked up by kind |
 
 ## What it does
 
@@ -51,7 +51,8 @@ Principle (strategy): **what is unclear stays out.** A secret once released cann
    field, listener event, any file): `ToolCallDecision`, `GuardProof`, `AiGrant`, `Guard`. Renaming a method lifts nothing.
 2. **Marked `excluded`** in `marks/*.toml`; a mark on a *method* holds for all union members it is split into. A member
    without its own mark is `unknown`; it inherits nothing.
-3. **Screen** (`screen.rs`) on method, member, every parameter and result, everything reachable from them, **and the
+3. **Screen** (`screen.rs`) on method, member, **a union parameter as a whole before it is split** (parameter name and
+   comment, name and comment of the union, block list on its type; the members are then judged on their own), every parameter and result, everything reachable from them, **and the
    event types a listener delivers** (`subscribe` becomes a resource only if `Event` and all inside pass):
    * secret words (`secret password passphrase passcode token key credential apikey private seed otp totp oauth auth
      authorization bearer cookie session pin mnemonic signature proof`), split at camelCase and acronyms
@@ -62,6 +63,7 @@ Principle (strategy): **what is unclear stays out.** A secret once released cann
    * type names are compared on every part of a nested path (`Wrap.ToolCallDecision`); comments of structs and
      interfaces are read too; a capability type is judged by its name, comment, block list and interface mark (its
      methods are judged when their own tools are made, not through the handle);
+   * a listener is judged like any interface: block list, interface mark (`"@interface"`), name and comment;
    * words are matched exactly and also as run-together lower-case substrings (`accesstoken`, `authtoken`, `pwd`).
    Each is lifted only by a `[release]` entry for exactly that field (`Owner.name`, `Iface.method.param`, or a type name)
    with a reason. `key` is not released anywhere else.
@@ -86,11 +88,11 @@ Strict parsing (unknown class, key or shape is an error). Tests: every method/me
 
 ## State
 
-Done: model, traits, schema reader, generator, mark files for all 15 schemas, example `list_tools`. 296 tools, 13 event
+Done: model, traits, schema reader, generator, mark files for all 15 schemas, example `list_tools`. 290 tools, 13 event
 resource templates and 1 blob template from the 15 schemas at this commit.
 Not done (on purpose): any server, bridge, call or handle store; the annotation file `schema/mcp.capnp` and the import of it
 in the other schemas (new contract, needs the consultation rule, other threads are editing `messenger.capnp`); tool grouping
-(problem 12, the messenger alone yields about 36 tools, all schemas 296); the output wrapper that keeps hostile message text apart (problem 11).
+(problem 12, the messenger alone yields about 36 tools, all schemas 290); the output wrapper that keeps hostile message text apart (problem 11).
 
 ## Releases written (each judged by me, to be confirmed)
 
@@ -118,10 +120,25 @@ Left out because not released: `Upload.write`, `Draft.attach`, `Boards.import`, 
 * **Capability ids** exist only in comments and several methods share one (`blob.write`), so a 1:1 name is not derivable;
   only `message.send` is given.
 
+## More limits, stated plainly
+
+* **A comment above a `struct` or `interface` almost never arrives** (it is attached to the previous declaration), so the
+  check of struct and interface comments rarely fires. Trailing comments on a line are read reliably.
+* **`extends` is not read.** An interface that extends another does not inherit the other's marks or screening.
+* A root is an interface that no result, struct field or listener event hands out; the rest need a `handle` argument.
+* **Free content is judged by name only.** Fields named `jscontact`, `jscalendar`, `geojson`, `as2`, `document`, `details`
+  carry whole objects and are not stopped (they can hold anything the person wrote). 89 of the tools carry one
+  (events 9, groups 5, people 16, places 6, resources 5, surveys 21, tasks 10, texts 10, whiteboard 7); whether they stay
+  offered is for the strategy to decide. Every one still needs a release by the person (`needsRelease`).
+* `Target.url` is **not** released: an RTMP key often sits in the path (`rtmp://host/live2/<key>`) and the contract cannot
+  tell application from application plus key. `Streams.targets`, `editTarget`, `setTargetEnabled` and the streaming events
+  resource therefore stay out. `Stream.ingestUrl` is released (made by the program, key kept apart as `publisherKey`).
+* `Groups.Follows` (delivering rights between groups) is excluded as an interface.
+
 ## Open points / questions for the strategy
 
 1. Final home of the crate. Marks move into annotations after the sprint.
-2. **Size:** 296 tools are a lot for one model (problem 12). Proposal: group by capability and offer a group only after
+2. **Size:** 290 tools are a lot for one model (problem 12). Proposal: group by capability and offer a group only after
    the person releases it; stage 1 only lists.
 3. A release stays valid when a comment changes. Binding it to a hash of type plus comment is possible and not done;
    until then a changed comment on a released field needs a manual look (noted, not built).
@@ -129,4 +146,6 @@ Left out because not released: `Upload.write`, `Draft.attach`, `Boards.import`, 
    caller says who answers. Should the engine fill it from the caller, never from arguments?
 5. The compiler attaches a comment to the previous declaration; several false alarms (Streams) are releases for that
    reason. A blank line before a comment that belongs to the next declaration would remove them.
-6. Handle expiry and per-call authorisation (problem 5) need the engine; stage 1 only names the handle's interface.
+6. `surveys.designer.invite` (an invitation to answer) is excluded for now: no tool for invitations until the strategy
+   decides. Question noted.
+7. Handle expiry and per-call authorisation (problem 5) need the engine; stage 1 only names the handle's interface.

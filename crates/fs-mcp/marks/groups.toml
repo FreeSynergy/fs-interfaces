@@ -9,6 +9,7 @@
 
 
 [Groups]
+follows = { risk = "excluded", reason = "hands out the Follows interface: administration (ADR 0056)" }
 delegations = "read"
 invitations = "read"
 items = "read"
@@ -40,3 +41,6 @@ setRightFlow = { risk = "excluded", reason = "may grant rights or an admin role;
 
 [Memberships]
 "@interface" = { risk = "excluded", reason = "administration of rights, roles, memberships, sharing or storage: an agent is never admin (ADR 0056); reads here are left out too" }
+
+[Follows]
+"@interface" = { risk = "excluded", reason = "following delivers rights between groups: administration (ADR 0056)" }

@@ -44,9 +44,14 @@ impl Run<'_> {
         let outs: Vec<&Field> = m.results.iter().collect();
         let screen = self.screen();
         let problem = v
-            .member
-            .as_deref()
-            .and_then(|name| screen.name(target, name, &v.member_doc, None))
+            .whole
+            .as_ref()
+            .and_then(|w| screen.union_param(file, iface, &m.name, w))
+            .or_else(|| {
+                v.member
+                    .as_deref()
+                    .and_then(|name| screen.name(target, name, &v.member_doc, None))
+            })
             .or_else(|| screen.name(&Target::item(file, iface, &m.name), &m.name, &m.doc, None))
             .or_else(|| screen.fields(file, iface, &m.name, &ins))
             .or_else(|| screen.fields(file, iface, &m.name, &outs));

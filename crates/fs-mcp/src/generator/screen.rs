@@ -35,6 +35,33 @@ impl Screen<'_> {
         })
     }
 
+    /// A union parameter as declared, before it is split into one tool per member: its name and comment, the
+    /// name and comment of the union, and the block list on its type. The members are judged on their own.
+    pub(super) fn union_param(
+        &self,
+        file: &str,
+        iface: &str,
+        method: &str,
+        f: &Field,
+    ) -> Option<Why> {
+        let target = Target::item(file, iface, &format!("{method}.{}", f.name));
+        if let Some(why) = self.name(&target, &f.name, &f.doc, None) {
+            return Some(why);
+        }
+        let TypeRef::Struct(n) = &f.ty else {
+            return None;
+        };
+        if let Some(why) = self.blocklist.type_reason(&n.name) {
+            return Some(Why::Blocked(why));
+        }
+        let def = self.index.struct_def(n)?;
+        let own = Target::owner(&n.file, &def.name);
+        let looks = name_looks_secret(&def.name) || doc_looks_secret(&def.doc);
+        (looks && self.risk.release(&own).is_none()).then(|| Why::SecretSuspect {
+            path: own.to_string(),
+        })
+    }
+
     /// One name (with its comment and, if known, its type): blocked, suspect, free-form, or fine.
     pub(super) fn name(
         &self,
