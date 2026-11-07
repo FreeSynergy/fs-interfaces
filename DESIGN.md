@@ -19,7 +19,7 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 
 ## State
 
-Version 0.40.0 (adds the workspace crate `fs-mcp`, the MCP tool generator stage 1: lists only, no contract changed; see `crates/fs-mcp/DESIGN.md`).
+Version 0.41.0 (adds the workspace crate `fs-mcp`, the MCP tool generator stage 1: lists only, no contract changed; see `crates/fs-mcp/DESIGN.md`).
 
 | Area | State |
 |---|---|
