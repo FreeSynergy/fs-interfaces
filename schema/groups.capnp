@@ -205,6 +205,7 @@ struct Delivery {
   passOn    @4 :Bool;              # the receiver may pass it on (not again from the relayed copy)
   via       @5 :List(Uuid);        # empty: own right; one entry: relayed from this source on this server
   state     @6 :DeliveryState;
+  origin    @7 :Text;              # IRI of the group whose right this is: the giver itself, or for a relayed copy the first source
 }
 
 # What reaches the receiver (the AS2 `Invite` content, proposal): enough to enter the source.
@@ -215,6 +216,7 @@ struct Offer {
   rights    @3 :List(Right);
   passOn    @4 :Bool;
   as2       @5 :Text;              # the `Invite` as JSON
+  origin    @6 :Text;              # IRI of the group whose right this is; equals `source` unless the giver relays
 }
 
 enum SourceState { active @0; withdrawn @1; }
