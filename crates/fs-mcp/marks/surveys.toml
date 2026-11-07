@@ -16,6 +16,8 @@ record = "acts-in-name"
 unlinkTask = "destructive"
 
 [Designer]
+createBy = "acts-in-name"
+setAiAllowed = { risk = "excluded", reason = "decides whether AIs may answer: only the creator, a human, may allow it; an agent never does (ADR 0054)" }
 addQuestion = "add"
 archive = "change"
 classify = { risk = "excluded", reason = "sets ADR 0029 categories: the person decides what is protected" }
@@ -42,6 +44,7 @@ save = "acts-in-name"
 submit = "acts-in-name"
 
 [Results]
+exportAi = "read"
 evaluate = "read"
 export = "read"
 filter = "read"
