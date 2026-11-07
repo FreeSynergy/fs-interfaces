@@ -20,6 +20,7 @@
 //!
 //! Pattern: Facade (declarations).
 
+pub mod client;
 mod envelope;
 mod feed;
 mod finish;
