@@ -61,3 +61,10 @@ impl<R: Remote> Worker<R> {
         todo!("interface only")
     }
 }
+
+impl<R: Remote> Drop for Worker<R> {
+    /// Close the queue, let the commands under way finish, close the connection, join the thread.
+    fn drop(&mut self) {
+        todo!("interface only")
+    }
+}
