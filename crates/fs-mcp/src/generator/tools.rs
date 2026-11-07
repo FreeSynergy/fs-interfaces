@@ -36,6 +36,10 @@ impl Run<'_> {
             });
             return;
         }
+        if m.unclear {
+            let path = format!("{target}: parameters or results the reader could not represent");
+            return self.leave(target, crate::Why::Unclear { path });
+        }
         if let Some(why) = self.g.blocklist.reason(&target) {
             return self.leave(target, crate::Why::Blocked(why));
         }
@@ -97,6 +101,7 @@ impl Run<'_> {
             source: v.target.clone(),
             handle_of,
             unmarked: verdict.mark.is_none(),
+            free_content: verdict.free.clone(),
         });
     }
 

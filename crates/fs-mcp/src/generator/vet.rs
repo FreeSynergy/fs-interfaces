@@ -12,6 +12,8 @@ use crate::{Field, Mark, Method, RiskClass, Target, Why};
 pub(super) struct Verdict {
     pub class: RiskClass,
     pub mark: Option<Mark>,
+    /// Free-format fields the candidate carries, with their written formats.
+    pub free: Vec<(String, String)>,
 }
 
 impl Run<'_> {
@@ -59,6 +61,10 @@ impl Run<'_> {
             self.leave(target.clone(), why);
             return None;
         }
-        Some(Verdict { class, mark })
+        let mut free = screen.free_fields(file, iface, &m.name, &ins);
+        free.extend(screen.free_fields(file, iface, &m.name, &outs));
+        free.sort();
+        free.dedup();
+        Some(Verdict { class, mark, free })
     }
 }

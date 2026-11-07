@@ -23,3 +23,13 @@ list = "read"
 occurrences = "read"
 update = "change"
 updateIf = "change"
+
+[format]
+"Event.jscalendar" = "JSCalendar (a specialist format, not a secret field; it can still hold what a person wrote)"
+"ImportReport.notes" = "notes text (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Instance.jscalendar" = "JSCalendar (a specialist format, not a secret field; it can still hold what a person wrote)"
+"InvitationEntry.comment" = "comment text (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Invitations.respond.comment" = "comment text (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Items.create.jscalendar" = "JSCalendar (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Items.update.jscalendar" = "JSCalendar (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Items.updateIf.jscalendar" = "JSCalendar (a specialist format, not a secret field; it can still hold what a person wrote)"

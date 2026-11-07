@@ -143,3 +143,26 @@ fn review_counterexamples_on_a_copy_of_the_real_schemas() {
         "a handle passed in is no listener"
     );
 }
+
+#[test]
+fn named_parameter_structures_with_groups_or_unions_are_never_a_tool() {
+    let extra = "struct Acct { name @0 :Text; auth :group { password @1 :Text; } }\n\
+        struct Pure { union { safe @0 :Text; danger @1 :Text; } }\n\
+        interface LabH { a5 @0 () -> Acct; a4 @1 Pure -> (); }";
+    let e = Edited::new("named", extra);
+    let contracts = CapnpcSource::new(&e.0).contracts().unwrap();
+    let marked = fs_mcp::MarkFiles::from_sources(&[("messenger", "[Pure]\ndanger = { risk = \"excluded\", reason = \"test\" }\n[LabH]\na5 = \"read\"\na4 = \"read\"\n")]).unwrap();
+    let c = generate_with(&contracts, &marked, Blocklist::standard());
+    assert!(
+        c.tools
+            .iter()
+            .all(|t| t.source != Target::item("messenger", "LabH", "a5")),
+        "a group with a password was not seen"
+    );
+    assert!(
+        c.tools
+            .iter()
+            .all(|t| t.source != Target::item("messenger", "LabH", "a4")),
+        "an excluded union member was not seen"
+    );
+}

@@ -9,6 +9,8 @@
 //! setText = "change"          # short form: just the class
 //! [Roles]
 //! "@interface" = { risk = "excluded", reason = "admin" }   # all methods, present and future, and every handle to it
+//! [format]                    # a free-format field: a format, not a secret field
+//! "Persons.jscontact" = "jscontact"
 //! [release]                   # a name that looks like a secret but is none, with the reason
 //! "Reaction.key" = "a reaction key, not key material"
 //! ```
@@ -25,6 +27,7 @@ use crate::{Error, Mark, RiskClass, RiskSource, Target};
 pub struct MarkFiles {
     marks: HashMap<Target, Mark>,
     releases: HashMap<Target, String>,
+    formats: HashMap<Target, String>,
 }
 
 impl MarkFiles {
@@ -79,7 +82,21 @@ impl MarkFiles {
                     return Err(bad(format!("{owner}: a table is expected")));
                 };
                 for (name, value) in body {
-                    if owner == "release" {
+                    if owner == "format" {
+                        let Value::String(f) = value else {
+                            return Err(bad(format!("format {name}: a format name is expected")));
+                        };
+                        if f.trim().is_empty() {
+                            return Err(bad(format!(
+                                "format {name}: the format must not be empty"
+                            )));
+                        }
+                        let target = match name.split_once('.') {
+                            Some((o, i)) => Target::item(file, o, i),
+                            None => return Err(bad(format!("format {name}: Owner.name expected"))),
+                        };
+                        me.formats.insert(target, f);
+                    } else if owner == "release" {
                         let Value::String(reason) = value else {
                             return Err(bad(format!("release {name}: a reason text is expected")));
                         };
@@ -173,10 +190,14 @@ impl RiskSource for MarkFiles {
     fn release(&self, target: &Target) -> Option<String> {
         self.releases.get(target).cloned()
     }
+    fn format(&self, target: &Target) -> Option<String> {
+        self.formats.get(target).cloned()
+    }
     fn targets(&self) -> Vec<Target> {
         self.marks
             .keys()
             .chain(self.releases.keys())
+            .chain(self.formats.keys())
             .cloned()
             .collect()
     }

@@ -44,6 +44,7 @@ pub fn method(n: &str, params: Vec<Field>, results: Vec<Field>) -> Method {
         params,
         results,
         streaming: false,
+        unclear: false,
     }
 }
 pub fn interface(n: &str, methods: Vec<Method>) -> Interface {

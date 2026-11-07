@@ -18,3 +18,9 @@ move = "change"
 moveFolder = "change"
 subscribe = "read"
 supportReport = "read"
+
+[format]
+"TextEntry.document" = "text document JSON (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Texts.create.markdown" = "Markdown (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Texts.edit.document" = "text document JSON (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Texts.editIf.document" = "text document JSON (a specialist format, not a secret field; it can still hold what a person wrote)"

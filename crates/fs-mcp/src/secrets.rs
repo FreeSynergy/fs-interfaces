@@ -169,3 +169,32 @@ pub fn looks_free_form(name: &str, ty: Option<&TypeRef>) -> bool {
     };
     ty.is_some_and(has_data) || (ty.is_some_and(text) && has_word(name, FREE_FORM_WORDS))
 }
+
+/// Names of fields that carry a whole object or text in a specialist format (`JSContact`, `JSCalendar`, `GeoJSON`,
+/// AS2, Markdown, HTML, Sieve, notes and comments). Matched whole, case-insensitive, on `Text` fields only.
+const FREE_FORMAT_NAMES: &[&str] = &[
+    "jscontact",
+    "jscalendar",
+    "geojson",
+    "as2",
+    "document",
+    "details",
+    "markdown",
+    "notes",
+    "comment",
+    "comments",
+    "bodytext",
+    "bodyhtml",
+    "reasoning",
+    "sieve",
+    "html",
+];
+
+/// Is this a free-format content field? Such a field needs a written `[format]` mark; it is not a secret
+/// field, but it can hold whatever a person wrote into it.
+#[must_use]
+pub fn looks_free_format(name: &str, ty: Option<&TypeRef>) -> bool {
+    let text = matches!(ty, Some(TypeRef::Text))
+        || matches!(ty, Some(TypeRef::List(inner)) if **inner == TypeRef::Text);
+    text && FREE_FORMAT_NAMES.contains(&name.to_lowercase().as_str())
+}

@@ -22,3 +22,10 @@ capabilities = "read"
 items = "read"
 subscribe = "read"
 supportReport = "read"
+
+[format]
+"ImportReport.notes" = "notes text (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Items.create.jscalendar" = "JSCalendar (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Items.edit.jscalendar" = "JSCalendar (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Items.editIf.jscalendar" = "JSCalendar (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Task.jscalendar" = "JSCalendar (a specialist format, not a secret field; it can still hold what a person wrote)"

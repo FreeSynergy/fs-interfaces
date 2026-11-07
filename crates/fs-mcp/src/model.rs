@@ -113,6 +113,9 @@ pub struct Method {
     pub results: Vec<Field>,
     /// `-> stream`: a flow, not a call with an answer.
     pub streaming: bool,
+    /// The reader could not represent the parameters or results (a named structure with groups or a union):
+    /// the method is left out, never half-read.
+    pub unclear: bool,
 }
 
 /// An interface (a capability).

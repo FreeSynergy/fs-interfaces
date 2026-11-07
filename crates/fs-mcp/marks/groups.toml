@@ -44,3 +44,7 @@ setRightFlow = { risk = "excluded", reason = "may grant rights or an admin role;
 
 [Follows]
 "@interface" = { risk = "excluded", reason = "following delivers rights between groups: administration (ADR 0056)" }
+
+[format]
+"Group.as2" = "AS2 JSON (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Offer.as2" = "AS2 JSON (a specialist format, not a secret field; it can still hold what a person wrote)"

@@ -35,3 +35,11 @@ updateIf = "destructive"
 
 [Roles]
 "@interface" = { risk = "excluded", reason = "administration of rights, roles, memberships, sharing or storage: an agent is never admin (ADR 0056); reads here are left out too" }
+
+[format]
+"Person.jscontact" = "JSContact (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Persons.create.jscontact" = "JSContact (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Persons.update.jscontact" = "JSContact (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Persons.updateIf.jscontact" = "JSContact (a specialist format, not a secret field; it can still hold what a person wrote)"
+"RoleAssignment.details" = "details text (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Roles.assign.details" = "details text (a specialist format, not a secret field; it can still hold what a person wrote)"

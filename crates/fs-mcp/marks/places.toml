@@ -16,3 +16,7 @@ within = "read"
 [TileSource]
 "@interface" = { risk = "excluded", reason = "provider or mirror interface (identity mirror, storage, tiles, hub protocol), not a capability of a person (ADR 0045, 0047, 0056)" }
 
+[format]
+"Place.geojson" = "GeoJSON (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Places.create.geojson" = "GeoJSON (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Places.update.geojson" = "GeoJSON (a specialist format, not a secret field; it can still hold what a person wrote)"

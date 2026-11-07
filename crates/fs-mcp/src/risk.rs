@@ -88,6 +88,10 @@ pub trait RiskSource {
     /// (for example a reaction key). Returns the reason. Without it the generator excludes the tool.
     fn release(&self, target: &Target) -> Option<String>;
 
+    /// The specialist format of a free-format field ("jscontact", "markdown", ...), written down by a person:
+    /// "a format, not a secret field". Without it the generator keeps the tool out.
+    fn format(&self, target: &Target) -> Option<String>;
+
     /// Every target that carries a mark or release, to find marks that point at nothing.
     fn targets(&self) -> Vec<Target>;
 }

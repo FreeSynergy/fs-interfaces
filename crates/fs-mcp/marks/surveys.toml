@@ -58,3 +58,7 @@ supportReport = "read"
 
 [release]
 "InviteReport.already" = "a list of people invited before; the comment only says that no new token is sent"
+
+[format]
+"Decision.as2" = "AS2 JSON (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Survey.as2" = "AS2 JSON (a specialist format, not a secret field; it can still hold what a person wrote)"

@@ -28,6 +28,9 @@ pub struct Tool {
     pub handle_of: Option<String>,
     /// True if no mark was found.
     pub unmarked: bool,
+    /// Free-format fields (`path`, `format`) the tool can carry: they can hold what a person wrote, secrets
+    /// included. Protection is the engine's alone.
+    pub free_content: Vec<(String, String)>,
 }
 
 impl Tool {
@@ -49,6 +52,7 @@ impl Tool {
                 "unmarked": self.unmarked,
                 "source": self.source.as_str(),
                 "handleOf": self.handle_of,
+                "freeContent": self.free_content.iter().map(|(f, k)| json!({"field": f, "format": k})).collect::<Vec<_>>(),
             }},
         })
     }

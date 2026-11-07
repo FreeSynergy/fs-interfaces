@@ -54,17 +54,16 @@ fn a_union_parameter_is_screened_as_a_whole_before_it_is_split() {
         ],
     );
     let mut marks = FakeMarks::default();
-    for (o, i, k) in [
-        ("Choice", "plain", 1),
-        ("Choice", "hashed", 1),
-        ("Outer.ToolCallDecision", "accept", 1),
-        ("Outer.ToolCallDecision", "reject", 1),
-        ("SecretChoice", "a", 1),
-        ("SecretChoice", "b", 1),
-        ("Plain", "x", 1),
-        ("Plain", "y", 1),
+    for (o, i) in [
+        ("Choice", "plain"),
+        ("Choice", "hashed"),
+        ("Outer.ToolCallDecision", "accept"),
+        ("Outer.ToolCallDecision", "reject"),
+        ("SecretChoice", "a"),
+        ("SecretChoice", "b"),
+        ("Plain", "x"),
+        ("Plain", "y"),
     ] {
-        let _ = k;
         marks.put(o, i, RiskClass::Read);
     }
     let out = run(&c, &marks);

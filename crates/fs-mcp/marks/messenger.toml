@@ -53,7 +53,7 @@ supportReport = "read"
 
 [Rules]
 list = "read"
-set = "acts-in-name"
+set = { risk = "excluded", reason = "a Sieve script can forward all mail silently: acting in the person's name without a trace" }
 
 [Search]
 query = "read"
@@ -68,3 +68,10 @@ query = "read"
 "ToolCall.argumentsDigest" = "a digest the engine computes over caller, tool name and arguments; it carries no argument text (messenger.capnp)"
 "MessageAction.react" = "the comment says reaction key: an emoji, not key material"
 "Conversation.act.react" = "the comment says reaction key: an emoji, not key material"
+
+[format]
+"Message.bodyHtml" = "HTML (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Message.bodyText" = "message text (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Message.reasoning" = "agent reasoning text (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Rules.list.sieve" = "Sieve script (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Rules.set.sieve" = "Sieve script (a specialist format, not a secret field; it can still hold what a person wrote)"

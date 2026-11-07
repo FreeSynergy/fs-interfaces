@@ -55,3 +55,6 @@ needs = "read"
 reservations = "read"
 subscribe = "read"
 supportReport = "read"
+
+[format]
+"Resource.as2" = "AS2 JSON (a specialist format, not a secret field; it can still hold what a person wrote)"

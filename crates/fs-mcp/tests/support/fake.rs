@@ -12,6 +12,7 @@ use super::FILE;
 pub struct FakeMarks {
     pub marks: HashMap<Target, Mark>,
     pub releases: HashMap<Target, String>,
+    pub formats: HashMap<Target, String>,
 }
 
 impl FakeMarks {
@@ -67,6 +68,9 @@ impl RiskSource for FakeMarks {
     }
     fn release(&self, t: &Target) -> Option<String> {
         self.releases.get(t).cloned()
+    }
+    fn format(&self, t: &Target) -> Option<String> {
+        self.formats.get(t).cloned()
     }
     fn targets(&self) -> Vec<Target> {
         self.marks

@@ -110,26 +110,32 @@ fn read_struct(t: &Tables<'_>, id: u64, name: &str, c: &mut Contract) -> Result<
     Ok(())
 }
 
-fn params(t: &Tables<'_>, id: u64) -> Result<(Vec<Field>, bool), Error> {
+/// Parameters or results of a method. `unclear` is set when the list is a named structure (`m @0 Foo -> Bar`)
+/// holding a group or a union: those are not read here, so the method is left out.
+fn params(t: &Tables<'_>, id: u64) -> Result<(Vec<Field>, bool, bool), Error> {
     let Some(node) = t.nodes.get(&id).copied() else {
-        return Ok((vec![], false));
+        return Ok((vec![], false, false));
     };
     let streaming = text(node.get_display_name()?)?.ends_with("StreamResult");
     let node::Which::Struct(s) = node.which()? else {
-        return Ok((vec![], false));
+        return Ok((vec![], false, false));
     };
+    let named = t.names.contains_key(&id);
     let mut out = Vec::new();
+    let mut unclear = false;
     for (ix, f) in s.get_fields()?.iter().enumerate() {
-        if let field::Which::Slot(slot) = f.which()? {
-            out.push(Field {
+        unclear |= named && f.get_discriminant_value() != NO_DISCRIMINANT;
+        match f.which()? {
+            field::Which::Slot(slot) => out.push(Field {
                 name: text(f.get_name()?)?,
                 doc: t.member_doc(id, ix),
                 ty: map(t, slot.get_type()?)?,
                 in_union: false,
-            });
+            }),
+            field::Which::Group(_) => unclear = true,
         }
     }
-    Ok((out, streaming))
+    Ok((out, streaming, unclear))
 }
 
 fn read_method(
@@ -138,22 +144,15 @@ fn read_method(
     ix: usize,
     m: capnp::schema_capnp::method::Reader<'_>,
 ) -> Result<Method, Error> {
-    let (params, _) = params(t, m.get_param_struct_type())?;
-    let (results, streaming) = params_of(t, m.get_result_struct_type())?;
+    let (ps, _, unclear_in) = params(t, m.get_param_struct_type())?;
+    let (results, streaming, unclear_out) = params(t, m.get_result_struct_type())?;
+    let results = if streaming { vec![] } else { results };
     Ok(Method {
         name: text(m.get_name()?)?,
         doc: t.member_doc(iface, ix),
-        params,
+        params: ps,
         results,
         streaming,
-    })
-}
-
-fn params_of(t: &Tables<'_>, id: u64) -> Result<(Vec<Field>, bool), Error> {
-    let (fields, streaming) = params(t, id)?;
-    Ok(if streaming {
-        (vec![], true)
-    } else {
-        (fields, false)
+        unclear: unclear_in || unclear_out,
     })
 }
