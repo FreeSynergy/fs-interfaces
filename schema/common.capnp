@@ -1,7 +1,7 @@
 # FreeSynergy common contract types — DRAFT 0.2 (2026-11-06)
 #
 # STATUS: DRAFT (ADR 0045: draft -> tested by >= 2 independent consumers -> 1.0 -> only version jumps).
-# Owner program: fs-store (envelope, activity log; proposed in ADR 0050) - shared types for all topics.
+# Owner program: fs-objects (envelope, activity log; proposed in ADR 0050) - shared types for all topics.
 # Consumers: fs-tasks, fs-hub, fs-messenger (contract draft), fs-calendar.
 #
 # Shared by every program contract (ADR 0021). Evolution rules: only append, never renumber.

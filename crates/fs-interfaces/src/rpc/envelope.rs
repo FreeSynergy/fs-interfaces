@@ -1,9 +1,9 @@
 //! The typed object envelope on the wire.
 //!
-//! Pattern: Adapter — `fs_store::Envelope` <-> `Envelope` in `common.capnp`. Empty text and an absent
+//! Pattern: Adapter — `fs_objects::Envelope` <-> `Envelope` in `common.capnp`. Empty text and an absent
 //! timestamp mean "none".
 
-use fs_store::Envelope;
+use fs_objects::Envelope;
 
 use super::ids::{from_millis, read_object_id, to_millis, write_object_id};
 use crate::common_capnp::envelope as wire;
