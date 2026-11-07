@@ -19,7 +19,7 @@ fn an_interface_taken_as_a_parameter_is_no_root() {
             ),
             interface(
                 "Watcher",
-                vec![method("changed", vec![field("note", text())], vec![])],
+                vec![method("changed", vec![field("label", text())], vec![])],
             ),
         ],
         vec![],
@@ -101,4 +101,74 @@ fn a_format_mark_does_not_lift_a_secret_name() {
         .generate(&c)
         .unwrap();
     assert!(!has_tool(&out, "Root", "save"));
+}
+
+#[test]
+fn the_further_free_names_need_a_format_mark_too() {
+    for name in [
+        "note",
+        "text",
+        "preview",
+        "summary",
+        "detail",
+        "result",
+        "value",
+        "body",
+        "content",
+        "message",
+        "description",
+        "memo",
+        "template",
+        "script",
+    ] {
+        let c = contract(
+            vec![interface(
+                "Root",
+                vec![method("save", vec![field(name, text())], vec![])],
+            )],
+            vec![],
+        );
+        let plain = MarkFiles::from_sources(&[(FILE, "[Root]\nsave = \"change\"\n")]).unwrap();
+        let out = Generator::new(&plain, Blocklist::standard())
+            .generate(&c)
+            .unwrap();
+        assert!(!has_tool(&out, "Root", "save"), "{name} slipped through");
+    }
+}
+
+#[test]
+fn an_events_resource_lists_the_free_fields_of_its_events() {
+    let mut ev = method("event", vec![field("note", text())], vec![]);
+    ev.streaming = true;
+    let c = contract(
+        vec![
+            interface(
+                "Root",
+                vec![method(
+                    "subscribe",
+                    vec![field("l", iface("FooListener"))],
+                    vec![],
+                )],
+            ),
+            interface("FooListener", vec![ev]),
+        ],
+        vec![],
+    );
+    let marks = MarkFiles::from_sources(&[(
+        FILE,
+        "[Root]\nsubscribe = \"read\"\n[format]\n\"FooListener.event.note\" = \"plain text\"\n",
+    )])
+    .unwrap();
+    let out = Generator::new(&marks, Blocklist::standard())
+        .generate(&c)
+        .unwrap();
+    assert_eq!(out.resources.len(), 1);
+    assert_eq!(
+        out.resources[0].free_content,
+        vec![("FooListener.event.note".to_owned(), "plain text".to_owned())]
+    );
+    assert_eq!(
+        out.resources[0].to_json()["_meta"]["net.freesynergy/mcp"]["freeContent"][0]["field"],
+        "FooListener.event.note"
+    );
 }

@@ -88,7 +88,7 @@ Strict parsing (unknown class, key or shape is an error). Tests: every method/me
 
 ## State
 
-Done: model, traits, schema reader, generator, mark files for all 15 schemas, example `list_tools`. 289 tools, 12 event
+Done: model, traits, schema reader, generator, mark files for all 15 schemas, example `list_tools`. 289 tools (141 with free-format fields), 12 event
 resource templates and 1 blob template from the 15 schemas at this commit.
 Not done (on purpose): any server, bridge, call or handle store; the annotation file `schema/mcp.capnp` and the import of it
 in the other schemas (new contract, needs the consultation rule, other threads are editing `messenger.capnp`); tool grouping
@@ -125,22 +125,22 @@ Left out because not released: `Upload.write`, `Draft.attach`, `Boards.import`, 
 * **A comment above a `struct` or `interface` almost never arrives** (it is attached to the previous declaration), so the
   check of struct and interface comments rarely fires. Trailing comments on a line are read reliably.
 * **`extends` is not read.** An interface that extends another does not inherit the other's marks or screening.
-* A root is an interface that no result, struct field or listener event hands out; the rest need a `handle` argument.
+* A root is an interface that no method takes as a parameter and no result, struct field or listener event hands out; every other interface needs a `handle` argument.
 * **Boundary (named, by the strategy): these tools can carry secrets that somebody wrote into specialist text (notes,
   links, URLs with passcodes, mail text). The protection lies with the engine alone: without authority, nothing;
   anything marked sensitive asks every time.** The list is machine-readable: `_meta.freeContent` of every tool
-  (`{field, format}`) and `examples/list_free_content.rs`. Every free field has a `[format]` mark in `marks/*.toml`
-  ("a format, not a secret field"); a free field without one keeps its tool out, and a test fails if any field of the
-  contracts named jscontact, jscalendar, geojson, as2, document, details, markdown, notes, comment, bodyText,
-  bodyHtml, reasoning, sieve or html lacks it. **94 tools carry such a field** (89 earlier, plus bodyText/bodyHtml/
-  reasoning, sieve, markdown, notes, comment). Links and virtual locations of a JSCalendar event and notes and links of a
-  JSContact card live inside those JSON fields. Event resources carry such fields too (messages) and are not counted.
-  Not covered by name: `preview`, `text` (TextChunk, import/export), `Extension.value`.
+  (`{field, format}`, on event resources too) and `examples/list_free_content.rs`. **The rule is by name, on `Text`
+  fields:** `jscontact jscalendar geojson as2 document details markdown notes comment comments bodyText bodyHtml
+  reasoning sieve html note text preview summary detail result value body content message description memo template
+  script`. A field with such a name needs a `[format]` mark (`Owner.field` or `Iface.method.param`) in `marks/*.toml`
+  saying what it holds ("a format, not a secret field"); without it its tool or resource stays out, and a test fails
+  if any field of the contracts with such a name lacks the mark. All 73 fields in today's contracts are marked
+  (none had to stay out). **141 tools and 11 event resources carry at least one.** Links and virtual locations of a
+  JSCalendar event and notes and links of a JSContact card live inside the JSON fields.
+  **Exceptions, complete:** a free field under another name (`title`, `name`, `label`, `address`, `url`, `subject`,
+  `answers`, `Extension.key`, ...), a `Text` that is really a document under a neutral name, and `Data` (which is
+  judged as free-form content, not as a format) are not found by this rule.
 * `Rules.set` is excluded: a Sieve script can forward all mail silently. `Rules.list` stays (read).
-* **Free content is judged by name only.** Fields named `jscontact`, `jscalendar`, `geojson`, `as2`, `document`, `details`
-  carry whole objects and are not stopped (they can hold anything the person wrote). 89 of the tools carry one
-  (events 9, groups 5, people 16, places 6, resources 5, surveys 21, tasks 10, texts 10, whiteboard 7); whether they stay
-  offered is for the strategy to decide. Every one still needs a release by the person (`needsRelease`).
 * `Target.url` is **not** released: an RTMP key often sits in the path (`rtmp://host/live2/<key>`) and the contract cannot
   tell application from application plus key. `Streams.targets`, `editTarget`, `setTargetEnabled` and the streaming events
   resource therefore stay out. `Stream.ingestUrl` is released (made by the program, key kept apart as `publisherKey`).

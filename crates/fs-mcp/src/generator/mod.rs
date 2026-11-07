@@ -4,6 +4,7 @@
 
 mod api;
 mod facts;
+mod free;
 mod resources;
 mod run;
 mod screen;

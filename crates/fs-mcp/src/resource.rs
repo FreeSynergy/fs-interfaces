@@ -33,6 +33,8 @@ pub struct ResourceTemplate {
     pub source: Target,
     /// No mark was found.
     pub unmarked: bool,
+    /// Free-format fields of the events or bytes (`path`, `format`); see [`crate::Tool::free_content`].
+    pub free_content: Vec<(String, String)>,
 }
 
 impl ResourceTemplate {
@@ -49,6 +51,7 @@ impl ResourceTemplate {
                 "askAlways": self.risk.asks_always(),
                 "unmarked": self.unmarked,
                 "source": self.source.as_str(),
+                "freeContent": self.free_content.iter().map(|(f, k)| json!({"field": f, "format": k})).collect::<Vec<_>>(),
                 "kind": match self.kind { ResourceKind::Events => "events", ResourceKind::Blob => "blob" },
             }},
         })

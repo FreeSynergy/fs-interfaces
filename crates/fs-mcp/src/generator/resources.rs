@@ -25,6 +25,11 @@ impl Run<'_> {
                     return Some(why);
                 }
                 for lm in &def.methods {
+                    if lm.unclear {
+                        return Some(Why::Unclear {
+                            path: format!("{}/{}.{}", n.file, n.name, lm.name),
+                        });
+                    }
                     let fields: Vec<&Field> = lm.params.iter().collect();
                     if let Some(why) = screen.fields(&n.file, &n.name, &lm.name, &fields) {
                         return Some(why);
@@ -33,6 +38,24 @@ impl Run<'_> {
             }
         }
         None
+    }
+
+    /// The free-format fields that the listener's events carry.
+    fn listener_free(&self, m: &Method) -> Vec<(String, String)> {
+        let screen = self.screen();
+        let mut out = Vec::new();
+        for n in self
+            .facts
+            .callback_params(m)
+            .iter()
+            .flat_map(|p| p.ty.interfaces())
+        {
+            for lm in self.index.interface_def(n).iter().flat_map(|d| &d.methods) {
+                let fields: Vec<&Field> = lm.params.iter().collect();
+                out.extend(screen.free_fields(&n.file, &n.name, &lm.name, &fields));
+            }
+        }
+        out
     }
 
     /// A `subscribe`-like method (it takes a listener): its events are a resource.
@@ -55,9 +78,12 @@ impl Run<'_> {
         if let Some(why) = self.listener_problem(m) {
             return self.leave(target, why);
         }
-        let Some(verdict) = self.vet(file, iface, m, &v) else {
+        let Some(mut verdict) = self.vet(file, iface, m, &v) else {
             return;
         };
+        verdict.free.extend(self.listener_free(m));
+        verdict.free.sort();
+        verdict.free.dedup();
         if verdict.class != crate::RiskClass::Read {
             return self.leave(
                 target,
@@ -124,6 +150,7 @@ impl Run<'_> {
             risk: v.class,
             source: target.clone(),
             unmarked: v.mark.is_none(),
+            free_content: v.free.clone(),
         });
     }
 }

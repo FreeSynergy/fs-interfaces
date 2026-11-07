@@ -58,3 +58,8 @@ supportReport = "read"
 
 [format]
 "Resource.as2" = "AS2 JSON (a specialist format, not a secret field; it can still hold what a person wrote)"
+"Capacity.note" = "note text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"Needs.offer.note" = "note text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"Offer.note" = "note text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"Reservation.note" = "note text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"Reservations.request.note" = "note text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"

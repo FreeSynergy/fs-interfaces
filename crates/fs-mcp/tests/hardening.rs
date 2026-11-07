@@ -10,7 +10,7 @@ use support::{
 };
 
 fn events_contract(extra: Vec<fs_mcp::Field>) -> Vec<Contract> {
-    let mut state = vec![field("message", TypeRef::Text)];
+    let mut state = vec![field("id", TypeRef::Text)];
     state.extend(extra);
     let mut ev = method("event", vec![field("event", st("Event"))], vec![]);
     ev.streaming = true;

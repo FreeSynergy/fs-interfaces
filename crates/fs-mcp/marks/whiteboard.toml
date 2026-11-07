@@ -44,3 +44,6 @@ supportReport = "read"
 
 [format]
 "Board.as2" = "AS2 JSON (a specialist format, not a secret field; it can still hold what a person wrote)"
+"BoardEditor.setText.text" = "display text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"Element.note" = "note text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"Element.text" = "display text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"

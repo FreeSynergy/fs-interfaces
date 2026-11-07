@@ -120,7 +120,7 @@ fn params(t: &Tables<'_>, id: u64) -> Result<(Vec<Field>, bool, bool), Error> {
     let node::Which::Struct(s) = node.which()? else {
         return Ok((vec![], false, false));
     };
-    let named = t.names.contains_key(&id);
+    let named = t.names.contains_key(&id) || node.get_scope_id() != 0;
     let mut out = Vec::new();
     let mut unclear = false;
     for (ix, f) in s.get_fields()?.iter().enumerate() {

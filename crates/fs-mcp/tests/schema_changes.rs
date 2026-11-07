@@ -37,7 +37,7 @@ impl Drop for Edited {
 fn a_new_interface_without_marks_is_listed_and_counts_as_unknown() {
     let e = Edited::new(
         "new-interface",
-        "interface Extra { wipe @0 () -> (); look @1 () -> (text :Text); }\ninterface Messenger2 { extra @0 () -> (extra :Extra); }",
+        "interface Extra { wipe @0 () -> (); look @1 () -> (label :Text); }\ninterface Messenger2 { extra @0 () -> (extra :Extra); }",
     );
     let contracts = CapnpcSource::new(&e.0).contracts().unwrap();
     let c = generate_with(&contracts, &marks(), Blocklist::standard());
@@ -164,5 +164,21 @@ fn named_parameter_structures_with_groups_or_unions_are_never_a_tool() {
             .iter()
             .all(|t| t.source != Target::item("messenger", "LabH", "a4")),
         "an excluded union member was not seen"
+    );
+}
+
+#[test]
+fn a_listener_method_with_an_unclear_event_makes_no_resource() {
+    let extra = "struct Ev { a @0 :Text; g :group { password @1 :Text; } }\n\
+        interface EvListener { changed @0 Ev -> stream; }\n\
+        interface Api { subscribe @0 (listener :EvListener) -> (subscription :C.Subscription); }";
+    let e = Edited::new("evlistener", extra);
+    let contracts = CapnpcSource::new(&e.0).contracts().unwrap();
+    let marked =
+        fs_mcp::MarkFiles::from_sources(&[("messenger", "[Api]\nsubscribe = \"read\"\n")]).unwrap();
+    let c = generate_with(&contracts, &marked, Blocklist::standard());
+    assert!(
+        c.resources.iter().all(|r| !r.uri_template.contains("Api")),
+        "an event with a group got through"
     );
 }

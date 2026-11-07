@@ -35,3 +35,9 @@ targets = "read"
 "Streams.status" = "the compiler attaches the comment of the next declaration here; it mentions rotateKey only in words"
 "Target.secure" = "a bool (rtmps or not); the comment only says that a key would travel readable on plain rtmp"
 "Target.note" = "the comment says: the last problem, with no key in it"
+
+[format]
+"CheckResult.note" = "note text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"Stream.note" = "note text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"Target.note" = "note text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"TargetStatus.note" = "note text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"

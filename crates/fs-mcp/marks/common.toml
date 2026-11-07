@@ -11,3 +11,7 @@ size = "read"
 "Problem.status" = "the compiler attaches the comment about the keys of extension members here; the field is an HTTP status"
 "Cursor" = "the compiler attaches the comment of the next declaration (an extension member with a key) to the Cursor; the Cursor holds a position"
 "Extension.key" = "the name of an RFC 9457 extension member, not key material"
+
+[format]
+"Extension.value" = "problem extension value (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"Problem.detail" = "problem detail (plain text, RFC 9457); a specialist or display format, not a secret field; it can still hold what a person wrote"
