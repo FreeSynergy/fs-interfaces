@@ -47,12 +47,19 @@ struct Task {
 # one page of tasks, ordered by due date (undated last)
 struct TaskPage { items @0 :List(Task); next @1 :Cursor; }
 
-# all members optional; unset (null / empty) = no restriction; combined with AND
+# all members optional; unset (null / empty / false) = no restriction; combined with AND.
+# The filter applies to `query` on every page: the cursor continues the same filtered, ordered list, so
+# the caller sends the same filter with each cursor (`list` takes no filter and returns everything).
+# "Open" = not finished: needs-action and in-process. completed, failed and cancelled are finished.
+# "Done" is `progress = "completed"`; `open` and `progress` are both applied (AND), so `open = true`
+# together with a finished `progress` matches nothing.
 struct TaskFilter {
   dueFrom  @0 :Timestamp;         # due at or after
   dueTo    @1 :Timestamp;         # due before (half-open range)
   progress @2 :Text;              # needs-action | in-process | completed | failed | cancelled
   label    @3 :Text;              # JSCalendar keyword
+  term     @4 :Text;              # substring of title and description; case-insensitive; empty = no restriction
+  open     @5 :Bool;              # true = only open tasks: progress needs-action or in-process (a task without progress counts as needs-action); false = no restriction
 }
 
 struct ImportReport {
