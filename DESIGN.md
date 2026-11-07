@@ -19,7 +19,7 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 
 ## State
 
-Version 0.35.0.
+Version 0.36.0.
 
 | Area | State |
 |---|---|
@@ -48,6 +48,7 @@ Version 0.35.0.
 | `whiteboard.capnp` (new, owner fs-whiteboard): boards, elements, merge per property, undo per editor | done, draft, provisional |
 | `messenger` draft 0.3: `Draft.setSubject`; `MessageSummary.arrival`, `undecrypted`, `signature`, `tooLarge`; `skipped` on both pages; `unknown` as ordinal 0 of `Kind`, `ToolCallState`, `DeliveryState`; revision rule stated in full | done, draft |
 | Contracts round 2 (draft, append only, strategy order): `texts` `revision` comment corrected (changes at every write, equality only), `LinkRow.title`/`internal`; `files` `pendingUploads` and `BlobBackend.scan` take a `Cursor` and answer `next`, `TrashReport.failedMissing` and the bound of `failed`, seven more problem types named (not-found, conflict, wrong-offset, invalid, encryption-required, stored-data-invalid, backend-failed); `revision` on `Event`, `Person`, `Task` and `events.Items.updateIf @9`, `people.Persons.updateIf @23`, `tasks.Items.editIf @12` (compare-and-set as `texts.editIf`, reason `conflict:`). `pendingUploads`/`scan` keep their ordinals and grow a parameter and a result field: on the wire not incompatible, but a 0.33 client gets only the first page from a 0.35 server (draft, no caller over RPC yet). The `failed` bound uses 24 bytes per id as a deliberate margin (a `Uuid` is 16 on the wire) | done, version 0.35.0 |
+| `people` `RoleDefinition` gains `type @8`, `broader @9`, `closeMatch @10`, `standardRefs @11` (SKOS roles, `roles.md`; append only, empty `type` = `skos:Concept`) | done, version 0.36.0 |
 | `files` gains `BlobInfo.modified`, `BlobBackend.has @14`, `sweepPending @15`; `commit` never replaces on a real-names backend | done |
 | `streaming.capnp` (new, owner fs-streaming): stage 1: streams, targets, keys as secrets, check, recording handed over | done, draft, provisional |
 | `rpc`: an item too large for any message no longer blocks what is behind it (`Problem::next`), error texts are cut at 64 KiB, `run_until_signal` waits for `run_to_end` work, `prepare_data_dir` answers the canonical path, `--instance` must be a domain | done, version 0.32.0 |

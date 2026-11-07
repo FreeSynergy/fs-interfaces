@@ -80,7 +80,7 @@ struct RoleField {
 enum RoleScope { personal @0; group @1; public @2; }
 
 struct RoleDefinition {
-  id          @0 :Text;
+  id          @0 :Text;                # full IRI: the file's base plus the short id
   names       @1 :List(Localized);
   description @2 :List(Localized);
   standard    @3 :Text;                # the standard it follows; empty = none (a gap)
@@ -88,6 +88,10 @@ struct RoleDefinition {
   owner       @5 :Text;                # the program responsible for it
   scope       @6 :RoleScope;
   cardKind    @7 :Text;                # cards with this role must have this kind; empty = any
+  type        @8 :Text;                # `org:Role` or `skos:Concept`; empty = `skos:Concept` (`org:Role` is a subclass of it, org 5.3.5)
+  broader     @9 :List(Text);          # full IRIs of more general roles (skos:broader); may point into another file
+  closeMatch  @10 :List(Text);         # full IRIs of the same idea elsewhere (skos:closeMatch); may point into another file
+  standardRefs @11 :List(Text);        # addresses of the standard's terms (rdfs:seeAlso)
 }
 
 struct RoleAssignment {
