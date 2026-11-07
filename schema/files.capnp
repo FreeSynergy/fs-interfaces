@@ -4,7 +4,7 @@
 # Consumers so far: none (0 of 2). No file frontends have been analysed yet
 # (docs/en/programs/apps/files/requirements.md): the target will get sharper before 1.0.
 #
-# What we know about a file is an object in fs-store; where its bytes are is a backend behind
+# What we know about a file is an object in fs-objects; where its bytes are is a backend behind
 # `BlobBackend`. Programs refer to a file by its id and read through `C.Blob`; they never see paths
 # or backends. Saving is not exporting (ADR 0046). Evolution rules: never renumber, only append.
 #
