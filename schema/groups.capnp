@@ -89,6 +89,7 @@ interface Groups {
   invitations   @3 () -> (invitations :Invitations);
   delegations   @4 () -> (delegations :Delegations);
   subscribe     @5 (listener :ChangeListener) -> (subscription :Subscription);   # group.subscribe
+  follows       @6 () -> (follows :Follows);                                     # follow.* (provisional)
 }
 
 interface Items {
@@ -186,3 +187,56 @@ struct ParentRequest {
 
 # NOTE (provisional): the report of a synchronisation (what was created, left out, unreadable, looped) is
 # not part of this contract; no method returns it yet. When a server exposes it, it appends it here.
+
+# ---- Following between independent groups (ADR 0056 "Einseitig folgen"; PROVISIONAL, the form is a proposal) ----
+# Not a tree and not nesting: no parents, no cycle rule. Who allows access DELIVERS (a repository turned
+# round); the receiver gets an offer (proposal: AS2 `Invite`), its server enters the source WITHOUT any
+# confirmation, and the receiver can remove it at any time. Mutual is allowed. Only the giver's own
+# rights go, never more than the giver holds (mayDo). The receiver may pass a delivery on only if the
+# source set `passOn`; the giver can revoke at any time. Nothing here authenticates `sender`: the
+# transport supplies it and the provider only checks that the offer's source lies at that origin.
+enum DeliveryState { active @0; revoked @1; }
+
+struct Delivery {
+  id        @0 :Uuid;
+  group     @1 :Uuid;              # the giving group on this server
+  recipient @2 :Text;              # IRI of the receiving group (https://<instance>/groups/<id>)
+  rights    @3 :List(Right);       # never manage (provisional)
+  passOn    @4 :Bool;              # the receiver may pass it on (not again from the relayed copy)
+  via       @5 :List(Uuid);        # empty: own right; one entry: relayed from this source on this server
+  state     @6 :DeliveryState;
+}
+
+# What reaches the receiver (the AS2 `Invite` content, proposal): enough to enter the source.
+struct Offer {
+  delivery  @0 :Uuid;              # id of the delivery at the giver
+  source    @1 :Text;              # IRI of the giving group
+  recipient @2 :Text;              # IRI of the receiving group
+  rights    @3 :List(Right);
+  passOn    @4 :Bool;
+  as2       @5 :Text;              # the `Invite` as JSON
+}
+
+enum SourceState { active @0; withdrawn @1; }
+
+# A source the receiving group has entered (the receiver's list of repositories, turned round).
+struct Source {
+  id     @0 :Uuid;
+  group  @1 :Uuid;                 # the receiving group on this server
+  offer  @2 :Offer;
+  sender @3 :Text;                 # origin the transport named when the offer arrived
+  state  @4 :SourceState;
+}
+
+interface Follows {
+  # giver side
+  deliver    @0 (group :Uuid, recipient :Text, rights :List(Right), passOn :Bool) -> (delivery :Delivery, offer :Offer);  # follow.deliver
+  passOn     @1 (source :Uuid, recipient :Text, rights :List(Right)) -> (delivery :Delivery, offer :Offer);              # follow.deliver
+  revoke     @2 (delivery :Uuid) -> ();                                         # follow.deliver
+  deliveries @3 (group :Uuid) -> (items :List(Delivery));                       # follow.read
+  # receiver side
+  receive    @4 (sender :Text, offer :Offer) -> (source :Source);               # follow.receive: no confirmation
+  withdraw   @5 (sender :Text, source :Text, delivery :Uuid) -> (source :Source);  # follow.receive: the giver revoked
+  sources    @6 (group :Uuid) -> (items :List(Source));                         # follow.read
+  removeSource @7 (id :Uuid) -> ();                                             # follow.receive: the receiver ends it
+}
