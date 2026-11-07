@@ -92,7 +92,7 @@ Done: model, traits, schema reader, generator, mark files for all 15 schemas, ex
 resource templates and 1 blob template from the 15 schemas at this commit.
 Not done (on purpose): any server, bridge, call or handle store; the annotation file `schema/mcp.capnp` and the import of it
 in the other schemas (new contract, needs the consultation rule, other threads are editing `messenger.capnp`); tool grouping
-(problem 12, the messenger alone yields about 36 tools, all schemas 289); the output wrapper that keeps hostile message text apart (problem 11).
+(problem 12, the messenger alone yields 35 tools, all schemas 289); the output wrapper that keeps hostile message text apart (problem 11).
 
 ## Releases written (each judged by me, to be confirmed)
 
@@ -110,13 +110,14 @@ Left out because not released: `Upload.write`, `Draft.attach`, `Boards.import`, 
   declaration to that declaration. A comment written *above* the next declaration without a blank line therefore lands on the
   previous one (`common.capnp`: the `Cursor` comment is on `Timestamp`). Descriptions can be a neighbour's. Remedy: blank line
   before a comment block that belongs to the next declaration, or trailing comments.
-* **Secrets that carry no secret word** (`proof`, `Data` blobs, a `Text` named `value`, free-form `config` or `json` text)
-  are not found; `Backends.add(config)` and `Roles.loadConfig(json)` are excluded by hand for that reason.
+* **Secrets that carry no secret word** (`proof`, `Data` blobs, free-form `config` or `json` text) are found only
+  through the free-form rule (out unless released); `Backends.add(config)` and `Roles.loadConfig(json)` are excluded by hand for that reason.
 * **Admin** has no marker in the contracts; the exclusions are a judgement by interface.
 * **Limits of the screen:** it follows structs, lists and groups; a capability (interface) is only a handle and is not
   entered, so what a capability returns is judged on its own methods. Named structures used as parameters are read
   through the type index; a structure in a file that was not compiled is "unclear" and excluded. The word lists
-  find names, not meaning: a secret under a harmless name (`value`, `text`) is not found.
+  find names, not meaning: a secret under a harmless name is not found. Names such as `value` and `text` fall under
+  the format rule: the `[format]` mark lets them through on purpose, it does not prove them free of secrets.
 * **Capability ids** exist only in comments and several methods share one (`blob.write`), so a 1:1 name is not derivable;
   only `message.send` is given.
 
@@ -125,7 +126,8 @@ Left out because not released: `Upload.write`, `Draft.attach`, `Boards.import`, 
 * **A comment above a `struct` or `interface` almost never arrives** (it is attached to the previous declaration), so the
   check of struct and interface comments rarely fires. Trailing comments on a line are read reliably.
 * **`extends` is not read.** An interface that extends another does not inherit the other's marks or screening.
-* A root is an interface that no method takes as a parameter and no result, struct field or listener event hands out; every other interface needs a `handle` argument.
+* A root is an interface that no method takes as a parameter and no result, struct field or listener event hands out;
+  every other interface needs a `handle` argument.
 * **Boundary (named, by the strategy): these tools can carry secrets that somebody wrote into specialist text (notes,
   links, URLs with passcodes, mail text). The protection lies with the engine alone: without authority, nothing;
   anything marked sensitive asks every time.** The list is machine-readable: `_meta.freeContent` of every tool
@@ -137,6 +139,14 @@ Left out because not released: `Upload.write`, `Draft.attach`, `Boards.import`, 
   if any field of the contracts with such a name lacks the mark. All 73 fields in today's contracts are marked
   (none had to stay out). **141 tools and 11 event resources carry at least one.** Links and virtual locations of a
   JSCalendar event and notes and links of a JSContact card live inside the JSON fields.
+  **Named explicitly, because they can carry credentials:**
+  * `ToolCall.detail` (messenger.capnp: "full command, paths, content", the **input** of a foreign tool) and
+    `ToolCall.result` ("what came back", its **output**): inputs and outputs of other tools, which may hold access data.
+    Reachable through `messenger.conversation.message` and the event resource `messenger.messenger.subscribe`.
+  * The whole exports `*.exportText.text` and `Items.exportIcs.text`: a whole address book, calendar or text at once.
+  * `Draft.setText.text` (message text), `Extension.value` (in 19 tools), and `Capacity.note`, `Offer.note`,
+    `Reservation.note` (physical access codes are written there).
+  The protection lies with the engine alone.
   **Exceptions, complete:** a free field under another name (`title`, `name`, `label`, `address`, `url`, `subject`,
   `answers`, `Extension.key`, ...), a `Text` that is really a document under a neutral name, and `Data` (which is
   judged as free-form content, not as a format) are not found by this rule.
