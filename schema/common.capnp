@@ -17,11 +17,17 @@ struct Timestamp { unixMillis @0 :Int64; }
 # `rpc::Problem::next`, read by `Problem::from_error`; none if nothing is behind it). A consumer that hands
 # it back skips that item and reads on. A smaller item above the usual page size comes alone on its page.
 struct Cursor    { opaque @0 :Data; }
+# One RFC 9457 extension member. A key may repeat (a list, e.g. several `issue`).
+struct Extension { key @0 :Text; value @1 :Text; }
 struct Problem   {                                          # RFC 9457 shape
   type   @0 :Text;
   title  @1 :Text;
   detail @2 :Text;
   status @3 :UInt16;
+  # Documentation of the shape: in Rust the extensions travel in the error text like `next`
+  # (`rpc::Problem::extensions`, `Problem::with_ext`), at most 64 entries, keys of at most 64 bytes,
+  # all texts together at most 64 KiB; `Problem::write` and `read` fill and read this member too.
+  extensions @4 :List(Extension);
 }
 
 interface Blob {                                            # bytes behind a capability (originals, attachments)

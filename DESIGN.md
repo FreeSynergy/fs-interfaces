@@ -12,14 +12,14 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 | `src/*_capnp.rs` (generated, committed) | Adapter | wire form; one module per schema, no generator needed at build time |
 | `src/provider.rs` `Unsupported` | Null Object | the explicit "not possible" (RFC 9457 `Problem`, status 501) |
 | `src/provider.rs` `Capabilities` | Value object | a provider's report of what it can do (`Support` per capability) |
-| `src/rpc/*` (feature `rpc`) | Adapter, Factory, Observer | the shared server and client side of every contract: socket, RPC system, envelope, RFC 9457 problems as RPC errors, pages, change feed |
+| `src/rpc/*` (feature `rpc`) | Adapter, Factory, Observer; `rpc/problem`: Value object (`Problem`, extensions), Adapter (`wire`: error text), `keys`: `Pattern: none`, constants | the shared server and client side of every contract: socket, RPC system, envelope, RFC 9457 problems as RPC errors, pages, change feed |
 | `src/rpc/client/*` (feature `rpc`) | Command (+ Strategy `Remote`, RAII guard `Reply`); `Timeouts`/`Fault`: `Pattern: none` in the file, plain data types; `problems`: `Pattern: none`, free helper functions | the client half every program's client shares: the thread that owns the `!Send` connection, fed by commands from any thread (the command is a boxed closure, not an enum with `apply`: the calls differ per contract); the guard turns a command that ends without an answer into `Fault::Interrupted` instead of "connection gone"; deadlines as configuration; `Problem` read back typed. Mapping to a program's own `Error` and its problem type URIs stay in that program's client |
 | `crates/regenerate` | Pipeline | `capnp-compiler` -> `CodeGeneratorRequest` -> `capnpc` -> files |
 | `tests/generated_matches_official.rs` | Oracle test | official compiler and ours must produce the committed code |
 
 ## State
 
-Version 0.36.0.
+Version 0.39.0.
 
 | Area | State |
 |---|---|
@@ -49,6 +49,7 @@ Version 0.36.0.
 | `messenger` draft 0.3: `Draft.setSubject`; `MessageSummary.arrival`, `undecrypted`, `signature`, `tooLarge`; `skipped` on both pages; `unknown` as ordinal 0 of `Kind`, `ToolCallState`, `DeliveryState`; revision rule stated in full | done, draft |
 | Contracts round 2 (draft, append only, strategy order): `texts` `revision` comment corrected (changes at every write, equality only), `LinkRow.title`/`internal`; `files` `pendingUploads` and `BlobBackend.scan` take a `Cursor` and answer `next`, `TrashReport.failedMissing` and the bound of `failed`, seven more problem types named (not-found, conflict, wrong-offset, invalid, encryption-required, stored-data-invalid, backend-failed); `revision` on `Event`, `Person`, `Task` and `events.Items.updateIf @9`, `people.Persons.updateIf @23`, `tasks.Items.editIf @12` (compare-and-set as `texts.editIf`, reason `conflict:`). `pendingUploads`/`scan` keep their ordinals and grow a parameter and a result field: on the wire not incompatible, but a 0.33 client gets only the first page from a 0.35 server (draft, no caller over RPC yet). The `failed` bound uses 24 bytes per id as a deliberate margin (a `Uuid` is 16 on the wire) | done, version 0.35.0 |
 | `people` `RoleDefinition` gains `type @8`, `broader @9`, `closeMatch @10`, `standardRefs @11` (SKOS roles, `roles.md`; append only, empty `type` = `skos:Concept`) | done, version 0.36.0 |
+| `rpc` `Problem` gains `extensions` (RFC 9457 extension members, typed: `with_ext`, `with_ext_u64`, `ext`, `ext_u64`, `ext_all`; at most 64 entries, keys of 64 bytes, all texts 64 KiB, an entry that does not fit is left out whole, never cut; in the error text as `ext<RS>key<RS>value` fields after `next`, a 0.36 reader loses only the cursor of a text that has both, so the `too-large` of a page with a cursor carries none); standard keys `id`, `limit`, `size`, `issue`, `kind` in `rpc::problem_keys`; `too_large_by` and the page checks fill `size`/`limit`; `common.capnp` gains `Extension` and `Problem.extensions @4` (`Problem::write`/`read` fill and read it; the error text carries it as well); `rpc/problem` split into `value`, `wire`, `ext`, `keys`, `answers` | done, version 0.39.0 |
 | `files` gains `BlobInfo.modified`, `BlobBackend.has @14`, `sweepPending @15`; `commit` never replaces on a real-names backend | done |
 | `streaming.capnp` (new, owner fs-streaming): stage 1: streams, targets, keys as secrets, check, recording handed over | done, draft, provisional |
 | `rpc`: an item too large for any message no longer blocks what is behind it (`Problem::next`), error texts are cut at 64 KiB, `run_until_signal` waits for `run_to_end` work, `prepare_data_dir` answers the canonical path, `--instance` must be a domain | done, version 0.32.0 |
@@ -57,7 +58,7 @@ Version 0.36.0.
 | Rust helpers `Unsupported`, `Capabilities` with wire round trips | done |
 | `rpc` (feature): socket with lock file, connection, problems, envelope, pages, feed | done, draft |
 | `rpc::client` (feature): `Worker<R: Remote>` (thread, current-thread runtime + `LocalSet`, command queue, `Timeouts` 5 s connect / 30 s call, drop cuts the connection first (commands under way get `Disconnected`, a write may be left half done), then joins; a command that waits on nothing from the connection keeps the drop waiting up to the call deadline; on the connection thread itself nothing is joined), reply guard (`Fault::Interrupted`), `Fault` naming the deadline, `problems` (`Failure::of`, `local_type`, `first_number`, `object_id_in`, `without_store_prefix`, `unsupported_of`); taken from the people and tasks clients, which map to their own `Error` and problem type URIs themselves | done, draft; tests in `tests/rpc_client*.rs` against a real server |
-| Tests | 2 oracle, 3 provider, 40 `rpc`, 19 `rpc::client` (+2 unit), 1 doc test |
+| Tests | 2 oracle, 3 provider, 40 `rpc` (+21 problem extensions and text format), 19 `rpc::client` (+2 unit), 1 doc test |
 | Interfaces at 1.0 | none; the draft -> 1.0 gate needs two independent consumers per interface |
 
 ## Decisions

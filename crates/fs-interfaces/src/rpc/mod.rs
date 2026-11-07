@@ -45,8 +45,9 @@ pub use page::{
     check_answer, check_intake, clamp_read,
 };
 pub use problem::{
-    INVALID_REQUEST, MAX_DETAIL_BYTES, Problem, TOO_LARGE, capped, failed, invalid_request,
-    is_unimplemented, too_large, unsupported,
+    INVALID_REQUEST, MAX_DETAIL_BYTES, MAX_EXTENSIONS, MAX_KEY_BYTES, Problem, TOO_LARGE, capped,
+    failed, invalid_request, is_unimplemented, keys as problem_keys, too_large, too_large_by,
+    unsupported,
 };
 pub use serve::{
     Connection, ReadLimits, connect, connect_with, run_until_signal, serve, serve_with,

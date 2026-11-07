@@ -7,7 +7,7 @@
 //!
 //! Pattern: Iterator (external, resumable through the cursor).
 
-use super::problem::{Problem, TOO_LARGE, invalid_request, too_large};
+use super::problem::{Problem, TOO_LARGE, invalid_request, too_large_by};
 
 /// Page size of the servers.
 pub const DEFAULT_PAGE_SIZE: usize = 100;
@@ -32,9 +32,11 @@ const CURSOR_V1: u8 = 1;
 /// `len` is above [`MAX_INTAKE_BYTES`].
 pub fn check_intake(len: usize) -> capnp::Result<()> {
     if len > MAX_INTAKE_BYTES {
-        return Err(too_large(format!(
-            "{len} bytes, at most {MAX_INTAKE_BYTES} fit"
-        )));
+        return Err(too_large_by(
+            format!("{len} bytes, at most {MAX_INTAKE_BYTES} fit"),
+            len as u64,
+            MAX_INTAKE_BYTES as u64,
+        ));
     }
     Ok(())
 }
@@ -45,9 +47,11 @@ pub fn check_intake(len: usize) -> capnp::Result<()> {
 /// `len` is above [`MAX_PAGE_BYTES`].
 pub fn check_answer(len: usize) -> capnp::Result<()> {
     if len > MAX_PAGE_BYTES {
-        return Err(too_large(format!(
-            "the answer has {len} bytes, at most {MAX_PAGE_BYTES} fit"
-        )));
+        return Err(too_large_by(
+            format!("the answer has {len} bytes, at most {MAX_PAGE_BYTES} fit"),
+            len as u64,
+            MAX_PAGE_BYTES as u64,
+        ));
     }
     Ok(())
 }
@@ -100,14 +104,16 @@ impl<T> Page<T> {
             }
             if heavy > MAX_ITEM_BYTES {
                 let behind = start.saturating_add(1);
-                return Err(Problem::new(
-                    TOO_LARGE,
-                    "Too large",
-                    format!("one item of {heavy} bytes, at most {MAX_ITEM_BYTES} fit"),
-                    413,
-                )
-                .with_next((behind < total).then(|| encode(behind)))
-                .into_error());
+                let detail = format!("one item of {heavy} bytes, at most {MAX_ITEM_BYTES} fit");
+                let next = (behind < total).then(|| encode(behind));
+                // With a cursor no extensions: a reader before 0.37 would lose the cursor, and the
+                // numbers are in the detail anyway.
+                let problem = if next.is_some() {
+                    Problem::new(TOO_LARGE, "Too large", detail, 413)
+                } else {
+                    Problem::too_large(detail, heavy as u64, MAX_ITEM_BYTES as u64)
+                };
+                return Err(problem.with_next(next).into_error());
             }
             items.push(item);
             if full {
