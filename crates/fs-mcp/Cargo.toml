@@ -1,0 +1,16 @@
+[package]
+name = "fs-mcp"
+description = "MCP tool generator (stage 1): reads the Cap'n Proto contracts and lists tools and resource templates with risk classes; no server, no execution (ADR 0021, 0054)"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+# Our own pure-Rust schema compiler (ADR 0040) reads the contracts; `capnp` reads its CodeGeneratorRequest.
+capnp = "0.27"
+capnp-compiler = { git = "https://github.com/FreeSynergy/fs-capnpc", tag = "v0.1.1" }
+serde_json = "1"
+toml = "0.8"
