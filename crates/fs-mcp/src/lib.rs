@@ -1,6 +1,7 @@
 //! MCP tool generator, stage 1 (ADR 0021 extension, ADR 0054): lists the tools and resource templates
 //! that the Cap'n Proto contracts allow, with a risk class each. It runs nothing: no server, no bridge,
-//! no call. Pattern: Strategy (see `DESIGN.md`).
+//! no call. Eine Liste ist keine Erlaubnis: the list is an offer, the engine decides on every call.
+//! Pattern: Strategy (see `DESIGN.md`).
 #![deny(missing_docs)]
 #![warn(clippy::pedantic)]
 

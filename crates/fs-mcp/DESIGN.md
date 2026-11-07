@@ -8,6 +8,11 @@ bridge and no call. Every later execution must refuse until the engine brake (Th
 **Marks stay in `marks/*.toml`.** They move into Cap'n Proto annotations after the sprint; there is deliberately no
 `schema/mcp.capnp` now, and no other schema imports one. The trait `RiskSource` makes that move local.
 
+**Eine Liste ist keine Erlaubnis.** The tool list is only an offer. Without an expressly granted authority an AI reads
+and does nothing (project owner, ADR 0054); the engine enforces that on every call, the generator does not change for it.
+Every tool and resource keeps `_meta.needsRelease: true`. The owner confirmed the admin exclusions (delegations, roles,
+memberships, invitations, backends, hub registration: no tool, not even for reading).
+
 ## Pattern map (ADR 0043)
 
 | Where | Pattern | Why |
