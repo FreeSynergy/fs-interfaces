@@ -104,6 +104,9 @@ struct Survey {
   scope     @5 :List(Uuid);   # groups asked, in the order they were added; empty = not bound to a group
   stage     @6 :UInt16;       # 0 at publishing; +1 for each widening
   minGroup  @7 :UInt16 = 5;   # smallest batch of anonymous results; at least 3 on anonymous surveys
+  # AI participants (2026-11-07): see the block at the end of the file
+  aiAllowed @8 :Bool = false; # an AI may answer only if the creator allowed it for this survey
+  creator   @9 :Text;         # person IRI who made it (`createBy`); empty = nobody may allow AIs
 }
 
 struct SurveyPage { items @0 :List(Survey); next @1 :Cursor; }
@@ -130,6 +133,7 @@ struct NamedResponse {
   person    @1 :Text;
   answers   @2 :List(Answer);
   submitted @3 :Bool;
+  ai        @4 :Bool;         # answered by a participant counted as an AI; kept and shown apart
 }
 
 # Tokens never appear here. The provider sends each one to its person directly and keeps only a hash
@@ -137,6 +141,7 @@ struct NamedResponse {
 struct InviteReport {
   invited @0 :List(Text);         # people newly invited
   already @1 :List(Text);         # invited before; no new token
+  refused @2 :List(Text);         # AI, or not known as a human, and the survey does not allow AIs
 }
 
 # who is answering; which arm is needed follows from the anonymity of the survey
@@ -165,6 +170,8 @@ struct Summary {
   hidden    @1 :Bool;
   questions @2 :List(QuestionSummary);
   heldBack  @3 :UInt32;             # answers not released yet (see the header); anonymous: 0 while open
+  ai        @4 :Summary;            # the AI part, same shape; counted apart, never in the fields above
+  hasAi     @5 :Bool;               # false: no AI part (not allowed and no AI answers); `ai` is then empty
 }
 
 struct OptionResult {
@@ -180,6 +187,8 @@ struct Evaluation {
   note     @3 :Text;                # why not decided
   hidden   @4 :Bool;
   heldBack @5 :UInt32;              # answers not counted because they are not released yet
+  ai       @6 :Evaluation;          # the same question evaluated over AI answers only
+  hasAi    @7 :Bool;
 }
 
 struct Decision {
@@ -228,6 +237,10 @@ interface Designer {
   invite       @15 (id :Uuid, people :List(Text), groups :List(Uuid)) -> (report :InviteReport); # survey.invite, survey.tokens
   # the ids of the people in the new groups come from fs-groups; results stay, anonymity stays
   widen        @16 (id :Uuid, parent :Uuid) -> (survey :Survey);                         # survey.widen
+  # like `create`, and records `creator`; only this person can later allow AIs
+  createBy     @17 (name :Text, anonymity :Anonymity, scope :List(Uuid), creator :Text) -> (survey :Survey); # survey.create
+  # only the creator, only in `draft` or `open`; allowing needs a creator who is a human by the marking
+  setAiAllowed @18 (id :Uuid, by :Text, allowed :Bool) -> (survey :Survey);              # survey.aiAllowed
 }
 
 interface Respond {
@@ -248,6 +261,8 @@ interface Results {
   export   @2 (id :Uuid, mediaType :Text) -> (data :Data);                                # result.export
   # `named` only
   filter   @3 (id :Uuid, question :Uuid, choice :Text, stage :UInt16 = 0xffff) -> (summary :Summary); # result.filter
+  # the AI answers as their own CSV (first column `participants` = `ai`); `export` never holds them
+  exportAi @4 (id :Uuid, mediaType :Text) -> (data :Data);                                # result.export
 }
 
 interface Decisions {
@@ -258,3 +273,12 @@ interface Decisions {
   unlinkTask @4 (id :Uuid, task :Text) -> (decision :Decision);                           # decision.link
   ofTask   @5 (task :Text) -> (decisions :List(Decision));                                # decision.read
 }
+
+# AI participants (2026-11-07, owner). An AI takes part only if the creator allowed it for this survey
+# (`aiAllowed`, default false). Whether a participant is an AI is told by the marking the host injects
+# (as in fs-groups `AiMarking`), never by what the participant says. Without an answer from the marking,
+# or without an identity, a participant is treated as an AI. AI answers are always counted and shown
+# apart: the `ai` parts of `Summary` and `Evaluation`, `exportAi`, `NamedResponse.ai`; the fields outside
+# `ai` are people only. Anonymous: the class is fixed when a token is issued, and its ballots are
+# released in their own batches. A person can hand a token to an AI; that limit is stated, not solved.
+# `anonymousOpen` takes `Credential.person` only to ask the marking; it is not stored.
