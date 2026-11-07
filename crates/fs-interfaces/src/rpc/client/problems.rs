@@ -7,7 +7,10 @@
 use capnp::Error;
 use fs_store::ObjectId;
 
-use crate::{Unsupported, rpc::Problem};
+use crate::Unsupported;
+use crate::rpc::{Problem, is_unimplemented};
+
+const STORE_PREFIX: &str = "object store: invalid input: ";
 
 /// Start of every problem type URI of FreeSynergy.
 pub const PROBLEM_BASE: &str = "https://freesynergy.net/problems/";
@@ -27,8 +30,11 @@ impl Failure {
     /// Sort out an RPC error. A problem comes first: status 501 has the kind `unimplemented` too.
     #[must_use]
     pub fn of(error: &Error) -> Self {
-        let _ = error;
-        todo!("interface only")
+        match Problem::from_error(error) {
+            Some(problem) => Self::Problem(problem),
+            None if is_unimplemented(error) => Self::Unimplemented,
+            None => Self::Other(error.to_string()),
+        }
     }
 }
 
@@ -36,36 +42,43 @@ impl Failure {
 /// another base stays whole.
 #[must_use]
 pub fn local_type(problem: &Problem) -> &str {
-    let _ = problem;
-    todo!("interface only")
+    problem
+        .problem_type
+        .strip_prefix(PROBLEM_BASE)
+        .unwrap_or(&problem.problem_type)
 }
 
 /// The first run of digits in `text`, 0 if there is none (`too-large` texts name a size).
 #[must_use]
 pub fn first_number(text: &str) -> usize {
-    let _ = text;
-    todo!("interface only")
+    let digits: String = text
+        .chars()
+        .skip_while(|c| !c.is_ascii_digit())
+        .take_while(char::is_ascii_digit)
+        .collect();
+    digits.parse().unwrap_or(0)
 }
 
 /// The first word of `text` that is an object id.
 #[must_use]
 pub fn object_id_in(text: &str) -> Option<ObjectId> {
-    let _ = text;
-    todo!("interface only")
+    text.split_whitespace()
+        .find_map(|word| word.parse::<ObjectId>().ok())
 }
 
 /// `detail` without the store's `object store: invalid input: ` in front, which the server's error
 /// text carries and a client's own text must not repeat.
 #[must_use]
 pub fn without_store_prefix(detail: &str) -> &str {
-    let _ = detail;
-    todo!("interface only")
+    detail.strip_prefix(STORE_PREFIX).unwrap_or(detail)
 }
 
 /// The "not possible" of the provider rule from a problem's detail, which reads
 /// `capability: reason`. Without the colon the whole text is the reason of `default_capability`.
 #[must_use]
 pub fn unsupported_of(detail: &str, default_capability: &str) -> Unsupported {
-    let _ = (detail, default_capability);
-    todo!("interface only")
+    let (capability, reason) = detail
+        .split_once(": ")
+        .unwrap_or((default_capability, detail));
+    Unsupported::new(capability, reason)
 }

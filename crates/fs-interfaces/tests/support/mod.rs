@@ -65,7 +65,7 @@ impl items::Server for Items {
 }
 
 struct Root {
-    items: items::Client,
+    gone: Arc<AtomicBool>,
 }
 
 impl tasks::Server for Root {
@@ -86,7 +86,10 @@ impl tasks::Server for Root {
         _: tasks::ItemsParams,
         mut results: tasks::ItemsResults,
     ) -> Result<(), capnp::Error> {
-        results.get().set_items(self.items.clone());
+        let items: items::Client = new_client(Items {
+            gone: self.gone.clone(),
+        });
+        results.get().set_items(items);
         Ok(())
     }
 }
@@ -118,9 +121,7 @@ impl TestServer {
             local.block_on(&runtime, async move {
                 let bound = bind_socket(&p).await.unwrap();
                 ready.send(()).unwrap();
-                let root: tasks::Client = new_client(Root {
-                    items: new_client(Items { gone }),
-                });
+                let root: tasks::Client = new_client(Root { gone });
                 let _ = serve(bound, root.client, async {
                     let _ = stopped.await;
                 })

@@ -54,7 +54,8 @@ Version 0.33.0.
 | Generated Rust with `capnp-compiler` v0.1.0 + `capnpc` 0.27 | done; byte-identical to `capnpc-embedded` 0.2 output (tested) |
 | Rust helpers `Unsupported`, `Capabilities` with wire round trips | done |
 | `rpc` (feature): socket with lock file, connection, problems, envelope, pages, feed | done, draft |
-| Tests | 2 oracle, 3 provider, 40 `rpc`, 1 doc test |
+| `rpc::client` (feature): `Worker<R: Remote>` (thread, current-thread runtime + `LocalSet`, command queue, `Timeouts` 5 s connect / 30 s call, drop joins), reply guard (`Fault::Interrupted`), `Fault` naming the deadline, `problems` (`Failure::of`, `local_type`, `first_number`, `object_id_in`, `without_store_prefix`, `unsupported_of`); taken from the people and tasks clients, which map to their own `Error` and problem type URIs themselves | done, draft; tests in `tests/rpc_client*.rs` against a real server |
+| Tests | 2 oracle, 3 provider, 40 `rpc`, 19 `rpc::client` (+2 unit), 1 doc test |
 | Interfaces at 1.0 | none; the draft -> 1.0 gate needs two independent consumers per interface |
 
 ## Decisions

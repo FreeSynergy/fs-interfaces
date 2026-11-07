@@ -14,17 +14,53 @@ pub(super) struct Reply<T> {
     server: &'static str,
 }
 
-#[allow(dead_code, clippy::needless_pass_by_value)] // interface only, until the implementation
 impl<T> Reply<T> {
     /// The command has started.
     pub(super) fn started(to: Sender<Result<T, Fault>>, server: &'static str) -> Self {
-        let _ = (&to, server);
-        todo!("interface only")
+        Self {
+            to: Some(to),
+            server,
+        }
     }
 
     /// Answer.
-    pub(super) fn send(self, answer: Result<T, Fault>) {
-        let _ = (&self.to, self.server, answer);
-        todo!("interface only")
+    pub(super) fn send(mut self, answer: Result<T, Fault>) {
+        if let Some(to) = self.to.take() {
+            let _ = to.send(answer);
+        }
+    }
+}
+
+impl<T> Drop for Reply<T> {
+    fn drop(&mut self) {
+        if let Some(to) = self.to.take() {
+            let _ = to.send(Err(Fault::Interrupted {
+                server: self.server,
+            }));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tokio::sync::oneshot::channel;
+
+    use super::*;
+
+    #[test]
+    fn dropped_after_it_started_it_answers_interrupted() {
+        let (to, mut from) = channel::<Result<u8, Fault>>();
+        drop(Reply::started(to, "x"));
+        assert_eq!(
+            from.try_recv().unwrap().unwrap_err(),
+            Fault::Interrupted { server: "x" }
+        );
+    }
+
+    #[test]
+    fn once_answered_it_does_not_answer_again() {
+        let (to, mut from) = channel::<Result<u8, Fault>>();
+        Reply::started(to, "x").send(Ok(7));
+        assert_eq!(from.try_recv().unwrap().unwrap(), 7);
     }
 }

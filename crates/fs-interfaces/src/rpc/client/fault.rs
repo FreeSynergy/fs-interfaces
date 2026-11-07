@@ -31,8 +31,15 @@ pub enum Fault {
 
 impl fmt::Display for Fault {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let _ = f;
-        todo!("interface only")
+        match self {
+            Self::Gone { server } => write!(f, "{server} server: the connection is gone"),
+            Self::Interrupted { server } => {
+                write!(f, "{server} client: a call ended without an answer")
+            }
+            Self::TimedOut { server, limit } => {
+                write!(f, "{server} server did not answer within {limit:?}")
+            }
+        }
     }
 }
 

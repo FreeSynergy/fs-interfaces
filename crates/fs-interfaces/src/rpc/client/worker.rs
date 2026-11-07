@@ -6,18 +6,84 @@
 
 use std::future::Future;
 use std::io;
-use std::marker::PhantomData;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::pin::Pin;
+use std::sync::mpsc;
+use std::thread::JoinHandle;
+use std::time::Duration;
+
+use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
+use tokio::sync::oneshot;
 
 use crate::Capabilities;
+use crate::rpc::connect;
 
+use super::reply::Reply;
 use super::{Fault, Remote, Timeouts};
+
+/// A command for the thread of the connection.
+type Job<R> = Box<dyn FnOnce(R) -> Pin<Box<dyn Future<Output = ()>>> + Send>;
 
 /// The thread of one connection, and the way to reach it. Any thread may call; calls overlap.
 pub struct Worker<R: Remote> {
     server: &'static str,
     timeouts: Timeouts,
-    remote: PhantomData<fn(R)>,
+    jobs: UnboundedSender<Job<R>>,
+    thread: Option<JoinHandle<()>>,
+}
+
+fn other(server: &str, e: impl std::fmt::Display) -> io::Error {
+    io::Error::other(format!("{server} server: {e}"))
+}
+
+/// The connection, and what the thread learned on it.
+async fn handshake<R: Remote>(
+    server: &'static str,
+    socket: &Path,
+) -> io::Result<(R, Capabilities, impl Sized)> {
+    let connection = connect::<R::Root>(socket).await?;
+    let root = connection.client.clone();
+    let (remote, capabilities) = R::open(root).await.map_err(|e| other(server, e))?;
+    Ok((remote, capabilities, connection))
+}
+
+fn run<R: Remote>(
+    server: &'static str,
+    socket: &Path,
+    limit: Duration,
+    mut queue: tokio::sync::mpsc::UnboundedReceiver<Job<R>>,
+    ready: &mpsc::Sender<io::Result<Capabilities>>,
+) {
+    let runtime = match tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+    {
+        Ok(runtime) => runtime,
+        Err(e) => return drop(ready.send(Err(e))),
+    };
+    let local = tokio::task::LocalSet::new();
+    local.block_on(&runtime, async {
+        let shaken = tokio::time::timeout(limit, handshake::<R>(server, socket)).await;
+        let (remote, capabilities, connection) = match shaken {
+            Ok(Ok(done)) => done,
+            Ok(Err(e)) => return drop(ready.send(Err(e))),
+            Err(_) => {
+                let silent = Fault::TimedOut { server, limit };
+                return drop(ready.send(Err(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    silent.to_string(),
+                ))));
+            }
+        };
+        let _ = ready.send(Ok(capabilities));
+        while let Some(job) = queue.recv().await {
+            tokio::task::spawn_local(job(remote.clone()));
+        }
+        drop(remote);
+        drop(connection);
+    });
+    // Let the disconnect and the commands still under way finish.
+    runtime.block_on(local);
 }
 
 impl<R: Remote> Worker<R> {
@@ -36,8 +102,24 @@ impl<R: Remote> Worker<R> {
         socket: &Path,
         timeouts: Timeouts,
     ) -> io::Result<(Self, Capabilities)> {
-        let _ = (server, socket, timeouts);
-        todo!("interface only")
+        let (jobs, queue) = unbounded_channel::<Job<R>>();
+        let (ready, answer) = mpsc::channel::<io::Result<Capabilities>>();
+        let socket: PathBuf = socket.to_path_buf();
+        let thread = std::thread::Builder::new()
+            .name(format!("fs-{server}-client"))
+            .spawn(move || run::<R>(server, &socket, timeouts.connect, queue, &ready))?;
+        let capabilities = answer
+            .recv()
+            .map_err(|_| other(server, "the connection thread ended"))??;
+        Ok((
+            Self {
+                server,
+                timeouts,
+                jobs,
+                thread: Some(thread),
+            },
+            capabilities,
+        ))
     }
 
     /// The deadlines of this connection.
@@ -57,14 +139,29 @@ impl<R: Remote> Worker<R> {
         F: FnOnce(R) -> Fut + Send + 'static,
         Fut: Future<Output = T> + 'static,
     {
-        let _ = (self.server, work);
-        todo!("interface only")
+        let (server, limit) = (self.server, self.timeouts.call);
+        let gone = Fault::Gone { server };
+        let (to, answer) = oneshot::channel();
+        let job: Job<R> = Box::new(move |remote| {
+            Box::pin(async move {
+                let reply = Reply::started(to, server);
+                let done = tokio::time::timeout(limit, work(remote)).await;
+                reply.send(done.map_err(|_| Fault::TimedOut { server, limit }));
+            })
+        });
+        self.jobs.send(job).map_err(|_| gone.clone())?;
+        answer.await.map_err(|_| gone)?
     }
 }
 
 impl<R: Remote> Drop for Worker<R> {
     /// Close the queue, let the commands under way finish, close the connection, join the thread.
     fn drop(&mut self) {
-        todo!("interface only")
+        // The sender goes with `self.jobs` after this; close the queue first by swapping it out.
+        let (closed, _) = unbounded_channel();
+        drop(std::mem::replace(&mut self.jobs, closed));
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
     }
 }

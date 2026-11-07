@@ -13,7 +13,7 @@ use crate::Capabilities;
 /// `!Send` capability clients.
 pub trait Remote: Clone + 'static {
     /// The root capability of the contract (`tasks::Client`, `people::Client` ...).
-    type Root: FromClientHook;
+    type Root: FromClientHook + Clone;
 
     /// The handshake: ask the root what the server supports (`supportReport`) and take the
     /// capabilities the client needs from it. Runs on the thread of the connection, under the
