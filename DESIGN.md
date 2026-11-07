@@ -96,5 +96,5 @@ The remedy is `chmod g-w` on the directory the message names, or another `--data
 
 ## Open points
 
-* Owner of `common.capnp` (`fs-store` is proposed in ADR 0050).
+* Owner of `common.capnp` (`fs-objects` is proposed in ADR 0050).
 * More topics from the catalogue (people, groups, events, files ...) as their owners write drafts.

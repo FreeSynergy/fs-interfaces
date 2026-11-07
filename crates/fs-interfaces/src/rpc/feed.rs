@@ -15,7 +15,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use capnp_rpc::new_client;
-use fs_store::{Envelope, ObjectId};
+use fs_objects::{Envelope, ObjectId};
 use tokio::sync::Notify;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::task::JoinHandle;
