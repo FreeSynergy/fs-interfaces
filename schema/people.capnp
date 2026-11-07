@@ -41,7 +41,7 @@ struct PersonPage { items @0 :List(Person); next @1 :Cursor; }
 # all members optional; empty = no restriction; combined with AND
 struct PersonFilter {
   kind @0 :Text;                       # JSContact kind
-  role @1 :Text;                       # role id
+  role @1 :Text;                       # full IRI of the role
   term @2 :Text;                       # substring of name, nickname, e-mail, phone, organisation
 }
 
@@ -97,7 +97,7 @@ struct RoleDefinition {
 struct RoleAssignment {
   id      @0 :Uuid;
   person  @1 :Uuid;
-  role    @2 :Text;                    # role id
+  role    @2 :Text;                    # full IRI of the role
   scope   @3 :Text;                    # IRI of the group; empty = personal
   details @4 :Text;                    # JSON object; lossless; for roles owned by fs-people
 }

@@ -34,6 +34,12 @@ struct Instance {
   overridden @4 :Bool;
 }
 
+# An event that could not be read or expanded and so is missing from `items`: its id and why.
+struct Damaged {
+  id     @0 :Uuid;
+  reason @1 :Text;
+}
+
 enum Response { accept @0; tentativeAccept @1; reject @2; }
 
 struct InvitationEntry {
@@ -66,7 +72,10 @@ interface Items {
   get         @3 (id :Uuid) -> (found :Bool, event :Event);                      # event.read
   getByUid    @4 (uid :Text) -> (found :Bool, event :Event);                     # event.read
   list        @5 (cursor :Cursor) -> (page :EventPage);                          # event.read
-  occurrences @6 (from :Timestamp, to :Timestamp) -> (items :List(Instance));    # event.occurrences
+  # `damaged` names each event that could not be read or expanded (id and reason) and so is missing from `items`.
+  # `cut` is true when `items` was cut short at a bound (instances per event, the answer budget) instead of failing,
+  # e.g. a series of 8 947 occurrences; the caller asks again with a narrower range. A 0.42 server leaves both empty/false.
+  occurrences @6 (from :Timestamp, to :Timestamp) -> (items :List(Instance), damaged :List(Damaged), cut :Bool);    # event.occurrences
   importText  @7 (mediaType :Text, text :Text) -> (report :ImportReport);        # event.import
   exportText  @8 (ids :List(Uuid), mediaType :Text) -> (text :Text);             # event.export
   updateIf    @9 (id :Uuid, revision :UInt64, jscalendar :Text) -> (event :Event);  # event.update, only if the event still has `revision`; otherwise it fails with a reason starting `conflict:` and writes nothing (compare-and-set; atomic inside one provider process only)

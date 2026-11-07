@@ -19,7 +19,7 @@ changes, consumers depend on this repo by git tag (ADR 0043, `coding.md` §8).
 
 ## State
 
-Version 0.42.0 (adds the workspace crate `fs-mcp`, the MCP tool generator stage 1: lists only, no contract changed; see `crates/fs-mcp/DESIGN.md`).
+Version 0.43.0 (`fs-store` v0.4.0, so a hub on 0.4 builds with one `Envelope` type; `SupportReport.instance @3` (the store's `StoreId`, empty = not known); `events.Items.occurrences` answers `damaged @1` (struct `Damaged`: id, reason) and `cut @2` (items cut short at a bound, no error); `people` comments say "full IRI" for roles; append only). Version 0.42.0 added the workspace crate `fs-mcp`, the MCP tool generator stage 1 (see `crates/fs-mcp/DESIGN.md`).
 
 | Area | State |
 |---|---|

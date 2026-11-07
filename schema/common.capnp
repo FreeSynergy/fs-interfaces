@@ -108,4 +108,8 @@ struct SupportReport {
   contractVersion @0 :Text;
   provider        @1 :Text;
   entries         @2 :List(Support);
+  # Identity of the provider's store (`fs-store` `StoreId`), made once when the store is created.
+  # Empty = not known, e.g. a provider without a store. The id is no secret, but it makes the server
+  # recognisable: it does not travel to the hub or into content unless someone decided so.
+  instance        @3 :Uuid;
 }
