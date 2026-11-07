@@ -3,4 +3,8 @@
 
 [Blob]
 read = { risk = "read", resource = true }
-size = { risk = "read", resource = true }
+size = "read"
+
+[release]
+"Cursor.opaque" = "an opaque paging cursor that the program itself issues: it holds a position, never a secret (common.capnp)"
+"Blob.read.data" = "bytes of a file or attachment; whether they are sensitive (ADR 0029) is decided by the engine at the object, and every read needs a release anyway (ADR 0054)"

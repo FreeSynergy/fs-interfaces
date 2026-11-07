@@ -12,13 +12,13 @@ addTarget = { risk = "excluded", reason = "takes or returns a key that is a secr
 check = "acts-in-name"
 create = { risk = "excluded", reason = "takes or returns a key that is a secret (streaming.capnp header, ADR 0021)" }
 delete = "destructive"
-editTarget = "change"
+editTarget = "acts-in-name"
 get = "read"
 list = "read"
 removeTarget = "destructive"
 rename = "change"
 rotateKey = { risk = "excluded", reason = "takes or returns a key that is a secret (streaming.capnp header, ADR 0021)" }
-setRecording = "change"
+setRecording = "acts-in-name"
 setTargetEnabled = "change"
 setTargetKey = { risk = "excluded", reason = "takes or returns a key that is a secret (streaming.capnp header, ADR 0021)" }
 status = "read"

@@ -1,8 +1,9 @@
 //! The fixed list of targets that never become tools, whatever any mark says.
 //!
-//! Pattern: Registry — a table of target to reason. It is code, not data in a mark file, so that a
-//! forgotten or edited mark cannot lift it. It goes away only when the contracts carry machine-readable
-//! exclusion marks (Thread 2). Trait: none (a table; the generator takes it by value so tests can swap it).
+//! Pattern: Specification — a pure predicate (`reason`, `type_reason`) over a fixed table of targets and
+//! type names. The table is code, not data in a mark file, so that a forgotten or edited mark cannot lift
+//! it. It goes away only when the contracts carry machine-readable exclusion marks (Thread 2).
+//! Trait: none (the generator takes it by value so tests can swap it).
 
 use crate::Target;
 
@@ -12,6 +13,7 @@ const SCHEMA: &str = "messenger";
 #[derive(Clone, Debug)]
 pub struct Blocklist {
     entries: Vec<(Target, &'static str)>,
+    types: Vec<(&'static str, &'static str)>,
 }
 
 impl Blocklist {
@@ -42,13 +44,38 @@ impl Blocklist {
                     "a secret would pass through the model (ADR 0021)",
                 ),
             ],
+            types: vec![
+                (
+                    "ToolCallDecision",
+                    "the decision of a person's device (ADR 0054); it may never pass through an agent in any form",
+                ),
+                (
+                    "GuardProof",
+                    "proof held by the Guard; an agent never carries it",
+                ),
+                ("AiGrant", "a grant to an AI is the person's act (ADR 0054)"),
+                (
+                    "Guard",
+                    "the Guard is the brake itself; an agent never reaches it (ADR 0054)",
+                ),
+            ],
         }
     }
 
     /// An empty list, for tests that must prove the other safeguards hold without it.
     #[must_use]
     pub fn empty() -> Self {
-        Self { entries: vec![] }
+        Self {
+            entries: vec![],
+            types: vec![],
+        }
+    }
+
+    /// Why a struct or interface of this name is blocked wherever it appears: as a parameter, a result, a
+    /// field, in any schema file. Renaming the method that carries it lifts nothing.
+    #[must_use]
+    pub fn type_reason(&self, name: &str) -> Option<&'static str> {
+        self.types.iter().find(|(n, _)| *n == name).map(|(_, r)| *r)
     }
 
     /// Why `target` is blocked, if it is.

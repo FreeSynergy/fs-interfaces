@@ -45,10 +45,6 @@ fn anything_not_understood_is_an_error_and_never_a_default() {
         parse("[release]\n\"Reaction.key\" = \"\"\n").is_err(),
         "a release needs its reason"
     );
-    assert!(
-        parse("[release]\nkey = \"x\"\n").is_err(),
-        "a release names Owner.name"
-    );
     assert!(parse("send = \"read\"\n").is_err(), "a table is expected");
     assert!(parse("not toml at all [").is_err());
 }

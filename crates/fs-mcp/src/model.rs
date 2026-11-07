@@ -1,6 +1,6 @@
 //! The generator's own view of the contracts: plain data, independent of how they were read.
 //!
-//! Pattern: Adapter target — [`crate::ContractSource`] implementations translate a foreign form (the
+//! Pattern: Value object — small plain types compared by value. [`crate::ContractSource`] implementations translate a foreign form (the
 //! `CodeGeneratorRequest` of the Cap'n Proto compiler) into these types, so the generator and its tests
 //! never touch compiler internals. Trait: [`crate::ContractSource`].
 
@@ -143,6 +143,7 @@ pub struct Contract {
 pub struct Index<'a> {
     structs: HashMap<TypeName, &'a StructDef>,
     enums: HashMap<TypeName, &'a EnumDef>,
+    interfaces: HashMap<TypeName, &'a Interface>,
 }
 
 impl<'a> Index<'a> {
@@ -155,21 +156,35 @@ impl<'a> Index<'a> {
         };
         let mut structs = HashMap::new();
         let mut enums = HashMap::new();
+        let mut interfaces = HashMap::new();
         for c in contracts {
             for s in &c.structs {
                 structs.insert(name(c, &s.name), s);
+            }
+            for i in &c.interfaces {
+                interfaces.insert(name(c, &i.name), i);
             }
             for e in &c.enums {
                 enums.insert(name(c, &e.name), e);
             }
         }
-        Self { structs, enums }
+        Self {
+            structs,
+            enums,
+            interfaces,
+        }
     }
 
     /// The struct behind a reference, if the contracts hold it.
     #[must_use]
     pub fn struct_def(&self, t: &TypeName) -> Option<&'a StructDef> {
         self.structs.get(t).copied()
+    }
+
+    /// The interface behind a reference.
+    #[must_use]
+    pub fn interface_def(&self, t: &TypeName) -> Option<&'a Interface> {
+        self.interfaces.get(t).copied()
     }
 
     /// The enum behind a reference.

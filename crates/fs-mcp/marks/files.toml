@@ -2,28 +2,28 @@
 # A method or union member without an entry counts as `unknown` and is listed by the tests.
 
 [Backends]
-add = { risk = "excluded", reason = "storage configuration (may hold credentials): an admin task, an agent is never admin (ADR 0056)" }
-list = "read"
-remove = { risk = "excluded", reason = "storage configuration (may hold credentials): an admin task, an agent is never admin (ADR 0056)" }
+add = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
+list = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
+remove = { risk = "excluded", reason = "administration of rights, roles, memberships or storage: an agent is never admin (ADR 0056); reads here are left out too" }
 
 [BlobBackend]
-commit = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-delete = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-discard = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-get = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-has = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-inspect = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-makeDir = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-naming = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-pending = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-publish = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-put = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-relocate = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-removeDir = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-scan = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-stat = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-supportReport = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-sweepPending = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+commit = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+delete = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+discard = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+get = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+has = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+inspect = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+makeDir = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+naming = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+pending = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+publish = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+put = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+relocate = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+removeDir = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+scan = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+stat = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+supportReport = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+sweepPending = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
 
 [Files]
 backends = "read"
@@ -35,7 +35,7 @@ supportReport = "read"
 transfer = "read"
 
 [Folders]
-classify = "change"
+classify = { risk = "excluded", reason = "sets ADR 0029 categories: the person decides what is protected" }
 copyFile = "add"
 createFolder = "add"
 deleteFolder = "destructive"

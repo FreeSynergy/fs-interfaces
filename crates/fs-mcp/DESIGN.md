@@ -5,17 +5,21 @@ ADR 0056). **Stage 1 only lists:** it turns the contracts into tools and resourc
 bridge and no call. Every later execution must refuse until the engine brake (Thread 2, `fs-messenger-guard`) exists.
 
 **Location is provisional** (crate in `fs-interfaces`, branch `mcp`); the strategy decides the final repo.
+**Marks stay in `marks/*.toml`.** They move into Cap'n Proto annotations after the sprint; there is deliberately no
+`schema/mcp.capnp` now, and no other schema imports one. The trait `RiskSource` makes that move local.
 
 ## Pattern map (ADR 0043)
 
 | Where | Pattern | Why |
 |-------|---------|-----|
-| `RiskSource` (`risk.rs`), `MarkFiles` (`marks.rs`) | Strategy | Marks come from files now and from annotations in the contracts later; only a new implementation of the trait is needed, the generator does not change |
-| `ContractSource` (`source.rs`), `CapnpcSource` | Strategy + Adapter | the generator reads its own model (`model.rs`); the `CodeGeneratorRequest` of our compiler is translated once, in `capnpc_source/` |
-| `ToolGenerator`, `Generator` (`generator/`) | Strategy; inside, Template method (`vet.rs`) | one fixed order of checks for every candidate: block list, mark, exclusion, secret scan |
-| `Blocklist` (`blocklist.rs`) | Registry | fixed table target to reason, in code so a mark file cannot lift it |
+| `RiskSource` (`risk.rs`), `MarkFiles` (`marks.rs`) | Strategy | Marks come from files now and from annotations later; only a new implementation of the trait is needed |
+| `ContractSource` (`source.rs`), `CapnpcSource` | Strategy + Adapter | the generator reads its own model; the `CodeGeneratorRequest` of our compiler is translated once, in `capnpc_source/` |
+| `ToolGenerator`, `Generator` (`generator/run.rs`) | Strategy | the generator takes any `RiskSource` and any contracts |
+| `Screen` (`generator/screen.rs`), `vet.rs`, `Blocklist`, `secrets.rs` | Specification | pure predicates over names, comments and types: the candidate is out unless every one holds; the walk inside `screen.rs` is a Visitor with one arm per type variant |
 | `Target` | Newtype | `file/Owner.name` keys for marks, releases and the block list |
-| `SchemaBuilder` (`jsonschema.rs`), `tools.rs`, `resources.rs` | Builder | `$defs` collected once per struct; tools assembled from parts |
+| `model.rs`, `Tool`, `ResourceTemplate`, `Variant`, `Catalog` | Value object | plain data compared by value |
+| `jsonschema.rs`, `capnpc_source/types.rs` | Visitor | one arm per `TypeRef` / Cap'n Proto type variant, outside the data |
+| `capnpc_source/names.rs` | Registry | node id to declared name and comment |
 
 ## What it does
 
@@ -35,15 +39,28 @@ sensitive (ADR 0029) is decided by the engine at the object, never here.
 
 ## Exclusions (tests fail if one appears)
 
-1. **Block list** (`blocklist.rs`, wins over any mark): `MessageAction.decide`, `MessageAction.none`, interface `Guard`,
-   `Messenger.guard`, `AccountSetup.secret`. Entries may point at things that do not exist yet (`Guard` is not on `main`).
-2. **Marked `excluded`** in `marks/*.toml`; a mark on a *method* holds for all its union members.
-3. **Fail-closed secret scan** (`scan.rs`, `secrets.rs`): every field, parameter, result, method and union member name that
-   contains a secret word (`secret password passphrase token key credential apikey private seed otp auth cookie`), or whose
-   comment says secret/password/passphrase/credential, keeps the tool out **unless a written release exists** in
-   `[release]` of the mark file, with a reason. A forgotten mark can therefore never free a secret; it costs a tool.
-4. Admin (ADR 0056): marked `excluded` by hand (rights, roles, delegations, memberships and invitations that may confer an
-   admin role, storage configuration). There is no machine rule for "admin"; see open points.
+Principle (strategy): **what is unclear stays out.** A secret once released cannot be taken back.
+
+1. **Block list** (`blocklist.rs`, wins over any mark): the targets `MessageAction.decide`, `MessageAction.none`,
+   interface `Guard`, `Messenger.guard`, `AccountSetup.secret`, and **by type, wherever it appears** (parameter, result,
+   field, listener event, any file): `ToolCallDecision`, `GuardProof`, `AiGrant`, `Guard`. Renaming a method lifts nothing.
+2. **Marked `excluded`** in `marks/*.toml`; a mark on a *method* holds for all union members it is split into. A member
+   without its own mark is `unknown`; it inherits nothing.
+3. **Screen** (`screen.rs`) on method, member, every parameter and result, everything reachable from them, **and the
+   event types a listener delivers** (`subscribe` becomes a resource only if `Event` and all inside pass):
+   * secret words (`secret password passphrase passcode token key credential apikey private seed otp totp oauth auth
+     authorization bearer cookie session pin mnemonic signature proof`), split at camelCase and acronyms
+     (`IMAPPassword`), in field, parameter, method and **type** names (`LoginCredentials`) and in comments of fields
+     and parameters (secret, password, passphrase, credential, token, mnemonic);
+   * free-form content: any `Data`, and `Text` named json, config, proof, payload, blob, data;
+   * a structure the index does not hold, and `AnyPointer`: **unclear = out**.
+   Each is lifted only by a `[release]` entry for exactly that field (`Owner.name`, `Iface.method.param`, or a type name)
+   with a reason. `key` is not released anywhere else.
+4. Admin (ADR 0056) and provider interfaces: whole interfaces are marked `excluded`, reads included: `Delegations`,
+   `Memberships`, groups `Invitations`, `Roles`, files `Backends`, `BlobBackend`, `GroupDirectory`, hub `Session` and
+   `Hub.register`, `Items.addParent`. Streaming methods with keys are out whole.
+5. `resource = true` is accepted only with class `read` (checked when the marks are read) and only on a method that
+   returns `Data` (checked when generating: otherwise an error).
 
 ## Mark files
 
@@ -54,16 +71,21 @@ Strict parsing (unknown class, key or shape is an error). Tests: every method/me
 
 ## State
 
-Done: model, traits, schema reader, generator, mark files for all 15 schemas, example `list_tools`. 336 tools, 13 event
-resource templates and 2 blob templates from the 15 schemas at this commit.
+Done: model, traits, schema reader, generator, mark files for all 15 schemas, example `list_tools`. 307 tools, 13 event
+resource templates and 1 blob template from the 15 schemas at this commit.
 Not done (on purpose): any server, bridge, call or handle store; the annotation file `schema/mcp.capnp` and the import of it
 in the other schemas (new contract, needs the consultation rule, other threads are editing `messenger.capnp`); tool grouping
-(problem 12, the messenger alone yields 36 tools, all schemas 336); the output wrapper that keeps hostile message text apart (problem 11).
+(problem 12, the messenger alone yields about 36 tools, all schemas 307); the output wrapper that keeps hostile message text apart (problem 11).
 
-## Releases written (secret-looking names that are not secrets)
+## Releases written (each judged by me, to be confirmed)
 
-`Reaction.key` (emoji), `Usage.inputTokens`/`outputTokens` (counts), `Draft.encryptionPlan.missingKeys` (addresses),
-`Target.hasKey` (bool), `CheckResult.key` (verdict `KeyCheck`). The reason is in `marks/*.toml`.
+Not secrets: `Reaction.key` (emoji), `Usage.inputTokens`/`outputTokens` (counts), `Draft.encryptionPlan.missingKeys`
+(addresses), `Target.hasKey` (bool), `CheckResult.key` (verdict), `MessageSummary.signature` (verdict enum),
+`Conversation.pin` (pins a conversation), `InviteReport.already` (people; the comment mentions a token).
+Free-form, released: `Cursor.opaque` (paging position issued by the program; **without it about 27 list/query tools
+drop**), `ToolCall.argumentsDigest` (engine digest), `Blob.read.data` (file bytes: the engine decides at the object).
+Left out because not released: `Upload.write`, `Draft.attach`, `Boards.import`, `Results.export`, `TileSource.tile`,
+`Respond.challenge`, `Credential.proof`.
 
 ## What the generator cannot recognise reliably
 
@@ -73,18 +95,18 @@ in the other schemas (new contract, needs the consultation rule, other threads a
   before a comment block that belongs to the next declaration, or trailing comments.
 * **Secrets that carry no secret word** (`proof`, `Data` blobs, a `Text` named `value`, free-form `config` or `json` text)
   are not found; `Backends.add(config)` and `Roles.loadConfig(json)` are excluded by hand for that reason.
-* **Admin** has no marker in the contracts; the list in the marks is a judgement, see questions.
+* **Admin** has no marker in the contracts; the exclusions are a judgement by interface.
+* **Limits of the screen:** it follows structs, lists and groups; a capability (interface) is only a handle and is not
+  entered, so what a capability returns is judged on its own methods. Named structures used as parameters are read
+  through the type index; a structure in a file that was not compiled is "unclear" and excluded. The word lists
+  find names, not meaning: a secret under a harmless name (`value`, `text`) is not found.
 * **Capability ids** exist only in comments and several methods share one (`blob.write`), so a 1:1 name is not derivable;
   only `message.send` is given.
 
 ## Open points / questions for the strategy
 
-1. Final home of the crate; whether marks stay in `marks/` until `schema/mcp.capnp` exists.
-2. A mark on the *method* is ignored when the method is split by a union; only `excluded` propagates. Intended?
-3. Streaming key tools (`Streams.create`, `rotateKey`, `addTarget`, `setTargetKey`) are excluded whole. Alternative: offer
-   them with the key field removed from the schema (the person reads the key on their own device).
-4. Membership/invitation methods that take a `role` are excluded as possible admin conferral; `Memberships.remove`
-   is `destructive`. Confirm or give a rule.
-5. Provider-facing interfaces (`BlobBackend`, `GroupDirectory.apply/remove`, `Hub.Session`, `Hub.register`) are excluded as
-   not a capability of a person. Confirm.
-6. Handle expiry and per-call authorisation (problem 5) need the engine; stage 1 only names the handle's interface.
+1. Final home of the crate. Marks move into annotations after the sprint.
+2. **Size:** 307 tools are a lot for one model (problem 12). Proposal: group by capability and offer a group only after
+   the person releases it; stage 1 only lists.
+3. Releases above are my judgement; `Cursor.opaque` and `Blob.read.data` matter most.
+4. Handle expiry and per-call authorisation (problem 5) need the engine; stage 1 only names the handle's interface.

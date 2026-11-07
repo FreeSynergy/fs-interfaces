@@ -2,7 +2,7 @@
 # A method or union member without an entry counts as `unknown` and is listed by the tests.
 
 [Items]
-assign = "change"
+assign = "acts-in-name"
 assignLabel = "change"
 create = "add"
 createRelation = "add"

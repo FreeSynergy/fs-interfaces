@@ -86,10 +86,11 @@ impl MarkFiles {
                                 "release {name}: the reason must not be empty"
                             )));
                         }
-                        let (o, i) = name
-                            .split_once('.')
-                            .ok_or_else(|| bad(format!("release {name}: Owner.name expected")))?;
-                        me.releases.insert(Target::item(file, o, i), reason);
+                        let target = match name.split_once('.') {
+                            Some((o, i)) => Target::item(file, o, i),
+                            None => Target::owner(file, &name),
+                        };
+                        me.releases.insert(target, reason);
                     } else {
                         let mark =
                             parse_mark(&value).map_err(|p| bad(format!("{owner}.{name}: {p}")))?;
@@ -119,17 +120,35 @@ fn parse_mark(v: &Value) -> Result<Mark, String> {
             {
                 return Err(format!("unknown key {k:?}"));
             }
-            let class = class_of(
-                t.get("risk")
-                    .and_then(Value::as_str)
-                    .ok_or("risk is missing")?,
-            )?;
-            let text = |k: &str| t.get(k).and_then(Value::as_str).map(str::to_owned);
+            let text = |k: &str| match t.get(k) {
+                None => Ok(None),
+                Some(Value::String(s)) if !s.trim().is_empty() => Ok(Some(s.clone())),
+                Some(_) => Err(format!("{k} must be a non-empty text")),
+            };
+            let risk = text("risk")?.ok_or("risk is missing")?;
+            let class = class_of(&risk)?;
+            let capability = text("capability")?;
+            if let Some(c) = &capability {
+                let valid = c.len() <= 128
+                    && c.chars()
+                        .all(|ch| ch.is_ascii_alphanumeric() || "_.-".contains(ch));
+                if !valid {
+                    return Err(format!("capability {c:?} is not a valid tool name"));
+                }
+            }
+            let resource = match t.get("resource") {
+                None => false,
+                Some(Value::Boolean(b)) => *b,
+                Some(_) => return Err("resource must be true or false".to_owned()),
+            };
+            if resource && class != RiskClass::Read {
+                return Err("only a method of class read may be a resource".to_owned());
+            }
             Ok(Mark {
                 class,
-                capability: text("capability"),
-                resource: t.get("resource").and_then(Value::as_bool).unwrap_or(false),
-                reason: text("reason"),
+                capability,
+                resource,
+                reason: text("reason")?,
             })
         }
         _ => Err("a class name or a table is expected".to_owned()),

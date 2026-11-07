@@ -11,7 +11,7 @@ propose = "acts-in-name"
 proposed = "read"
 remove = "destructive"
 set = "change"
-shareWithGroup = "change"
+shareWithGroup = "acts-in-name"
 sharedGroups = "read"
 withdraw = "acts-in-name"
 

@@ -1,6 +1,6 @@
 //! Cap'n Proto types to the generator's [`TypeRef`].
 //!
-//! Pattern: none (one pure mapping function). Trait: none.
+//! Pattern: Visitor — one arm per Cap'n Proto type variant, kept outside the data. Trait: none.
 
 use capnp::schema_capnp::type_;
 

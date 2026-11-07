@@ -1,7 +1,7 @@
 //! A named place in a contract that can carry a mark: an interface, a method, a union member, a field.
 //!
-//! Pattern: Newtype — `Target` is a validated-by-construction string key, so marks, releases and the block
-//! list cannot be mixed up with free text. Trait: none (plain value); it keys [`crate::RiskSource`].
+//! Pattern: Newtype — `Target` wraps the string key, so marks, releases and the block list cannot be
+//! mixed up with free text. Trait: none (plain value); it keys [`crate::RiskSource`].
 
 use std::fmt;
 

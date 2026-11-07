@@ -6,7 +6,7 @@ mod api;
 mod facts;
 mod resources;
 mod run;
-mod scan;
+mod screen;
 mod tools;
 mod variant;
 mod vet;

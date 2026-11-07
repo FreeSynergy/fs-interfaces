@@ -1,7 +1,7 @@
 //! Contract types to JSON Schema (draft 2020-12, the dialect MCP uses).
 //!
-//! Pattern: Builder — [`SchemaBuilder`] collects the `$defs` of every struct it meets, once each, and
-//! `finish` attaches them to the root. Trait: none (internal).
+//! Pattern: Visitor — one arm per [`TypeRef`] variant, kept outside the data; the walk collects the `$defs`
+//! of every struct once. Trait: none (internal).
 
 use std::collections::BTreeMap;
 

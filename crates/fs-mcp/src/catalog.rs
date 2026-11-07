@@ -18,6 +18,17 @@ pub enum Why {
         /// The suspicious name, such as `AccountSetup.secret`.
         path: String,
     },
+    /// Free-form content (`Data`, or a field named json, config, proof, payload, blob, data) that nobody
+    /// released in writing as free of secrets.
+    FreeForm {
+        /// Where, such as `files/Upload.write.data`.
+        path: String,
+    },
+    /// Something the generator cannot judge: a structure it does not know, or an `AnyPointer`.
+    Unclear {
+        /// Where.
+        path: String,
+    },
     /// Not a call: a listener or a stream. Events become resources.
     NotACall(&'static str),
 }

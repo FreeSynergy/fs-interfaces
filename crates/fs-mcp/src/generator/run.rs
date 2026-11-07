@@ -1,14 +1,15 @@
 //! The run: [`Generator`] and the walk over interfaces that fills a catalog. It runs nothing.
 //!
 //! Pattern: Strategy — [`Generator`] implements [`ToolGenerator`] and takes its marks from any
-//! [`RiskSource`] (mark files now, annotations later). Inside, a Template method: for each candidate the
-//! same fixed order of checks (block list, not-a-call, marks, secrets) decides tool, resource or exclusion.
+//! [`RiskSource`] (mark files now, annotations later). The walk over interfaces fills a catalog; every
+//! candidate must pass `vet` (marks) and the screen (types) before it becomes a tool or resource.
 //! Trait: [`ToolGenerator`].
 
 use std::collections::HashSet;
 
 use super::api::ToolGenerator;
 use super::facts::{self, Facts};
+use super::screen::Screen;
 use crate::{Blocklist, Catalog, Contract, Error, Index, Interface, Left, RiskSource, Target, Why};
 
 /// The stage 1 generator.
@@ -31,9 +32,18 @@ pub(crate) struct Run<'a> {
     pub(crate) index: Index<'a>,
     pub(crate) facts: Facts,
     pub(crate) out: Catalog,
+    pub(crate) errors: Vec<Error>,
 }
 
 impl Run<'_> {
+    pub(super) fn screen(&self) -> Screen<'_> {
+        Screen {
+            risk: self.g.risk,
+            blocklist: &self.g.blocklist,
+            index: &self.index,
+        }
+    }
+
     pub(crate) fn leave(&mut self, target: Target, why: Why) {
         self.out.left_out.push(Left { target, why });
     }
@@ -41,6 +51,9 @@ impl Run<'_> {
     fn interface(&mut self, file: &str, iface: &Interface) {
         let owner = Target::owner(file, &iface.name);
         if let Some(why) = self.g.blocklist.reason(&owner) {
+            return self.leave(owner, Why::Blocked(why));
+        }
+        if let Some(why) = self.g.blocklist.type_reason(&iface.name) {
             return self.leave(owner, Why::Blocked(why));
         }
         if self.facts.is_callback(file, &iface.name) {
@@ -63,11 +76,15 @@ impl ToolGenerator for Generator<'_> {
             index: Index::new(contracts),
             facts: Facts::collect(contracts),
             out: Catalog::default(),
+            errors: Vec::new(),
         };
         for c in contracts {
             for i in &c.interfaces {
                 run.interface(&c.file, i);
             }
+        }
+        if let Some(e) = run.errors.into_iter().next() {
+            return Err(e);
         }
         let mut out = run.out;
         let mut seen = HashSet::new();

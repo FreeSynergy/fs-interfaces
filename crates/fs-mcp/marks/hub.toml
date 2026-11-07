@@ -7,7 +7,7 @@ proposals = "read"
 register = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
 
 [Session]
-ack = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-pull = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-push = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
-subscribe = { risk = "excluded", reason = "provider or program-to-hub interface, not a capability of a person (ADR 0045)" }
+ack = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+pull = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+push = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }
+subscribe = { risk = "excluded", reason = "interface of the identity mirror or of the program-to-hub protocol, not a capability of a person (ADR 0047, 0056)" }

@@ -1,6 +1,6 @@
 //! Walks the nodes of a request: interfaces, structs (and groups), enums, per requested file.
 //!
-//! Pattern: Adapter (the foreign form is read here and nowhere else). Trait: none (internal).
+//! Pattern: Adapter — the foreign form is read here and nowhere else. Trait: none (internal).
 
 use capnp::schema_capnp::{code_generator_request, field, node};
 
@@ -119,11 +119,11 @@ fn params(t: &Tables<'_>, id: u64) -> Result<(Vec<Field>, bool), Error> {
         return Ok((vec![], false));
     };
     let mut out = Vec::new();
-    for f in s.get_fields()? {
+    for (ix, f) in s.get_fields()?.iter().enumerate() {
         if let field::Which::Slot(slot) = f.which()? {
             out.push(Field {
                 name: text(f.get_name()?)?,
-                doc: String::new(),
+                doc: t.member_doc(id, ix),
                 ty: map(t, slot.get_type()?)?,
                 in_union: false,
             });

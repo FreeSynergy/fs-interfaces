@@ -61,9 +61,8 @@ fn a_forgotten_block_entry_does_not_release_a_secret() {
         left(&c, "Accounts", Some("add")),
         Some(Why::SecretSuspect { .. })
     ));
-    // `proof`/`signer` of the decision do not look secret, but with an empty list `decide` is then a tool: only the
-    // block list holds it back. That is why the list exists, and why the real-schema test pins its entries.
-    assert!(names(&c).iter().any(|n| n.contains("act.decide")));
+    // Even with an empty block list the decision stays out: its `proof` is `Data`, which nobody released.
+    assert!(!names(&c).iter().any(|n| n.contains("act.decide")));
 }
 
 #[test]

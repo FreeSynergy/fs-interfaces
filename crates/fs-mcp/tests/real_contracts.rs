@@ -3,8 +3,7 @@
 
 mod support;
 
-use fs_mcp::{Blocklist, MarkFiles, RiskClass, Target, Why, name_looks_secret};
-use serde_json::Value;
+use fs_mcp::{Blocklist, MarkFiles, RiskClass, Target, Why};
 use support::real::{contracts, generate_with, marks, real_catalog};
 
 #[test]
@@ -88,36 +87,59 @@ fn the_messenger_act_tools_are_one_per_member() {
     );
 }
 
-/// Second, independent line of defence: look at the finished JSON, not at the generator's own checks.
+/// Second, independent line of defence: it reads the finished JSON and the release lists itself, and matches by
+/// plain substring, so a mistake in the generator's word splitting cannot hide here.
 #[test]
-fn no_secret_looking_name_reaches_any_schema_unless_it_is_a_known_harmless_one() {
-    // Names that look secret and are not; each has a written release in marks/*.toml with its reason.
-    const HARMLESS: [&str; 6] = [
+fn every_secret_looking_property_has_a_written_release_for_exactly_that_field() {
+    const NEEDLES: [&str; 15] = [
+        "secret",
+        "passw",
+        "token",
         "key",
-        "inputTokens",
-        "outputTokens",
-        "missingKeys",
-        "hasKey",
-        "KeyCheck",
+        "credential",
+        "otp",
+        "auth",
+        "cookie",
+        "session",
+        "seed",
+        "private",
+        "signature",
+        "proof",
+        "mnemonic",
+        "bearer",
     ];
-    fn names(v: &Value, out: &mut Vec<String>) {
-        match v {
-            Value::Object(o) => {
-                if let Some(Value::Object(p)) = o.get("properties") {
-                    out.extend(p.keys().cloned());
-                }
-                o.values().for_each(|x| names(x, out));
-            }
-            Value::Array(a) => a.iter().for_each(|x| names(x, out)),
-            _ => {}
+    let mut releases = Vec::new();
+    for e in std::fs::read_dir(support::real::marks_dir()).unwrap() {
+        let text = std::fs::read_to_string(e.unwrap().path()).unwrap();
+        let table: toml::Table = text.parse().unwrap();
+        if let Some(toml::Value::Table(r)) = table.get("release") {
+            releases.extend(r.keys().cloned());
         }
     }
+    let secretish = |p: &str| NEEDLES.iter().any(|n| p.to_lowercase().contains(n));
     for t in &real_catalog().tools {
-        let mut found = Vec::new();
-        names(&t.input_schema, &mut found);
-        names(&t.output_schema, &mut found);
-        for n in found.iter().filter(|n| name_looks_secret(n)) {
-            assert!(HARMLESS.contains(&n.as_str()), "{} carries {n}", t.name);
+        for schema in [&t.input_schema, &t.output_schema] {
+            for p in schema["properties"]
+                .as_object()
+                .into_iter()
+                .flat_map(|o| o.keys())
+                .filter(|p| secretish(p))
+            {
+                let ok = releases.iter().any(|k| k.ends_with(&format!(".{p}")));
+                assert!(ok, "{}: top-level {p} has no release", t.name);
+            }
+            for (def, body) in schema["$defs"].as_object().into_iter().flatten() {
+                let strukt = def.split_once('.').map_or(def.as_str(), |(_, s)| s);
+                for p in body["properties"]
+                    .as_object()
+                    .into_iter()
+                    .flat_map(|o| o.keys())
+                    .filter(|p| secretish(p))
+                {
+                    let ok = releases.contains(&format!("{strukt}.{p}"));
+                    assert!(ok, "{}: {strukt}.{p} has no release", t.name);
+                }
+            }
         }
     }
 }
@@ -187,5 +209,8 @@ fn events_and_blobs_are_resources_and_listeners_are_no_tools() {
             .iter()
             .all(|t| !t.name.contains("subscribe") && !t.name.contains("listener"))
     );
-    assert!(c.tools.iter().all(|t| !t.name.starts_with("common.blob.")));
+    assert!(
+        c.tools.iter().all(|t| t.name != "common.blob.read"),
+        "bytes are a resource"
+    );
 }

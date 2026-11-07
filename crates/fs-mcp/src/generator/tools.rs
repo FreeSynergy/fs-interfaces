@@ -1,12 +1,13 @@
 //! Builds the [`Tool`] of a vetted candidate: name, description, input and output schema.
 //!
-//! Pattern: Builder (the tool is assembled from parts, never edited afterwards). Trait: none (internal).
+//! Pattern: Value object — a [`Tool`] is assembled once from the parts and never edited afterwards.
+//! Trait: none (internal).
 
 use serde_json::{Value, json};
 
 use super::run::Run;
 use super::variant::Variant;
-use crate::{Field, Interface, Method, SchemaBuilder, Target, Tool};
+use crate::{Error, Field, Interface, Method, SchemaBuilder, Target, Tool, TypeRef};
 
 const NO_DOC: &str = "(the contract has no comment on this)";
 
@@ -16,9 +17,25 @@ pub(super) fn lower_first(s: &str) -> String {
         .map_or_else(String::new, |f| f.to_lowercase().chain(c).collect())
 }
 
+/// Does the method hand out bytes (a `Data` result)? Only such a method may be a resource.
+fn returns_bytes(m: &Method) -> bool {
+    m.results.iter().any(|f| match &f.ty {
+        TypeRef::Data => true,
+        TypeRef::List(inner) => **inner == TypeRef::Data,
+        _ => false,
+    })
+}
+
 impl Run<'_> {
     pub(super) fn method(&mut self, file: &str, iface: &Interface, m: &Method, root: bool) {
         let target = Target::item(file, &iface.name, &m.name);
+        if self.g.risk.mark(&target).is_some_and(|k| k.resource) && !returns_bytes(m) {
+            self.errors.push(Error::Marks {
+                file: file.to_owned(),
+                problem: format!("{target}: resource = true, but the method returns no bytes"),
+            });
+            return;
+        }
         if let Some(why) = self.g.blocklist.reason(&target) {
             return self.leave(target, crate::Why::Blocked(why));
         }

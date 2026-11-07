@@ -1,14 +1,40 @@
 //! Resource templates: change feeds (`subscribe`) and bytes (`Blob`) are read as resources, never called.
 //!
-//! Pattern: Builder (a template is assembled from the method's parts). Trait: none (internal).
+//! Pattern: Value object — a [`ResourceTemplate`] is assembled once from the method's parts.
+//! Trait: none (internal).
 
 use super::run::Run;
 use super::tools::lower_first;
 use super::variant::Variant;
 use super::vet::Verdict;
-use crate::{Method, ResourceKind, ResourceTemplate, Target};
+use crate::{Field, Method, ResourceKind, ResourceTemplate, Target, Why};
 
 impl Run<'_> {
+    /// The listener hands the events to the caller, so everything the listener's methods carry is read by
+    /// the caller: it goes through the same screen as a result. A listener nobody defined is a problem.
+    fn listener_problem(&self, m: &Method) -> Option<Why> {
+        let screen = self.screen();
+        for p in m.params.iter().filter(|p| !p.ty.interfaces().is_empty()) {
+            for n in p.ty.interfaces() {
+                if let Some(why) = self.g.blocklist.type_reason(&n.name) {
+                    return Some(Why::Blocked(why));
+                }
+                let Some(def) = self.index.interface_def(n) else {
+                    return Some(Why::Unclear {
+                        path: format!("{}/{}", n.file, n.name),
+                    });
+                };
+                for lm in &def.methods {
+                    let fields: Vec<&Field> = lm.params.iter().collect();
+                    if let Some(why) = screen.fields(&n.file, &n.name, &lm.name, &fields) {
+                        return Some(why);
+                    }
+                }
+            }
+        }
+        None
+    }
+
     /// A `subscribe`-like method (it takes a listener): its events are a resource.
     pub(super) fn events_resource(&mut self, file: &str, iface: &str, m: &Method, root: bool) {
         let target = Target::item(file, iface, &m.name);
@@ -24,6 +50,9 @@ impl Run<'_> {
             member_doc: String::new(),
             inputs,
         };
+        if let Some(why) = self.listener_problem(m) {
+            return self.leave(target, why);
+        }
         let Some(verdict) = self.vet(file, iface, m, &v) else {
             return;
         };

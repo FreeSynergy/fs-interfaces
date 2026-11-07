@@ -4,7 +4,7 @@
 [Credential]
 none = "acts-in-name"
 person = "acts-in-name"
-proof = "acts-in-name"
+proof = { risk = "excluded", reason = "Data proof: free-form content nobody has judged (answer to Respond.challenge)" }
 token = { risk = "excluded", reason = "a token is a secret (ADR 0021)" }
 
 [Decisions]
@@ -18,7 +18,7 @@ unlinkTask = "destructive"
 [Designer]
 addQuestion = "add"
 archive = "change"
-classify = "change"
+classify = { risk = "excluded", reason = "sets ADR 0029 categories: the person decides what is protected" }
 close = "change"
 create = "add"
 delete = "destructive"
@@ -32,7 +32,7 @@ publish = "acts-in-name"
 removeQuestion = "destructive"
 reopen = "change"
 setConditions = "change"
-widen = "change"
+widen = "acts-in-name"
 
 [Respond]
 challenge = "read"
@@ -55,3 +55,6 @@ respond = "read"
 results = "read"
 subscribe = "read"
 supportReport = "read"
+
+[release]
+"InviteReport.already" = "a list of people invited before; the comment only says that no new token is sent"

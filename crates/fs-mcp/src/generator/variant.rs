@@ -1,7 +1,7 @@
 //! Splits a method into the candidates that become tools: one per union member of a parameter (so that
 //! `Conversation.act` is not one tool of mixed risk), else the method itself.
 //!
-//! Pattern: Iterator-style expansion (a method yields several variants). Trait: none (internal).
+//! Pattern: Value object — a [`Variant`] is one candidate tool; a method yields a list of them. Trait: none.
 
 use super::run::Run;
 use crate::{Field, Method, Target, TypeRef};

@@ -13,7 +13,8 @@ struct Edited(PathBuf);
 
 impl Edited {
     fn new(tag: &str, extra: &str) -> Self {
-        let dir = std::env::temp_dir().join(format!("fs-mcp-{tag}-{}", std::process::id()));
+        let dir = std::path::Path::new(env!("CARGO_TARGET_TMPDIR"))
+            .join(format!("fs-mcp-{tag}-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         for e in std::fs::read_dir(schema_dir()).unwrap() {
             let p = e.unwrap().path();
