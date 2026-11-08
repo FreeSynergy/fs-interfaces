@@ -18,14 +18,14 @@ capnp-rpc = { version = "0.27", optional = true }
 tokio = { version = "1", features = ["rt", "net", "sync", "macros", "signal", "time"], optional = true }
 tokio-util = { version = "0.7", features = ["compat"], optional = true }
 futures = { version = "0.3", optional = true }
-fs-objects = { git = "https://github.com/FreeSynergy/fs-objects", tag = "v0.5.0", optional = true }
+fs-objects = { git = "https://github.com/FreeSynergy/fs-objects", tag = "v0.0.1", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"], optional = true }
 uuid = { version = "1", optional = true }
 rustix = { version = "1", features = ["process"], optional = true }
 
 [dev-dependencies]
 # Our own pure-Rust schema compiler (ADR 0040) regenerates the committed code ...
-capnp-compiler = { git = "https://github.com/FreeSynergy/fs-capnpc", tag = "v0.1.0" }
+capnp-compiler = { git = "https://github.com/FreeSynergy/fs-capnpc", tag = "v0.0.1" }
 capnpc = "0.27"
 # ... and the official compiler (as WASM) is the oracle in tests/generated_matches_official.rs.
 capnpc-embedded = "0.2"
