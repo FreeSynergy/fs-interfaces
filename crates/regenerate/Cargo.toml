@@ -8,5 +8,5 @@ rust-version.workspace = true
 publish = false
 
 [dependencies]
-capnp-compiler = { git = "https://github.com/FreeSynergy/fs-capnpc", tag = "v0.1.0" }
+capnp-compiler = { git = "https://github.com/FreeSynergy/fs-capnpc", tag = "v0.0.1" }
 capnpc = "0.27"
