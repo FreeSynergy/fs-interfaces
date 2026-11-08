@@ -8,7 +8,7 @@ What is different here: an interface is a target, not something that grows. It i
 
 ## What it can do today
 
-Latest tag: `v0.47.0`.
+Latest tag: `v0.0.1`.
 
 - Cap'n Proto schemas for: common types, tasks, messenger, hub, people, groups, files, events, places and texts, and, according to the design file, surveys, history, resources, whiteboard and streaming. The README table lists the first ten; the DESIGN file has the full list.
 - The Rust code generated from them is committed, so a normal build needs no schema compiler.
@@ -32,7 +32,7 @@ Interfaces is the common language of the programs. FreeSynergy is a family of pr
 
 - Workspace crates: `fs-interfaces` (generated code and the provider rule), `regenerate` (rebuilds the generated code with our own compiler [fs-capnpc](https://github.com/FreeSynergy/fs-capnpc)), `fs-mcp`.
 - Each schema in `schema/` starts with a header naming status, owner and consumers. Never renumber or remove a field; only append.
-- Use it by git tag: `fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.44.0" }`.
+- Use it by git tag: `fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.0.1" }`.
 - After a schema change: `cargo run -p regenerate` and `cargo test -p fs-interfaces`. No C++ toolchain needed.
 - Design and the full state table: [DESIGN.md](DESIGN.md).
 - Licence: MIT OR Apache-2.0.
@@ -88,7 +88,7 @@ Each schema file starts with a header naming status, owner and consumers.
 ### Use
 
 ```toml
-fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.7.0" }
+fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.0.1" }
 ```
 
 ```rust
