@@ -7,19 +7,25 @@
 # in and out through import and export. Evolution rules: only append.
 #
 # DRAFT 0.2 adds (all append only; a provider that lacks one answers `Unsupported` for its
-# capability id in `supportReport`): history (`text.history`), trash (`text.trash`), spaces and
+# capability id in `supportReport`): edit with summary (`text.editSummary`), history (`text.history`), trash (`text.trash`), spaces and
 # ordered folders (`text.space`), templates (`text.template`), redirects (`text.redirect`), search
 # with snippets and filters (`text.search`), and typed problems (below). Semantics and limits of each
 # method: fs-interfaces DESIGN.md, section "texts 0.2". Zero `Uuid` (hi = lo = 0) means "none".
 #
 # PROBLEMS. Besides `unsupportedProblemType` (common.capnp) the methods answer these RFC 9457
 # problem types (`Problem.type`, with `status`, `detail`, and the extension members named):
-#   notFoundProblemType    404  id, path, revision number or folder does not exist (ext `id`, `kind`)
+#   notFoundProblemType    404  id, path, revision number or folder does not exist (ext `id`, `kind` =
+#                               "text" | "folder" | "revision"); also `trash` or `purge` on a text that
+#                               is already in the trash (kind "text"; it is no longer addressable)
+#   badPathProblemType     422  a path (or folder path, redirect target) breaks the path rules, or a
+#                               folder name has no usable slug; ext `issue` = "bad-path" plus the reason
+#                               (`empty-slug`, `outside-parent`, `external-target`, ...)
 #   conflictProblemType    409  `editIf`, `editWith`, `restoreRevision`, `setTemplate`, `setRedirect`:
 #                               the text no longer has the expected `revision`. Nothing was written.
 #                               ext: `id` (the text), `kind` = "text", `issue` = "stale-revision",
-#                               `revision` = the CURRENT revision as decimal u64 (key
-#                               `conflictRevisionKey`), `expected` = the revision the caller sent
+#                               `revision` = the CURRENT revision as decimal u64 when the provider
+#                               knows it (key `conflictRevisionKey`; fs-tasks and fs-people omit it on
+#                               purpose, to be aligned), `expected` = the revision the caller sent
 #                               (key `conflictExpectedKey`). `detail` still starts `conflict:` so a
 #                               0.49 reader that looks at the text keeps working.
 #   pathTakenProblemType   409  the path (or the original path on restore) is used by another text
@@ -45,6 +51,7 @@ const notFoundProblemType    :Text = "https://freesynergy.net/problems/texts/not
 const conflictProblemType    :Text = "https://freesynergy.net/problems/texts/conflict";
 const pathTakenProblemType   :Text = "https://freesynergy.net/problems/texts/path-taken";
 const moveRefusedProblemType :Text = "https://freesynergy.net/problems/texts/move-refused";
+const badPathProblemType     :Text = "https://freesynergy.net/problems/texts/bad-path";
 const invalidProblemType     :Text = "https://freesynergy.net/problems/texts/invalid";
 const notInTrashProblemType  :Text = "https://freesynergy.net/problems/texts/not-in-trash";
 const notEmptyProblemType    :Text = "https://freesynergy.net/problems/texts/not-empty";
@@ -57,6 +64,8 @@ const maxRedirectHops        :UInt8 = 8;
 # bounds a provider enforces (a larger request is `invalidProblemType`); see DESIGN.md "texts 0.2"
 const maxSummaryBytes        :UInt16 = 200;
 const maxSearchTermBytes     :UInt16 = 256;
+const maxSearchWords         :UInt8 = 8;
+const minPrefixBytes         :UInt8 = 2;       # the prefix word of a prefix search is at least this long
 const maxSnippetBytes        :UInt16 = 240;
 const maxSnippetsPerHit      :UInt8 = 3;
 const maxHighlightsPerSnippet :UInt8 = 20;
@@ -108,7 +117,7 @@ struct RevisionInfo {
 struct RevisionPage { items @0 :List(RevisionInfo); next @1 :Cursor; }   # newest first
 struct RevisionContent { info @0 :RevisionInfo; document @1 :Text; }
 
-# ---- 0.2: trash (text.trash) -----------------------------------------------------------------
+# ---- 0.2: trash (text.trash; `trash` moves a text there, `delete` keeps its 0.1 meaning) -----------------------------------------------------------------
 struct TrashItem {
   id        @0 :Uuid;
   path      @1 :Text;              # the path it had when deleted
@@ -124,7 +133,7 @@ struct TrashPage { items @0 :List(TrashItem); next @1 :Cursor; }          # most
 # display `name`; their `path` is the prefix they own (space "manual" owns "manual/..."). A page's
 # parent is the folder whose path is the longest prefix of the page's path, so moving a page between
 # folders is the existing `move`/`moveFolder`; only the ORDER among siblings is new state.
-enum NodeKind { page @0; folder @1; space @2; }
+enum NodeKind { unknown @0; page @1; folder @2; space @3; }   # unknown = a value from a newer provider or unset; never treat as a page
 struct Node {
   id       @0 :Uuid;               # the text id for a page
   kind     @1 :NodeKind;
@@ -136,15 +145,19 @@ struct Node {
   redirect @7 :Bool;               # pages only
 }
 struct NodePage { items @0 :List(Node); next @1 :Cursor; }
-enum Placement { first @0; last @1; before @2; after @3; }
+enum Placement { unspecified @0; first @1; last @2; before @3; after @4; }   # unspecified is refused (invalidProblemType, issue `placement`)
 
 # ---- 0.2: redirects (text.redirect) ----------------------------------------------------------
-enum Outcome { resolved @0; notFound @1; loop @2; tooManyHops @3; }
+enum Outcome { unknown @0; resolved @1; notFound @2; loop @3; tooManyHops @4; }   # unknown = unset or from a newer provider: NOT success
 struct Resolution {
-  outcome @0 :Outcome;             # resolved: `text` is the end of the chain (possibly the start itself, hops empty)
-                                   # notFound: the start or a target does not exist; `hops` ends at the missing path
-                                   # loop: a path came up twice; tooManyHops: more than maxRedirectHops redirects
-  hops    @1 :List(Text);          # the paths followed, start first, the final path excluded
+  outcome @0 :Outcome;             # resolved: `text` is the end of the chain (the start itself if it is no redirect)
+                                   # notFound: the start or a target does not exist
+                                   # loop: a path came up twice (wins whenever a cycle is detected)
+                                   # tooManyHops: more than maxRedirectHops redirects and no cycle seen
+  hops    @1 :List(Text);          # the paths visited, start first, up to the last one examined: for resolved the final path
+                                   # is NOT included (it is `text.path`); for notFound it ends with the missing path; for loop with
+                                   # the path that came twice; for tooManyHops with the last path examined. So hops.len() is the
+                                   # number of redirects followed for resolved, and at most maxRedirectHops + 1 otherwise
   text    @2 :TextEntry;           # set only when outcome = resolved
 }
 
@@ -160,8 +173,8 @@ struct SearchFilter {
   updatedTo     @6 :Timestamp;     # updated before (half open); unixMillis 0 = no restriction
 }
 struct SearchQuery {
-  term   @0 :Text;                 # words, case-insensitive, all must match; at most maxSearchTermBytes; empty = filters only
-  prefix @1 :Bool;                 # true: the LAST word matches as a prefix (type-ahead); the others whole
+  term   @0 :Text;                 # words, case-insensitive, all must match; at most maxSearchTermBytes and maxSearchWords words; empty = filters only
+  prefix @1 :Bool;                 # true: the LAST word matches as a prefix (type-ahead), at least minPrefixBytes long (else invalidProblemType, issue `prefix-too-short`); the others whole
   filter @2 :SearchFilter;
 }
 # A range of a snippet in UTF-8 bytes, half open, always on character boundaries.
@@ -203,15 +216,15 @@ interface Texts {
   moveFolder @14 (prefix :Text, path :Text) -> (moved :List(TextEntry));          # text.move: the text at `prefix` (if any) and every `prefix/...` move along; links follow; a clash below refuses all, nothing written
   editIf     @15 (id :Uuid, revision :UInt64, document :Text) -> (text :TextEntry);  # text.edit, only if the text still has `revision`; otherwise it fails with `conflictProblemType` (typed, see PROBLEMS above; detail still starts `conflict:`) and writes nothing (compare-and-set; atomic inside one provider process only)
   # ---- 0.2, append only ---------------------------------------------------------------------
-  editWith   @16 (id :Uuid, expect :Expect, document :Text, summary :Text) -> (text :TextEntry);   # text.edit: edit/editIf with a revision summary (may be empty; at most maxSummaryBytes)
+  editWith   @16 (id :Uuid, expect :Expect, document :Text, summary :Text) -> (text :TextEntry);   # text.editSummary: edit/editIf with a revision summary (may be empty; at most maxSummaryBytes); capability `text.editSummary`
   # history (text.history). Also readable for a text in the trash.
   history    @17 (id :Uuid, cursor :Cursor) -> (page :RevisionPage);                          # text.history: newest first, at most maxHistoryPage per page
   getRevision @18 (id :Uuid, number :UInt64) -> (found :Bool, revision :RevisionContent);     # text.history: found = false if never existed or pruned
   restoreRevision @19 (id :Uuid, number :UInt64, expect :Expect) -> (text :TextEntry);        # text.history: writes the old document as a NEW revision (restoredFrom = number); path, template and redirect stay as now; history is never rewritten
-  # trash (text.trash). With this capability `delete @4` moves the text to the trash.
+  # trash (text.trash). `delete @4` keeps its 0.1 meaning (removal as the provider always did it); `trash` is the recoverable one.
   listTrash  @20 (cursor :Cursor) -> (page :TrashPage);                                       # text.trash
   restoreFromTrash @21 (id :Uuid, path :Text) -> (text :TextEntry);                           # text.trash: empty path = the old one; taken = pathTakenProblemType, nothing changes
-  purge      @22 (id :Uuid) -> ();                                                            # text.trash: forever, only for a text in the trash (else notInTrashProblemType); the one way to destroy a text
+  purge      @22 (id :Uuid) -> ();                                                            # text.trash: removes the text from this provider for good (what exactly: DESIGN.md "purge scope"); only for a text in the trash (else notInTrashProblemType)
   # spaces and ordered folders (text.space)
   createFolder @23 (parent :Uuid, name :Text, path :Text) -> (node :Node);                    # text.space: zero parent = a new space; empty path = parent path + "/" + a slug of name
   renameFolder @24 (id :Uuid, name :Text) -> (node :Node);                                    # text.space: display name only; a path change is moveFolder
@@ -225,5 +238,9 @@ interface Texts {
   setRedirect @31 (id :Uuid, target :Text, expect :Expect) -> (text :TextEntry);              # text.redirect: empty target clears; the target need not exist; itself = invalidProblemType, issue `self-redirect`
   resolve    @32 (path :Text) -> (resolution :Resolution);                                    # text.redirect: follows redirects, at most maxRedirectHops; `get`/`getByPath` never follow
   # search (text.search)
-  search     @33 (query :SearchQuery, cursor :Cursor) -> (page :SearchPage);                  # text.search: relevance first (filters only: updated, newest first); at most maxSearchPage hits
+  search     @33 (query :SearchQuery, cursor :Cursor) -> (page :SearchPage);                  # text.search: order (relevance desc, updated desc, id asc); a cursor continues after that tuple of its last hit, so a text that changes between pages may be skipped or shown twice; at most maxSearchPage hits
+  purgeRevision @34 (id :Uuid, number :UInt64) -> ();                                         # text.history: removes ONE old revision for good (leaked secret); not the current one (invalidProblemType, issue `current-revision`); unknown/pruned = notFoundProblemType kind "revision"
+  # trash method added after the first draft of 0.2 so `delete` keeps its meaning (@35, in the trash group above in meaning)
+  trash      @35 (id :Uuid) -> (item :TrashItem);   # text.trash: moves the text with its history out of sight; path free again; already trashed or unknown = notFoundProblemType
 }
+

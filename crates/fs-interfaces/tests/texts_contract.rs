@@ -73,7 +73,9 @@ fn new_methods_are_appended_without_gaps() {
             "createFromTemplate",
             "setRedirect",
             "resolve",
-            "search"
+            "search",
+            "purgeRevision",
+            "trash"
         ]
     );
 }
@@ -182,4 +184,29 @@ fn search_hit_with_highlights_round_trips() {
     let h = sn.get_highlights().unwrap().get(0);
     let text = sn.get_text().unwrap().to_str().unwrap();
     assert_eq!(&text[h.get_start() as usize..h.get_end() as usize], "wiki");
+}
+
+#[test]
+fn a_missing_enum_value_is_never_success() {
+    // ordinal 0 is the neutral value, so an unset or unknown field cannot read as "resolved"/"first"/"page"
+    assert_eq!(t::Outcome::Unknown as u16, 0);
+    assert_eq!(t::Outcome::Resolved as u16, 1);
+    assert_eq!(t::Outcome::TooManyHops as u16, 4);
+    assert_eq!(t::Placement::Unspecified as u16, 0);
+    assert_eq!(t::Placement::After as u16, 4);
+    assert_eq!(t::NodeKind::Unknown as u16, 0);
+    assert_eq!(t::NodeKind::Space as u16, 3);
+    assert_eq!(t::Tri::Any as u16, 0);
+    let mut m = capnp::message::Builder::new_default();
+    let r = m.init_root::<t::resolution::Builder>().into_reader();
+    assert!(matches!(r.get_outcome().unwrap(), t::Outcome::Unknown));
+}
+
+#[test]
+fn the_added_consts_and_problem_types_are_golden() {
+    assert_eq!(
+        t::BAD_PATH_PROBLEM_TYPE,
+        "https://freesynergy.net/problems/texts/bad-path"
+    );
+    assert_eq!((t::MAX_SEARCH_WORDS, t::MIN_PREFIX_BYTES), (8, 2));
 }

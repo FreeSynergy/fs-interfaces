@@ -57,7 +57,7 @@ Latest tag v0.47.0 (header corrected 2026-11-08; the next lines list 0.44.0 and 
 | `streaming.capnp` (new, owner fs-streaming): stage 1: streams, targets, keys as secrets, check, recording handed over | done, draft, provisional |
 | `rpc`: an item too large for any message no longer blocks what is behind it (`Problem::next`), error texts are cut at 64 KiB, `run_until_signal` waits for `run_to_end` work, `prepare_data_dir` answers the canonical path, `--instance` must be a domain | done, version 0.32.0 |
 | `files` gains `BlobBackend.inspect @16` | done |
-| `texts` draft 0.2 (0.50.0): history, trash, spaces and ordered folders, templates, redirects, search with snippets, typed conflict problem; `TextEntry.template/redirectTo/updatedBy`; methods `@16` to `@33`; append only (section "texts 0.2") | done, draft |
+| `texts` draft 0.2 (0.50.0): history, trash, spaces and ordered folders, templates, redirects, search with snippets, typed conflict problem; `TextEntry.template/redirectTo/updatedBy`; methods `@16` to `@35`; append only (section "texts 0.2") | done, draft |
 | Generated Rust with `capnp-compiler` v0.1.0 + `capnpc` 0.27 | done; byte-identical to `capnpc-embedded` 0.2 output (tested) |
 | Rust helpers `Unsupported`, `Capabilities` with wire round trips | done |
 | `rpc` (feature): socket with lock file, connection, problems, envelope, pages, feed | done, draft |
@@ -73,40 +73,60 @@ All of it is append only: `TextEntry` gains `template @4`, `redirectTo @5`, `upd
 
 | Method | Capability | Semantics and limits |
 |---|---|---|
-| `editWith(id, expect, document, summary)` | `text.edit` | `edit`/`editIf` plus a revision summary (at most 200 bytes, else `invalid`, issue `summary-too-long`). |
-| `history(id, cursor)` | `text.history` | Revisions of a text, newest first, `RevisionInfo` (number, revision, author, at, size, summary, path, restoredFrom). At most 100 per page, opaque cursor. Works for a trashed text. `number` counts from 1 per text, never reused; it (not `revision`) orders. Every write adds one: create, edit*, move, import, restore, setTemplate, setRedirect. |
+| `editWith(id, expect, document, summary)` | `text.editSummary` | `edit`/`editIf` plus a revision summary (at most 200 bytes, else `invalid`, issue `summary-too-long`). |
+| `history(id, cursor)` | `text.history` | Revisions of a text, newest first, `RevisionInfo` (number, revision, author, at, size, summary, path, restoredFrom). At most 100 per page, opaque cursor. Works for a trashed text. `number` counts from 1 per text, never reused; it (not `revision`) orders. A provider keeps per text at least the last 50 revisions or 90 days of them, whichever is more (the current one always). Every write adds one: create, edit*, move, import, restore, setTemplate, setRedirect. |
 | `getRevision(id, number)` | `text.history` | The document of one revision (`found = false` if it never existed or was pruned). The answer must fit one message (`too-large` otherwise, as `get`). |
 | `restoreRevision(id, number, expect)` | `text.history` | Writes the old document as a new revision (`restoredFrom = number`, summary `restored revision N`). Path, template and redirect flags stay as they are now. History is never rewritten or truncated by it. |
-| `delete(id)` (existing) | `text.trash` | With this capability delete moves the text (and its history) to the trash: `get`, `list`, `find`, `search`, `links` no longer show it, its path is free again, a feed event `Deleted` is told. Without it, delete behaves as before. |
+| `delete(id)` (existing) | `text.delete` | Keeps its 0.1 meaning exactly; this contract does not change it. |
+| `trash(id)` | `text.trash` | Moves the text and its history to the trash: `get`, `list`, `find`, `search`, `links` no longer show it, its path is free again, a feed event `Deleted` is told. A text already in the trash (or unknown) answers `not-found`, kind `text`. Returns the `TrashItem`. |
 | `listTrash(cursor)` | `text.trash` | `TrashItem` (id, path, name, deletedAt, deletedBy, size), most recently deleted first, paged. |
 | `restoreFromTrash(id, path)` | `text.trash` | Empty path = the old path. If the path is taken: `path-taken` (409), nothing changes; the caller may send another path. Not in trash: `not-in-trash`. |
-| `purge(id)` | `text.trash` | Destroys one trashed text and its history for good. Refuses a text not in the trash (`not-in-trash`). The only way to destroy a text through this contract; nothing purges implicitly through this API (a provider may expire the trash by its own policy and must say so in its report). |
-| `createFolder(parent, name, path)` | `text.space` | Zero parent = a new space. Folder name at most 255 bytes, no `/`. Empty path = parent path + `/` + slug of name. Path taken: `path-taken`. |
+| `purge(id)` | `text.trash` | Removes one trashed text for good; scope below. Refuses a text not in the trash (`not-in-trash`). Nothing purges implicitly through this API (a provider may expire the trash by its own policy and must say so in its report). |
+| `purgeRevision(id, number)` | `text.history` (risk: destructive) | Removes ONE old revision for good, for a leaked secret. Not the current revision (`invalid`, issue `current-revision`; edit the text first, then purge the old one). The revision `number` stays used: the gap is shown as a gap, `getRevision` answers `found = false`, `restoreRevision` of it answers `not-found` kind `revision`, new numbers continue after the highest ever given. Text of the secret that is still in later revisions is not found or cleaned by this call. |
+| `createFolder(parent, name, path)` | `text.space` | Zero parent = a new space. Folder name at most 255 bytes, no `/`. An explicit `path` must lie strictly below the parent's path (`parent.path + "/" + ...`; for a space any valid path) and obey the path rules: no `.` or `..` segment, no empty segment, no leading or trailing `/`, no U+10FFFF; else `bad-path` (issue `outside-parent` or the rule). Empty path = parent path + `/` + slug of the name; a name with an empty slug (for example only non-Latin letters) answers `bad-path`, issue `empty-slug`, unless a path is given. **Adoption:** creating a folder over a prefix that already holds texts (or exists as a path only) adopts it: the texts stay, only the node is new. A prefix already owned by a folder node: `path-taken`. |
 | `renameFolder(id, name)` | `text.space` | Display name only. A path change is `moveFolder` (links follow, as before). |
-| `deleteFolder(id)` | `text.space` | Only an empty folder (`not-empty`, 409). Never deletes texts. |
+| `deleteFolder(id)` | `text.space` | Only an empty folder (`not-empty`, 409): texts in the trash below it still count, so they block it until purged or restored. Never deletes texts. |
 | `getFolder(id)` | `text.space` | `Node` of a space or folder. |
 | `children(parent, cursor)` | `text.space` | Ordered children (folders, pages) as `Node`s with `position`; zero parent = spaces and pages outside every folder. At most 200 per page. Children never placed come after placed ones, in creation order. |
 | `reorder(id, placement, anchor)` | `text.space` | `first`, `last`, `before`, `after` (anchor must be a sibling, else `invalid`, issue `anchor`) within the current parent. Moving to another parent is `move`/`moveFolder`; the page's order slot then is `last` there. The order is state of the provider, not part of the document. |
 | `setTemplate(id, template, expect)` | `text.template` | Marks or unmarks. A template is an ordinary text (listed, edited, versioned) that `search` can include or exclude. |
 | `createFromTemplate(template, path)` | `text.template` | New text with a copy of the template's document, new id, not a template, own history starting with summary `from template <path>`. No placeholder substitution. Path taken: `path-taken`; source not a template: `invalid`, issue `not-a-template`. |
-| `setRedirect(id, target, expect)` | `text.redirect` | Target is a path (empty clears). The target need not exist. Target = own path: `invalid`, issue `self-redirect`. `get`/`getByPath` never follow. |
-| `resolve(path)` | `text.redirect` | Follows redirects, at most 8 (`maxRedirectHops`). `Resolution.outcome`: `resolved` (with the final text), `notFound`, `loop` (a path came twice), `tooManyHops`; `hops` lists the paths followed. These are results, not problems. |
-| `search(query, cursor)` | `text.search` | Term (all words, case-insensitive, at most 256 bytes, else `invalid`, issue `term-too-long`); `prefix = true` matches the last word as a prefix. Filters (AND): `space`, `pathPrefix`, `template`/`redirect` (`any`/`only`/`exclude`), `author` (last writer), `updatedFrom`/`updatedTo` (half open, 0 = none). Hits carry at most 3 snippets of at most 240 bytes with at most 20 highlights each (UTF-8 byte ranges, on character boundaries, ordered, not overlapping). At most 50 hits per page. Order: relevance, then updated newest first, then id; with an empty term: updated newest first. `find` stays as the simple search. |
+| `setRedirect(id, target, expect)` | `text.redirect` | Target is a path (empty clears). The target must be a valid internal path under the same path rules (no scheme such as `https:`, no `..`); else `bad-path` (issue `external-target` or the rule). The target need not exist. Target = own path: `invalid`, issue `self-redirect`. `get`/`getByPath` never follow. |
+| `resolve(path)` | `text.redirect` | Follows redirects, at most 8 (`maxRedirectHops`). `Resolution.outcome`: `resolved` (with the final text), `notFound`, `loop` (a path came twice; it wins whenever a cycle is detected), `tooManyHops` (more than 8 redirects, no cycle seen), `unknown` (ordinal 0: an unset or newer value, never success). `hops` lists the paths visited, start first; for `resolved` the final path is not in it. These are results, not problems. |
+| `search(query, cursor)` | `text.search` | Term (all words, case-insensitive, at most 256 bytes and 8 words, else `invalid`, issue `term-too-long` or `too-many-words`); `prefix = true` matches the last word as a prefix, at least 2 bytes (`prefix-too-short`). Filters (AND): `space`, `pathPrefix`, `template`/`redirect` (`any`/`only`/`exclude`), `author` (last writer), `updatedFrom`/`updatedTo` (half open, 0 = none). Hits carry at most 3 snippets of at most 240 bytes with at most 20 highlights each (UTF-8 byte ranges, on character boundaries, ordered, not overlapping). At most 50 hits per page. Order: (relevance desc, updated desc, id asc); with an empty term relevance is equal. The cursor continues after that tuple of the last hit; a text that changes between two pages may be skipped or shown twice (relevance moves). `find` stays as the simple search. |
+
+### Purge scope (provisional, owner may change)
+
+`purge` removes from the provider: the text object, its log entries, all its revisions, its entries in the search and link indexes, and its files (provider: `purge_object` plus `clean_files`). It does **not** reach copies that already left the provider: what was synced to the hub or told on the feed stays there (the hub needs a purge of its own, `sync_then_purge` in fs-hub), and an unsynced delete may never reach the hub. A client must not promise a person "gone everywhere".
+
+### Where revisions live (provisional)
+
+`number` and the revisions are stored with the text's history, **not** as a counter inside the text record: a store undo or a log compaction/clear-history would reset such a counter and reuse numbers. The provider derives the next number from the highest ever given (kept apart from the revisions it may prune).
+
+### Trash edge cases (provisional)
+
+* A trashed text counts as a child for `deleteFolder` (blocks it) until purged or restored; so a restore never lands in a deleted folder through this API. If the folder node is gone anyway, `restoreFromTrash` keeps the path and the page has the nearest existing folder as parent (or none); it is not moved.
+* `trash`/`purge` of an already trashed text: `not-found` (`trash`), `not-in-trash` (`purge`... of a live text).
+* `moveFolder` moves the folder nodes at and below the prefix with the texts, and keeps their order slots.
+* Links rewritten by a `move` are writes in the other texts and add a revision there (summary `links updated`); a provider that cannot do that says so in its report.
+* Structure changes (folders, order, flags, trash and restore) have **no feed events yet** (`subscribe` tells text changes only); open point.
+* Redirects do **not** follow page moves (a redirect stays a path); open point, decision.
 
 ### Open points of texts 0.2 (choices I was unsure about; for the strategy session)
 
+0. All decisions marked provisional above and in the list are the coordinator's and may be changed by the owner. `revision` in the conflict is "when known": fs-tasks and fs-people omit it on purpose; align all three later. `kind` values of `not-found`: `text`, `folder`, `revision`.
 1. **`kind` in the conflict problem.** The order said `kind=conflict`; `rpc::problem_keys::KIND` is defined as the noun of the object (`task`, `page`), and the problem `type` already says conflict. I set `kind` = `text`, `issue` = `stale-revision` and added `revision`/`expected`. Say if `kind` should be `conflict`.
 2. **`editWith`/`Expect`** is a new write method instead of a `summary` on `editIf` (parameters added to an existing method would change meaning for old callers). The other new writes take `Expect` rather than a bare revision. Alternative: summary-less only.
-3. **`delete` changes meaning** (trash instead of removal) for a provider that reports `text.trash`. Not a wire change; clients must read the report. A separate `trash` method would avoid it but leaves `delete` as a silent hard delete.
+3. **`delete` keeps its meaning;** the separate `trash` method (`@35`) is the recoverable one. Decided, provisional.
 4. **No `emptyTrash`, no retention setting** in the contract; only per-text `purge`. Provider-side expiry is allowed but undefined.
-5. **History retention:** the contract allows pruning (gaps in `number`) but sets no minimum. Proposal: keep at least the last 50 revisions or 90 days.
+5. **History retention:** pruning is allowed (gaps in `number`); the obligation is at least 50 revisions or 90 days per text, whichever keeps more. Provisional.
 6. **Folders are nodes at path prefixes** (a folder owns a prefix, a page's parent is its longest-prefix folder), not a second tree independent of paths. It keeps `move`/links as they are but means a page cannot sit in a folder whose prefix is not its path. Order slots are per parent; `position` is an index, not a stable key.
 7. **Order on `move` across parents** (slot `last`) and `children` cursor stability under concurrent reorders are not specified beyond "opaque cursor"; the cursor limits above (`Limits of rpc`) apply.
 8. **Template creation** copies without placeholders; no template parameters (title, date).
 9. **Search `author`** compares the last writer only, not any past author; **no relevance score** on the wire; `field` is free text (`name`, `path`, `body`) rather than an enum so a provider can add `tag` later.
 10. **Redirect to a path** (not to an id): it survives a recreate and follows `move` only if the provider rewrites it as it rewrites links; the contract does not yet require that.
 11. **Search over trashed texts** is not offered (no `trashed` filter); `listTrash` has no term.
-12. **No spaces without folders in old data:** an existing provider has paths only; `createFolder` for an existing prefix would adopt it (provider's choice, unspecified).
+12. Existing data has paths only; `createFolder` over an existing prefix adopts it (decided above).
 13. `Timestamp` millisecond resolution and the `Time` limit above still apply to `at`, `updatedFrom`, `updatedTo`.
 
 ## Decisions
