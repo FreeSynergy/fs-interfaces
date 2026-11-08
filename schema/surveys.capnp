@@ -151,7 +151,30 @@ struct Credential {
     person @1 :Text;              # named
     token  @2 :Text;              # anonymousOnce
     proof  @3 :Data;              # public: the answer to `Respond.challenge`
+    open   @4 :OpenClaim;         # anonymousOpen: anyone, no proof (2026-11-08, owner); `none` is refused there
   }
+}
+
+# What an open respondent hands in. `declaredAi` is the answer to "Are you an AI?": a claim, never a
+# proof, and required (`unset` is refused). `elapsedMs` and `honeypot` only feed the pattern counts
+# (`Summary.patterns`); neither is stored with the ballot.
+enum Claim { unset @0; human @1; ai @2; }
+struct OpenClaim {
+  declaredAi @0 :Claim;
+  elapsedMs  @1 :UInt32;            # 0 = not measured
+  honeypot   @2 :Text;              # the hidden field; any text in it is a pattern
+}
+
+# Patterns of open answers, counted per lane and released with the batch, never per ballot. They are
+# shown beside the figures and never used to leave an answer out.
+struct Patterns {
+  looked     @0 :UInt32;            # open claims that were looked at
+  tooFast    @1 :UInt32;
+  honeypot   @2 :UInt32;
+  straightLine @3 :UInt32;          # the same choice in every row
+  burst      @4 :UInt32;
+  noTiming   @5 :UInt32;
+  sameText   @6 :UInt32;            # ballots whose free text another ballot also holds
 }
 
 struct ChoiceCount { choice @0 :Text; count @1 :UInt32; }
@@ -172,6 +195,9 @@ struct Summary {
   heldBack  @3 :UInt32;             # answers not released yet (see the header); anonymous: 0 while open
   ai        @4 :Summary;            # the AI part, same shape; counted apart, never in the fields above
   hasAi     @5 :Bool;               # false: no AI part (not allowed and no AI answers); `ai` is then empty
+  hasPatterns @6 :Bool;             # anonymousOpen only
+  patterns  @7 :Patterns;           # beside the figures of this part; nothing is left out because of them
+  voluntary @8 :List(ChoiceCount);  # `key=value` and how often; only after the close and from `minGroup` sets
 }
 
 struct OptionResult {
@@ -251,7 +277,11 @@ interface Respond {
   submit @3 (id :Uuid, credential :Credential, answers :List(Answer)) -> ();             # response.submit
   # work to do before a `public` answer, bound to this survey; harder under load
   challenge @4 (id :Uuid) -> (challenge :Data, difficulty :UInt8);                       # survey.publicLink
+  # details given after the answers (age group, role); tied to no ballot; limits in the program's DESIGN.md
+  voluntary @5 (id :Uuid, details :List(Voluntary)) -> ();                               # response.voluntary
 }
+
+struct Voluntary { key @0 :Text; value @1 :Text; }
 
 interface Results {
   # stage 0xFFFF = all stages, otherwise that stage only

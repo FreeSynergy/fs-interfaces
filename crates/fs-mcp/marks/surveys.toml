@@ -3,6 +3,7 @@
 
 [Credential]
 none = "acts-in-name"
+open = "acts-in-name"
 person = "acts-in-name"
 proof = { risk = "excluded", reason = "Data proof: free-form content nobody has judged (answer to Respond.challenge)" }
 token = { risk = "excluded", reason = "a token is a secret (ADR 0021)" }
@@ -42,6 +43,7 @@ open = "read"
 resume = "read"
 save = "acts-in-name"
 submit = "acts-in-name"
+voluntary = "acts-in-name"
 
 [Results]
 exportAi = "read"
