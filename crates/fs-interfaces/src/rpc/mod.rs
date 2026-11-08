@@ -21,6 +21,7 @@
 //! Pattern: Facade (declarations).
 
 pub mod client;
+mod cursor;
 mod envelope;
 mod feed;
 mod finish;
@@ -32,6 +33,7 @@ mod pump;
 mod serve;
 mod socket;
 
+pub use cursor::{PlaceParts, decode_place, encode_place};
 pub use envelope::{envelope_weight, read_envelope, write_envelope};
 pub use feed::{
     ChangeReceiver, ChangeSender, FEED_CAPACITY, FEED_ENDED_PROBLEM_TYPE, FEED_STALL, Notice,
