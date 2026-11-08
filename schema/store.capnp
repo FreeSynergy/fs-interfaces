@@ -47,8 +47,23 @@ enum JobPhase {
   verified   @1;   # signature and checksum are good
   installing @2;
   installed  @3;
-  failed     @4;   # always followed by rolledBack
+  failed     @4;   # then rolledBack, or rollbackFailed
   rolledBack @5;
+  rollbackFailed @6;   # the undo failed too: the person must look; `failure` says why
+}
+
+# Why a job failed, so a client can say it in its own words. Clients must tolerate values they do not know.
+enum JobFailure {
+  none               @0;
+  fetch              @1;   # a source or a file could not be read
+  catalogSignature   @2;   # the catalog is not signed by a trusted key; nothing in it is believed
+  releaseSignature   @3;
+  checksum           @4;
+  notOffered         @5;
+  unsupportedFormat  @6;
+  downgrade          @7;   # the catalog offers an older version than the installed one
+  running            @8;   # the program is running; it is never replaced
+  install            @9;   # unpacking or switching failed
 }
 
 struct Source {
@@ -75,21 +90,32 @@ struct Job {
   id      @0 :Text;
   package @1 :Text;
   phase   @2 :JobPhase;
-  problem @3 :Text;      # why it failed; empty otherwise
+  problem @3 :Text;      # human-readable detail; empty otherwise
+  version @4 :Text;      # the version being installed
+  failure @5 :JobFailure;
+  source  @6 :Text;      # source id it came from
+  signer  @7 :Text;      # fingerprint that signed it, upper-case hex; empty before it is verified
 }
 
 interface Store {
   capabilities  @0 () -> (capabilities :CapabilityList);
   supportReport @1 () -> (report :SupportReport);                 # provider rule (ADR 0045)
   sources       @2 () -> (list :List(Source));                    # source.read
+  # Allowed schemes: https, ssh and file (file only for a source the person adds on this machine). A release
+  # address in a catalog must be https, or file when the catalog itself came from a file source.
   addSource     @3 (url :Text) -> (source :Source);               # source.add
   setEnabled    @4 (id :Text, enabled :Bool) -> ();               # source.enable
   removeSource  @5 (id :Text) -> ();                              # source.remove; refused for the reference source
   available     @6 () -> (list :List(Package), skipped :List(Skipped));  # package.read
   installed     @7 () -> (list :List(Package));                   # package.read
-  install       @8 (name :Text) -> (job :Job);                    # package.install
-  update        @9 (name :Text) -> (job :Job);                    # package.update; "fs-store" updates the store itself
+  # `source` empty = the best verified offer of all enabled sources; with two sources offering one name
+  # the caller names the source, or the call is refused as ambiguous
+  install       @8 (name :Text, source :Text) -> (job :Job);                  # package.install
+  update        @9 (name :Text, source :Text) -> (job :Job);                  # package.update; "fs-store" updates the store itself
   job           @10 (id :Text) -> (found :Bool, job :Job);        # package.read
   # changes of jobs (phase); each job is announced as `created` and then `updated`
   subscribe     @11 (listener :ChangeListener) -> (subscription :Subscription);
+  # appended after the review of 2026-11-08
+  uninstall     @12 (name :Text) -> (job :Job);                   # package.uninstall; refused while running
+  refresh       @13 () -> (skipped :List(Skipped));               # source.refresh: reads every enabled source again
 }
