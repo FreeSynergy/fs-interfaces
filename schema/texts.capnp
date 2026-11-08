@@ -1,7 +1,7 @@
 # fs-wiki contract — DRAFT 0.2 (2026-11-08)
 #
 # STATUS: DRAFT. Owner program: fs-wiki. Lives in fs-interfaces (ADR 0045, 0050).
-# Consumers so far: none (0 of 2). Provider: fs-wiki-core over the text library fs-text.
+# Consumers so far: 1 of 2 (fs-wiki-core / fs-wiki-server). Provider: fs-wiki-core over the text library fs-text.
 # Every text is a wiki entry (ADR 0031): text + layers, the database is the truth, files are exports
 # (ADR 0042). A text travels as the JSON form of its document, with its AS2 envelope; Markdown goes
 # in and out through import and export. Evolution rules: only append.
@@ -15,11 +15,15 @@
 # PROBLEMS. Besides `unsupportedProblemType` (common.capnp) the methods answer these RFC 9457
 # problem types (`Problem.type`, with `status`, `detail`, and the extension members named):
 #   notFoundProblemType    404  id, path, revision number or folder does not exist (ext `id`, `kind` =
-#                               "text" | "folder" | "revision"); also `trash` or `purge` on a text that
-#                               is already in the trash (kind "text"; it is no longer addressable)
-#   badPathProblemType     422  a path (or folder path, redirect target) breaks the path rules, or a
-#                               folder name has no usable slug; ext `issue` = "bad-path" plus the reason
-#                               (`empty-slug`, `outside-parent`, `external-target`, ...)
+#                               "text" | "folder" | "revision"). `trash` of a trashed or unknown text ->
+#                               not-found; `purge` of a live text -> not-in-trash; `purge` of an unknown
+#                               or already purged text -> not-found. The new 0.2 methods use kind
+#                               "text"; the 0.1 methods (`editIf` included) may keep "page".
+#   badPathProblemType     422  0.2 methods only (`createFolder`, `setRedirect`, `createFromTemplate`,
+#                               `restoreFromTrash` with a path): a path breaks the path rules, or a folder
+#                               name has no usable slug. ext `issue` = the reason alone (`empty-slug`,
+#                               `dot-segment`, `outside-parent`, `external-target`, ...), ext `path` = the
+#                               path refused. The 0.1 methods answer `invalid` for path errors.
 #   conflictProblemType    409  `editIf`, `editWith`, `restoreRevision`, `setTemplate`, `setRedirect`:
 #                               the text no longer has the expected `revision`. Nothing was written.
 #                               ext: `id` (the text), `kind` = "text", `issue` = "stale-revision",
@@ -31,7 +35,8 @@
 #   pathTakenProblemType   409  the path (or the original path on restore) is used by another text
 #   moveRefusedProblemType 409  a move is refused (target not empty, another move unfinished)
 #   invalidProblemType     422  the request is not acceptable; one `issue` per reason (for example
-#                               `term-too-long`, `summary-too-long`, `self-redirect`, `bad-path`)
+#                               `term-too-long`, `summary-too-long`, `self-redirect`); path errors of the 0.2
+#                               methods are `badPathProblemType`, those of the 0.1 methods stay here
 #   notInTrashProblemType  409  `purge` or `restoreFromTrash` on a text that is not in the trash
 #   notEmptyProblemType    409  `deleteFolder` on a folder that still has children (ext `id`)
 # A client reads `type` and the extension keys, never the sentence in `detail`.
@@ -100,12 +105,13 @@ struct LinkRow {
 struct Expect { union { any @0 :Void; revision @1 :UInt64; } }
 
 # ---- 0.2: history (text.history) -------------------------------------------------------------
-# Every write of a text (create, edit, editIf, editWith, move, import, restoreRevision, setTemplate,
-# setRedirect) adds one revision. `number` counts them per text from 1, never reused, never
+# Every write of a text (create, edit, editIf, editWith, move, import, restoreRevision, restoreFromTrash,
+# setTemplate, setRedirect, and a link rewritten by a move of ANOTHER text, in the texts it rewrites) adds
+# one revision. A setTemplate or setRedirect that changes nothing adds none. `number` counts them per text from 1, never reused, never
 # rewritten; it is the only thing here that orders revisions (`TextEntry.revision` does not).
 struct RevisionInfo {
   text     @0 :Uuid;
-  number   @1 :UInt64;             # 1 = the creation; gaps are possible where a provider pruned old ones
+  number   @1 :UInt64;             # 1 = the first known state (a text written before history existed starts at its first write after the upgrade); gaps are possible where a provider pruned old ones
   revision @2 :UInt64;             # the `TextEntry.revision` this write produced
   author   @3 :Text;               # actor (IRI or DID); empty = not known
   at       @4 :Timestamp;
@@ -157,7 +163,8 @@ struct Resolution {
   hops    @1 :List(Text);          # the paths visited, start first, up to the last one examined: for resolved the final path
                                    # is NOT included (it is `text.path`); for notFound it ends with the missing path; for loop with
                                    # the path that came twice; for tooManyHops with the last path examined. So hops.len() is the
-                                   # number of redirects followed for resolved, and at most maxRedirectHops + 1 otherwise
+                                   # number of redirects followed for resolved; otherwise at most maxRedirectHops + 1 hops,
+                                   # and + 2 for a loop (the repeated path is appended)
   text    @2 :TextEntry;           # set only when outcome = resolved
 }
 

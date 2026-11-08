@@ -210,3 +210,27 @@ fn the_added_consts_and_problem_types_are_golden() {
     );
     assert_eq!((t::MAX_SEARCH_WORDS, t::MIN_PREFIX_BYTES), (8, 2));
 }
+
+#[test]
+fn the_remaining_problem_types_and_bounds_are_golden() {
+    assert_eq!(
+        t::PATH_TAKEN_PROBLEM_TYPE,
+        "https://freesynergy.net/problems/texts/path-taken"
+    );
+    assert_eq!(
+        t::MOVE_REFUSED_PROBLEM_TYPE,
+        "https://freesynergy.net/problems/texts/move-refused"
+    );
+    assert_eq!(
+        t::INVALID_PROBLEM_TYPE,
+        "https://freesynergy.net/problems/texts/invalid"
+    );
+    assert_eq!(
+        (
+            t::MAX_SEARCH_TERM_BYTES,
+            t::MAX_HIGHLIGHTS_PER_SNIPPET,
+            t::MAX_FOLDER_NAME_BYTES
+        ),
+        (256, 20, 255)
+    );
+}
