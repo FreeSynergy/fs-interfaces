@@ -75,7 +75,7 @@ interface), ADR 0040 (pure-Rust Cap'n Proto compiler, generated code committed).
 | `files.capnp` | Files, folders, resumable upload; backends that keep the bytes | fs-files | draft |
 | `events.capnp` | Events (JSCalendar `Event`), instances, invitations | fs-calendar | draft |
 | `places.capnp` | Places (GeoJSON); sources of map tiles | fs-maps | draft |
-| `texts.capnp` | Texts: text + layers, links | fs-wiki | draft |
+| `texts.capnp` | Texts: text + layers, links, history, trash, spaces, templates, redirects, search | fs-wiki | draft |
 | `surveys.capnp` | Surveys, answers, results; AI participation per survey | fs-surveys | draft |
 | `history.capnp` | History as an observer of the activity log | fs-history | draft |
 | `resources.capnp` | Resources: what we have, need and who has time | fs-resources | draft |
