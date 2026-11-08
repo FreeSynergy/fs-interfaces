@@ -1,0 +1,23 @@
+# Risk marks for store.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+# Installing, updating or adding a source puts foreign code on the person's machine: it acts in their name and asks
+# every time. Removing a package or a source destroys something. Reading is listed too, not harmless (ADR 0054).
+
+[Store]
+addSource = "acts-in-name"
+available = "read"
+capabilities = "read"
+install = "acts-in-name"
+installed = "read"
+job = "read"
+refresh = "change"
+removeSource = "destructive"
+setEnabled = "change"
+sources = "read"
+subscribe = "read"
+supportReport = "read"
+uninstall = "destructive"
+update = "acts-in-name"
+
+[format]
+"Package.summary" = "one-line description of a package from the signed catalog (plain text, AppStream <summary>); a display text, not a secret field"
