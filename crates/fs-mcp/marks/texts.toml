@@ -49,3 +49,11 @@ revision = "change"
 "Texts.exportText.text" = "whole exported document (vCard, iCalendar or similar, with notes); a specialist or display format, not a secret field; it can still hold what a person wrote"
 "Texts.importText.text" = "imported document text (format by media type); a specialist or display format, not a secret field; it can still hold what a person wrote"
 "Texts.editWith.document" = "text document JSON (a specialist format, not a secret field; it can still hold what a person wrote)"
+"RevisionContent.document" = "text document JSON of an old revision (a specialist format, not a secret field; it can still hold what a person wrote)"
+"RevisionInfo.summary" = "short note on a revision, written by the editor or the provider (not a secret field; it can still hold what a person wrote)"
+"Snippet.text" = "excerpt of a text around a search hit (a display format, not a secret field; it can still hold what a person wrote)"
+"Texts.editWith.summary" = "short note on a revision (not a secret field; it can still hold what a person wrote)"
+
+[release]
+"RevisionInfo.author" = "an actor IRI or DID of the editor, not a credential"
+"SearchFilter.author" = "an actor IRI or DID to filter by, not a credential"
