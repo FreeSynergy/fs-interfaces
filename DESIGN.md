@@ -107,3 +107,7 @@ The remedy is `chmod g-w` on the directory the message names, or another `--data
 ## fs-mcp
 
 The MCP tool generator (stage 1, lists only) lives in `crates/fs-mcp`; see its `DESIGN.md`.
+
+## Contact values (feature `values`, 0.51.0)
+
+`values::{EmailAddress, PhoneNumber, ContactValue, ValueProblem}`: value objects shared by all programs (e-mail by the practical HTML rule with IDNA-mapped domains and the 254-character limit; phone E.164). Equality and hash follow the canonical form. A failure is a code, the sentence is the program's. Not a contract: no schema, no draft status.

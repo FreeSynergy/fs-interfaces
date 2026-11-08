@@ -20,6 +20,9 @@
 //! * [`streaming_capnp`] - live streams and where they go (owner `fs-streaming`)
 //! * [`store_capnp`] - install and update programs from Git sources (owner `fs-store`)
 //!
+//! [`values`] (feature `values`) holds the contact values every program shares: [`values::EmailAddress`] and
+//! [`values::PhoneNumber`], valid on construction (value objects, trait [`values::ContactValue`]).
+//!
 //! [`provider`] holds the Rust side of the provider rule: [`Unsupported`] and [`Capabilities`].
 //!
 //! [`rpc`] (feature `rpc`) is the shared server and client side of every contract, so that each
@@ -31,6 +34,8 @@
 #![deny(missing_docs)]
 #![warn(clippy::pedantic)]
 
+#[cfg(feature = "values")]
+pub mod values;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod common_capnp;

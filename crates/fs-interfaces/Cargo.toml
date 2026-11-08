@@ -8,6 +8,8 @@ rust-version.workspace = true
 repository.workspace = true
 
 [features]
+# Contact values every program shares (`values`): `EmailAddress`, `PhoneNumber`, the trait `ContactValue`.
+values = ["dep:idna"]
 # The shared server and client side of every contract: Unix socket, RPC system, envelope on the wire,
 # RFC 9457 problems as RPC errors, pages, change feed. Pulls in the runtime; contracts alone do not.
 rpc = ["dep:capnp-rpc", "dep:tokio", "dep:tokio-util", "dep:futures", "dep:fs-objects", "dep:chrono", "dep:uuid", "dep:rustix"]
@@ -22,6 +24,7 @@ fs-objects = { git = "https://github.com/FreeSynergy/fs-objects", tag = "v0.5.0"
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"], optional = true }
 uuid = { version = "1", optional = true }
 rustix = { version = "1", features = ["process"], optional = true }
+idna = { version = "1", optional = true }
 
 [dev-dependencies]
 # Our own pure-Rust schema compiler (ADR 0040) regenerates the committed code ...
