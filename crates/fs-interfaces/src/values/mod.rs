@@ -7,57 +7,10 @@
 
 mod email;
 mod phone;
+mod problem;
+mod value;
 
 pub use email::EmailAddress;
 pub use phone::PhoneNumber;
-
-/// Why typed text is not (yet) a value. The variants are stable codes for the words of a program.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum ValueProblem {
-    /// Nothing typed.
-    Empty,
-    /// An e-mail address needs an `@`.
-    MissingAt,
-    /// More than one `@`.
-    ManyAt,
-    /// Nothing before the `@`.
-    EmptyLocal,
-    /// Nothing after the `@`.
-    EmptyDomain,
-    /// A character that may not stand before the `@`.
-    LocalCharacter,
-    /// The part before the `@` is longer than 64 characters.
-    LocalTooLong,
-    /// The domain is not a valid host name (also after conversion from a Unicode name).
-    BadDomain,
-    /// The domain has no dot: it names no public host.
-    DomainWithoutDot,
-    /// A phone number needs `+`, then a country code that does not start with 0, and the number (E.164).
-    NoCountryCode,
-    /// A character a phone number does not hold.
-    PhoneCharacter,
-    /// The whole address is longer than 254 characters.
-    AddressTooLong,
-    /// Fewer than 7 or more than 15 digits.
-    PhoneLength,
-}
-
-/// A value of a contact point, valid by construction.
-pub trait ContactValue: Sized {
-    /// From what was typed (spaces around it do not matter).
-    ///
-    /// # Errors
-    /// The first rule the text breaks.
-    fn parse(typed: &str) -> Result<Self, ValueProblem>;
-
-    /// The canonical text to store and compare.
-    fn as_str(&self) -> &str;
-
-    /// Whether `typed` is a value, without making one; what a field asks on every key.
-    ///
-    /// # Errors
-    /// The same as [`ContactValue::parse`].
-    fn check(typed: &str) -> Result<(), ValueProblem> {
-        Self::parse(typed).map(|_| ())
-    }
-}
+pub use problem::ValueProblem;
+pub use value::ContactValue;
