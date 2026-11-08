@@ -1,4 +1,5 @@
 //! The place cursor: a place comes back as it went, and nothing else does.
+#![cfg(feature = "rpc")]
 
 use fs_interfaces::rpc::{PlaceParts, decode_place, encode_place};
 
