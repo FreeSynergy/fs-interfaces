@@ -18,6 +18,7 @@
 //! * [`resources_capnp`] - things, capacity, needs and offers (owner `fs-resources`)
 //! * [`whiteboard_capnp`] - boards and their elements (owner `fs-whiteboard`)
 //! * [`streaming_capnp`] - live streams and where they go (owner `fs-streaming`)
+//! * [`store_capnp`] - install and update programs from Git sources (owner `fs-store`)
 //!
 //! [`provider`] holds the Rust side of the provider rule: [`Unsupported`] and [`Capabilities`].
 //!
@@ -63,6 +64,9 @@ pub mod resources_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod streaming_capnp;
+#[rustfmt::skip]
+#[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
+pub mod store_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod surveys_capnp;
