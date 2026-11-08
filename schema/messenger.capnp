@@ -59,8 +59,8 @@ struct ToolCall {
 }
 
 # Unset reads as `unknown`. For a call of the engine's own, `unknown` always asks (ADR 0054). The agent cannot set this.
-# destroys and actsForPerson are the brake: they ask every time. allowClass is offered only for readsOnly and changes.
-enum ToolCallRisk { unknown @0; readsOnly @1; changes @2; destroys @3; actsForPerson @4; }
+# destroys, actsForPerson and readsSensitive (a read of an object marked sensitive) are the brake: they ask every time. allowClass is offered only for readsOnly and changes.
+enum ToolCallRisk { unknown @0; readsOnly @1; changes @2; destroys @3; actsForPerson @4; readsSensitive @5; }
 
 # A value this program cannot read is sent as open.
 enum ToolCallOutcome { open @0; done @1; failed @2; refused @3; cancelled @4; }
