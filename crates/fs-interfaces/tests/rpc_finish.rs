@@ -32,9 +32,7 @@ async fn a_panic_answers_an_error() {
     tokio::task::LocalSet::new()
         .run_until(async {
             let answer = run_to_end(async {
-                if true {
-                    panic!("boom");
-                }
+                panic!("boom");
             })
             .await;
             assert!(answer.is_err());

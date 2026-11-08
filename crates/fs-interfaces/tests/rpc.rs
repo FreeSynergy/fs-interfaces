@@ -71,7 +71,7 @@ fn pages_cover_everything_exactly_once() {
 fn an_exactly_full_last_page_has_no_next() {
     let page = Page::of(vec![1, 2, 3], &[], 3).unwrap();
     assert_eq!(page.items, [1, 2, 3]);
-    assert!(page.next.is_empty());
+    assert_eq!(page.next, [] as [u8; 0]);
 }
 
 #[test]

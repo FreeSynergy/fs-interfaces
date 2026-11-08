@@ -26,6 +26,8 @@ fn blocked_targets_stay_out_even_when_marked_readable() {
     let c = Generator::new(&marks, Blocklist::standard())
         .generate(&messenger_like())
         .unwrap();
+    #[allow(clippy::case_sensitive_file_extension_comparisons)]
+    // ".none" is a tool-name suffix, not a file extension
     for t in &c.tools {
         assert!(
             !t.name.contains("decide") && !t.name.contains("guard") && !t.name.ends_with(".none"),

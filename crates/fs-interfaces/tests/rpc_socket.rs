@@ -15,6 +15,7 @@ use fs_interfaces::rpc::{Problem, bind_socket, connect, serve, unsupported};
 struct NoBlob;
 
 impl blob::Server for NoBlob {
+    #[allow(clippy::unused_async_trait_impl)] // the generated server trait is async; nothing to await here
     async fn size(
         self: Rc<Self>,
         _: blob::SizeParams,

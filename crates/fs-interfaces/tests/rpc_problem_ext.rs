@@ -88,8 +88,11 @@ fn unicode_and_newlines_are_kept() {
 
 #[test]
 fn an_empty_key_is_left_out() {
-    assert!(base().with_ext("", "v").extensions.is_empty());
-    assert!(base().with_ext("\u{1f}", "v").extensions.len() == 1); // becomes " "
+    assert_eq!(
+        base().with_ext("", "v").extensions,
+        [] as [(std::string::String, std::string::String); 0]
+    );
+    assert_eq!(base().with_ext("\u{1f}", "v").extensions.len(), 1); // becomes " "
 }
 
 #[test]

@@ -63,6 +63,7 @@ pub fn strukt(n: &str, fields: Vec<Field>) -> StructDef {
 }
 
 /// A small contract with every shape the generator must handle.
+#[allow(clippy::too_many_lines)] // one declarative fixture; splitting it would only scatter the contract
 pub fn messenger_like() -> Vec<Contract> {
     let mut listener = method("event", vec![field("event", TypeRef::Text)], vec![]);
     listener.streaming = true;

@@ -33,6 +33,7 @@ impl change_listener::Server for Listener {
         Ok(())
     }
 
+    #[allow(clippy::unused_async_trait_impl)] // the generated server trait is async; nothing to await here
     async fn ended(
         self: Rc<Self>,
         params: change_listener::EndedParams,

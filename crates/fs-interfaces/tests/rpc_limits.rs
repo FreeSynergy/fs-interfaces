@@ -18,7 +18,7 @@ const _: () = assert!(MAX_PAGE_BYTES < MAX_ITEM_BYTES && MAX_ITEM_BYTES < MAX_ME
 /// A `Places` provider whose places are only their text, enough to see an answer cross the wire.
 struct Texts(Vec<String>);
 
-fn write(out: &mut places::ListResults, page: &Page<String>) -> capnp::Result<()> {
+fn write(out: &mut places::ListResults, page: &Page<String>) {
     let mut answer = out.get().init_page();
     let mut items = answer
         .reborrow()
@@ -27,10 +27,10 @@ fn write(out: &mut places::ListResults, page: &Page<String>) -> capnp::Result<()
         items.reborrow().get(i).set_geojson(text.as_str());
     }
     answer.init_next().set_opaque(&page.next);
-    Ok(())
 }
 
 impl places::Server for Texts {
+    #[allow(clippy::unused_async_trait_impl)] // the generated server trait is async; nothing to await here
     async fn list(
         self: Rc<Self>,
         params: places::ListParams,
@@ -38,10 +38,12 @@ impl places::Server for Texts {
     ) -> Result<(), capnp::Error> {
         let cursor = params.get()?.get_cursor()?.get_opaque()?;
         let page = Page::of_weighted(self.0.clone(), cursor, 10, |t: &String| t.len() + STRUCTURE)?;
-        write(&mut results, &page)
+        write(&mut results, &page);
+        Ok(())
     }
 
     /// Answers a text only this method's caller can read: above what a connection reads by default.
+    #[allow(clippy::unused_async_trait_impl)] // the generated server trait is async; nothing to await here
     async fn within(
         self: Rc<Self>,
         _: places::WithinParams,
@@ -56,6 +58,7 @@ impl places::Server for Texts {
     }
 
     /// Fails the way a program does that quotes what it was sent.
+    #[allow(clippy::unused_async_trait_impl)] // the generated server trait is async; nothing to await here
     async fn find_by_name(
         self: Rc<Self>,
         params: places::FindByNameParams,
@@ -145,7 +148,7 @@ async fn what_is_behind_an_item_too_large_stays_readable() {
         assert_eq!(alone, [40 * MIB], "above a page size it still comes, alone");
         let (last, cursor) = page(client, &cursor).await.unwrap();
         assert_eq!(last, [3]);
-        assert!(cursor.is_empty());
+        assert_eq!(cursor, [] as [u8; 0]);
     })
     .await;
 }

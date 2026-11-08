@@ -105,7 +105,7 @@ fn every_method_of_accounts_and_event_invitations_is_excluded_one_by_one() {
             .flat_map(|x| &x.interfaces)
             .find(|i| i.name == iface)
             .unwrap();
-        assert!(!i.methods.is_empty());
+        assert_ne!(i.methods, [] as [fs_mcp::Method; 0]);
         for m in &i.methods {
             let src = fs_mcp::Target::item(file, iface, &m.name);
             assert!(c.tools.iter().all(|t| t.source != src), "{src} is a tool");

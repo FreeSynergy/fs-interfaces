@@ -52,10 +52,9 @@ fn an_event_type_with_a_secret_keeps_the_events_resource_out() {
 fn an_event_type_nobody_defined_keeps_the_resource_out() {
     let mut c = events_contract(vec![]);
     c[0].structs.retain(|s| s.name != "StateChange");
-    assert!(
-        run(&c, &read_all(&[("Root", "subscribe")]))
-            .resources
-            .is_empty()
+    assert_eq!(
+        run(&c, &read_all(&[("Root", "subscribe")])).resources,
+        [] as [fs_mcp::ResourceTemplate; 0]
     );
 }
 

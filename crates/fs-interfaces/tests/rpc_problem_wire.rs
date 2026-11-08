@@ -4,6 +4,7 @@
 
 use capnp::Error;
 use fs_interfaces::rpc::Problem;
+use std::fmt::Write as _;
 
 /// Text as 0.36.0 wrote it, with a cursor (`01 02 ff`). Frozen: do not edit.
 const V036_WITH_NEXT: &str = "fs-problem\u{1f}413\u{1f}https://freesynergy.net/problems/too-large\u{1f}Too large\u{1f}one item\u{1f}0102ff";
@@ -45,7 +46,10 @@ fn text_of_0_36_0_reads_as_before() {
         (p.title.as_str(), p.detail.as_str()),
         ("Too large", "one item")
     );
-    assert!(p.extensions.is_empty());
+    assert_eq!(
+        p.extensions,
+        [] as [(std::string::String, std::string::String); 0]
+    );
     let q = Problem::from_error(&err(V036_PLAIN)).expect("problem");
     assert_eq!((q.status, q.next, q.extensions.len()), (409, None, 0));
 }
@@ -130,7 +134,7 @@ fn extensions_after_a_cursor_and_the_rpc_prefix_are_read() {
 fn a_reader_does_not_trust_the_count() {
     let mut text = V036_PLAIN.to_string();
     for i in 0..500 {
-        text.push_str(&format!("\u{1f}ext\u{1e}k{i}\u{1e}v"));
+        let _ = write!(text, "\u{1f}ext\u{1e}k{i}\u{1e}v");
     }
     let p = Problem::from_error(&err(&text)).expect("problem");
     assert_eq!(p.extensions.len(), fs_interfaces::rpc::MAX_EXTENSIONS);

@@ -91,7 +91,7 @@ fn the_messenger_act_tools_are_one_per_member() {
 fn without_any_marks_everything_is_unknown_and_the_exclusions_still_hold() {
     let none = MarkFiles::from_sources(&[]).unwrap();
     let c = generate_with(&contracts(), &none, Blocklist::standard());
-    assert!(!c.tools.is_empty());
+    assert_ne!(c.tools, [] as [fs_mcp::Tool; 0]);
     assert!(
         c.tools
             .iter()

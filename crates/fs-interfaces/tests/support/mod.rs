@@ -71,6 +71,7 @@ struct Root {
 }
 
 impl tasks::Server for Root {
+    #[allow(clippy::unused_async_trait_impl)] // the generated server trait is async; nothing to await here
     async fn support_report(
         self: Rc<Self>,
         _: tasks::SupportReportParams,
@@ -83,6 +84,7 @@ impl tasks::Server for Root {
         Ok(())
     }
 
+    #[allow(clippy::unused_async_trait_impl)] // the generated server trait is async; nothing to await here
     async fn items(
         self: Rc<Self>,
         _: tasks::ItemsParams,
