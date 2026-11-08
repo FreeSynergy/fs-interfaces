@@ -61,6 +61,8 @@ struct Relation {
 
 # ---- Same person: two cards stay, a link connects them (link, don't merge) ----
 
+enum SameState { open @0; confirmed @1; rejected @2; }
+
 struct SamePersonProposal {
   a       @0 :Uuid;
   b       @1 :Uuid;
@@ -139,6 +141,12 @@ interface Persons {
   listMembers    @21 (list :Uuid) -> (items :List(Person));                      # cardgroup.read
   listsOf        @22 (member :Uuid) -> (items :List(Person));                    # cardgroup.read
   updateIf       @23 (id :Uuid, revision :UInt64, jscontact :Text) -> (person :Person);  # person.update, only if the person still has `revision`; otherwise it fails with a reason starting `conflict:` and writes nothing (compare-and-set; atomic inside one provider process only)
+  # ADR 0058. A pair nobody answered is `open`; `confirmSame` makes it `confirmed`; `rejectSame` makes it
+  # `rejected` and it is not proposed again; unlinking a confirmed pair makes it `rejected`;
+  # `reopenSame` takes a rejection back. Linking copies nothing from the person.
+  rejectSame     @24 (a :Uuid, b :Uuid) -> (rejection :Uuid);                    # same.link
+  reopenSame     @25 (rejection :Uuid) -> ();                                    # same.link
+  sameState      @26 (a :Uuid, b :Uuid) -> (state :SameState);                   # same.read
 }
 
 interface Roles {
