@@ -40,6 +40,8 @@ enum PackageFormat {
   rpm      @1;   # through dnf; the person confirms root themselves
   flatpak  @2;
   appImage @3;
+  deb      @4;   # through apt on Debian and Ubuntu; the person confirms root themselves
+  exe      @5;   # Windows setup.exe; the store does not install it itself yet (Unsupported)
 }
 
 enum JobPhase {
