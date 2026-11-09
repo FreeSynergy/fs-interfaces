@@ -1,0 +1,25 @@
+[package]
+name = "fs-types"
+description = "FreeSynergy basic types (e-mail, phone, name, address, place, date, language, link, image, key, choice, keywords, reference): check, normalise, suggest; and the type description every program reports (ADR 0066)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[features]
+# `TypeCatalog` server over a `TypeRegistry` (Cap'n Proto RPC); contracts alone do not need the runtime.
+rpc = ["dep:capnp-rpc"]
+
+[dependencies]
+capnp = "0.27"
+capnp-rpc = { version = "0.27", optional = true }
+fs-interfaces = { path = "../fs-interfaces", features = ["values"] }
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+geo-uri = "0.2"
+iri-string = { version = "0.7", features = ["alloc"] }
+oxilangtag = "0.1"
+unicode-normalization = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "macros"] }

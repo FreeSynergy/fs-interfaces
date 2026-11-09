@@ -1,0 +1,50 @@
+# fs-types - Design
+
+The basic types of ADR 0066 and the type description every program reports. Wire form: `schema/types.capnp` (this repo).
+
+## Where it lives, and why (`coding.md` §4, §8)
+
+A workspace crate of `fs-interfaces`, next to `fs-mcp`, not a repository of its own. Reasons: (1) `coding.md` §8 lets repos depend only by tag, and the rules here belong to the contract in `types.capnp`; one tag moves both, so schema and rules cannot drift apart. (2) `fs-interfaces` already holds `values::{EmailAddress, PhoneNumber}`, the first two basic types; they stay where they are (programs use them since before this crate) and `fs-types` adds them to its registry by an Adapter instead of copying them (`coding.md` §4). (3) A new repository means a new GitHub repository, which is outward-facing and not part of this round; it can be split off later by moving the crate (consumers name the crate, not the path). A consumer writes `fs-types = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.0.N" }`. `fs-interfaces` itself does not depend on `fs-types`.
+
+## Pattern map
+
+| Part | Pattern | Why |
+|---|---|---|
+| `BasicValue` and one file per kind (`text`, `contact`, `language`, `iri`, `datetime`, `place`, `key`, `keywords`, `name`, `address`, `image`, `choice`) | Value object + Template method (`parse`/`canonical` per type, `check`/`suggest` provided) | valid on construction, equal values have equal canonical text; the trait is the interface (ADR 0043) |
+| `language`, `iri`, `datetime`, `place`, `contact` | Adapter over a free crate (`oxilangtag`, `iri-string`, `chrono`, `geo-uri`, `fs-interfaces::values`) | do not rebuild what exists (ADR 0015, `coding.md` §4) |
+| `rule.rs` `Rule`, `BasicRules` | Registry of Strategy objects | a generated frontend knows only a field's `BasicType`; it reaches check/normalise/suggest by kind |
+| `describe/` `FieldDescription`, `CommandDescription`, `TypeDescription` | Value object + Builder | read from a program, written by chaining |
+| `describe/describes.rs` `DescribesType` | Registry entry point (trait first) | a program lists each data type it owns |
+| `describe/registry.rs` | Registry | name to description, validated on the way in |
+| `describe/validate.rs`, `check.rs` | Template method | one flow for all programs: the admin frontend and a program's own `check` command say the same |
+| `describe/wire.rs`, `describe/server.rs` (feature `rpc`) | Adapter | generated capnp types to plain structs, and `TypeCatalog.describe` over a registry |
+
+## Decisions (provisional, marked for the strategy)
+
+* Kinds in this version: the thirteen of the task list plus `text` and `multilineText`. `onlineService`, `timeZone`, `duration`, `recurrence`, `quantity`, `money`, `colour`, `sound`, `video`, formatted text are in `map.md` and are appended to `BasicType` later (append only; a reader meeting a newer kind treats the field as plain text).
+* Canonical forms: e-mail as `fs-interfaces` makes it; phone `+<digits>`; language RFC 5646 case; link normalised (scheme and host lower case, dot segments removed); reference kept as written (an identity); date `YYYY-MM-DD`; date-time with offset, `Z` for UTC; place as `geo:` URI; fingerprint bare upper-case hex; keywords lower case, sorted, `, `-joined.
+* Limits (ours, provisional): text 4096 chars, multi-line 65536, URI 2048 bytes, keyword 64 chars and 256 per set, name/address parts 1024 chars.
+* A name typed on one line is never split into given and surname (wrong for many names); components come from a form.
+* Problems are codes (`TypeProblem::code`, translation key suffix `problem.<code>`), never sentences (ADR 0057, `coding.md` §2a).
+* Labels in a description are translation keys: lower-case words of letters and digits joined by `.` or `-`.
+
+## JSContact and vCard: free crate checked (task point 4)
+
+Candidate `calcard` 0.3.14 (Stalwart Labs; `Apache-2.0 OR MIT`; first released 2025-05, updated 2026-09-15, 15 releases in 2026-08/09, about 89000 downloads; repository `stalwartlabs/calcard`). Described as "iCalendar/JSCalendar and vCard/JSContact parsing, building and conversion library". Tried in a throw-away crate (not in this repo): parse a vCard 4.0 text, `VCard::into_jscontact::<String, String>()` gives a JSContact JSON value (`name.components`, `emails`, `phones`, `addresses`, `vCard.convertedProperties` for what vCard keeps), and `JSContact::into_vcard()` writes vCard 4.0 back (`FN`, `N`, `EMAIL`, `TEL;VALUE=URI`, `ADR` with `JSCOMPS`, `PROP-ID`). Other crates seen: `jscontact` 0.2.1 (RFC 9553 types only, 7000 downloads, last 2025-01), `vcard` 0.6.0 (vCard 4.0 RFC 6350 and 9554, parse and generate, no JSContact), `vcard4` 0.7.3 (parser only). **Result: use `calcard` for vCard import and export in `fs-people` (thread P); do not build our own.** Not done here: no dependency added to this repo (nothing in `fs-types` needs it), the field-by-field coverage of RFC 9553 against `description.md` is thread P's check; `calcard` pulls in more than we need (iCalendar), accepted for now; its types are generic over the id type, `String` works.
+
+## State
+
+| Area | State |
+|---|---|
+| `types.capnp` draft 0.1: `BasicType` (17 values), `Name`, `Address`, `Image` and their kinds, type description (`FieldDescription`, `CommandDescription`, `TypeDescription`, `CommandKind`), `TypeCatalog.describe` | done, draft |
+| Rules for all 16 kinds: check, normalise (suggest where it makes sense: e-mail domains, language, link scheme, reference, keywords, choice) | done, tested (24 tests over the kinds) |
+| `BasicRules` registry, unknown kind as text | done, tested |
+| Description: builders, validation, registry, record check, wire round trip, `CatalogServer` (feature `rpc`) | done, tested (incl. a real RPC call) |
+
+## Unsupported (named, not faked)
+
+* `onlineService`, `timeZone`, `duration`, `recurrence`, `quantity`, `money`, `colour`, `sound`, `video`, formatted text: not yet in `BasicType`.
+* Date-time without offset (JSCalendar `LocalDateTime`) and IANA time zones: need the tz database.
+* Language: well-formed only, the IANA subtag registry is not consulted. Address: country code checked for shape, not against the ISO 3166-1 list. Place: points only (no GeoJSON shapes). Key: OpenPGP fingerprints only (no SSH, age, X.509). Phone and e-mail: no existence check (a network matter).
+* Suggestions: phone, date, date-time, place, key, name, address, image, text offer none (`suggest` returns an empty list on purpose).
+* Components (`input`, `display`, `compact`, `cell`) per basic type are thread C's, in `fs-components`; nothing of the look is here.

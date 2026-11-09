@@ -19,6 +19,7 @@
 //! * [`whiteboard_capnp`] - boards and their elements (owner `fs-whiteboard`)
 //! * [`streaming_capnp`] - live streams and where they go (owner `fs-streaming`)
 //! * [`store_capnp`] - install and update programs from Git sources (owner `fs-store`)
+//! * [`types_capnp`] - basic types and the type description (owner: the shared types layer, crate `fs-types`)
 //!
 //! [`values`] (feature `values`) holds the contact values every program shares: [`values::EmailAddress`] and
 //! [`values::PhoneNumber`], valid on construction (value objects, trait [`values::ContactValue`]).
@@ -84,6 +85,9 @@ pub mod whiteboard_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod texts_capnp;
+#[rustfmt::skip]
+#[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
+pub mod types_capnp;
 
 pub mod provider;
 #[cfg(feature = "rpc")]
