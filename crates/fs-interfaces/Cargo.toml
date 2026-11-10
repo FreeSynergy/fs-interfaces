@@ -12,7 +12,7 @@ repository.workspace = true
 values = ["dep:idna"]
 # The shared server and client side of every contract: Unix socket, RPC system, envelope on the wire,
 # RFC 9457 problems as RPC errors, pages, change feed. Pulls in the runtime; contracts alone do not.
-rpc = ["dep:capnp-rpc", "dep:tokio", "dep:tokio-util", "dep:futures", "dep:fs-objects", "dep:chrono", "dep:uuid", "dep:rustix"]
+rpc = ["dep:capnp-rpc", "dep:tokio", "dep:tokio-util", "dep:futures", "dep:fs-objects", "dep:chrono", "dep:uuid", "dep:rustix", "dep:windows-sys"]
 
 [dependencies]
 capnp = "0.27"
@@ -28,6 +28,12 @@ idna = { version = "1", optional = true }
 [target.'cfg(unix)'.dependencies]
 # Who is on the other end of a Unix socket, and who runs this; the tests send themselves signals.
 rustix = { version = "1", features = ["process"], optional = true }
+
+[target.'cfg(windows)'.dependencies]
+# Who is on the other end of a named pipe, and who runs this; rights of the pipe and of the data folder.
+windows-sys = { version = "0.61", optional = true, features = [
+  "Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_Pipes", "Win32_System_Threading",
+] }
 
 [dev-dependencies]
 # Our own pure-Rust schema compiler (ADR 0040) regenerates the committed code ...
