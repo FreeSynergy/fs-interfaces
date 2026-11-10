@@ -15,6 +15,7 @@
 @0xb3379cb1bb991be5;
 
 using C = import "common.capnp";
+using T = import "types.capnp";
 using Uuid = C.Uuid;
 using Cursor = C.Cursor;
 using Envelope = C.Envelope;
@@ -90,6 +91,8 @@ interface Groups {
   delegations   @4 () -> (delegations :Delegations);
   subscribe     @5 (listener :ChangeListener) -> (subscription :Subscription);   # group.subscribe
   follows       @6 () -> (follows :Follows);                                     # follow.* (provisional)
+  # The data types this program owns and what can be done with them (ADR 0066), for a generated frontend.
+  types         @7 () -> (catalog :T.TypeCatalog);
 }
 
 interface Items {

@@ -26,6 +26,7 @@
 @0xd6b1f4a27c3e9085;
 
 using C = import "common.capnp";
+using T = import "types.capnp";
 using Uuid = C.Uuid;
 using Cursor = C.Cursor;
 using Envelope = C.Envelope;
@@ -242,6 +243,8 @@ interface Surveys {
   decisions     @5 () -> (decisions :Decisions);
   # state changes only, and new answers of `named` surveys; ballots never (survey.subscribe)
   subscribe     @6 (listener :ChangeListener) -> (subscription :Subscription);
+  # The data types this program owns and what can be done with them (ADR 0066), for a generated frontend.
+  types         @7 () -> (catalog :T.TypeCatalog);
 }
 
 interface Designer {

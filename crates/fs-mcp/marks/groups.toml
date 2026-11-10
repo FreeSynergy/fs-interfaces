@@ -15,6 +15,7 @@ invitations = "read"
 items = "read"
 memberships = "read"
 subscribe = "read"
+types = "read"
 supportReport = "read"
 
 [Invitations]

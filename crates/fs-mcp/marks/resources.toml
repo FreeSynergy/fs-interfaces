@@ -54,6 +54,7 @@ items = "read"
 needs = "read"
 reservations = "read"
 subscribe = "read"
+types = "read"
 supportReport = "read"
 
 [format]

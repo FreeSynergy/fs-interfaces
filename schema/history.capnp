@@ -15,6 +15,7 @@
 @0xe81c7a35d94b2f06;
 
 using C = import "common.capnp";
+using T = import "types.capnp";
 using Uuid = C.Uuid;
 using Timestamp = C.Timestamp;
 using Cursor = C.Cursor;
@@ -80,4 +81,6 @@ interface History {
   # if delivered again. An empty filter is refused
   forget   @5 (filter :EntryFilter) -> (removed :UInt32);                          # history.forget
   subscribe @6 (filter :EntryFilter, listener :EntryListener) -> (subscription :Subscription); # history.subscribe
+  # The data types this program owns and what can be done with them (ADR 0066), for a generated frontend.
+  types         @7 () -> (catalog :T.TypeCatalog);
 }

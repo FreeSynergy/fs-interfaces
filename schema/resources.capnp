@@ -23,6 +23,7 @@
 @0x9a4e27c1f6d3b850;
 
 using C = import "common.capnp";
+using T = import "types.capnp";
 using Uuid = C.Uuid;
 using Timestamp = C.Timestamp;
 using Cursor = C.Cursor;
@@ -162,6 +163,8 @@ interface Resources {
   needs         @5 () -> (needs :Needs);
   # resources, reservations, needs and offers; never capacity or allocations (resource.subscribe)
   subscribe     @6 (listener :ChangeListener) -> (subscription :Subscription);
+  # The data types this program owns and what can be done with them (ADR 0066), for a generated frontend.
+  types         @7 () -> (catalog :T.TypeCatalog);
 }
 
 interface Items {

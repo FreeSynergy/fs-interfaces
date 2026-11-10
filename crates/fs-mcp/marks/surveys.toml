@@ -59,6 +59,7 @@ designer = "read"
 respond = "read"
 results = "read"
 subscribe = "read"
+types = "read"
 supportReport = "read"
 
 [release]
