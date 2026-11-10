@@ -83,7 +83,7 @@ fn connect_once(socket: &Path) -> bool {
 }
 
 /// Starts the new server (with `Control`) in this process on its own thread.
-fn start_new(socket: &Path, version: &'static str) -> std::io::Result<()> {
+fn start_new(socket: &Path, version: &'static str) {
     let socket: PathBuf = socket.to_owned();
     std::thread::spawn(move || {
         let _ = run_until_signal_as(&socket, ServerIdentity::new("test", version), || async {
@@ -91,12 +91,11 @@ fn start_new(socket: &Path, version: &'static str) -> std::io::Result<()> {
             Ok(root.client)
         });
     });
-    Ok(())
 }
 
 /// Starts the first server and waits until it listens (else "no server" would be what the client finds).
 fn start_first(socket: &Path, version: &'static str) {
-    start_new(socket, version).unwrap();
+    start_new(socket, version);
     let began = Instant::now();
     while connect_once(socket) {
         assert!(
@@ -160,15 +159,16 @@ fn an_old_server_without_control_is_replaced() {
     let mut old = spawn_old_server(&socket);
     let rt = runtime();
     tokio::task::LocalSet::new().block_on(&rt, async {
-        let started = AtomicBool::new(false);
+        let called = AtomicBool::new(false);
         let starter = || {
-            started.store(true, Ordering::SeqCst);
-            start_new(&socket, "0.0.3")
+            called.store(true, Ordering::SeqCst);
+            start_new(&socket, "0.0.3");
+            Ok(())
         };
         let c = connect_matching::<blob::Client>(&socket, &Expected::new("0.0.3"), &starter)
             .await
             .unwrap();
-        assert!(started.load(Ordering::SeqCst));
+        assert!(called.load(Ordering::SeqCst));
         assert_eq!(seven(&c.client).await, 7);
         drop(c);
         stop_server(&socket).await.unwrap();
@@ -216,7 +216,10 @@ fn a_server_of_another_version_is_stopped_by_request_and_replaced() {
     start_first(&socket, "0.0.2");
     let rt = runtime();
     tokio::task::LocalSet::new().block_on(&rt, async {
-        let starter = || start_new(&socket, "0.0.3");
+        let starter = || {
+            start_new(&socket, "0.0.3");
+            Ok(())
+        };
         let c = connect_matching_with::<blob::Client>(
             &socket,
             &Expected::new("0.0.3"),
@@ -254,7 +257,7 @@ fn a_failed_start_is_a_typed_error() {
             }
             other => panic!("{other}"),
         }
-        assert!(!e.to_string().is_empty());
+        assert_ne!(e.to_string(), "");
     });
     // The old server was ended by SIGTERM before the start failed.
     assert!(old.wait().is_ok());
@@ -268,7 +271,10 @@ fn a_replacement_that_is_still_wrong_is_a_mismatch() {
     start_first(&socket, "0.0.2");
     let rt = runtime();
     tokio::task::LocalSet::new().block_on(&rt, async {
-        let starter = || start_new(&socket, "0.0.2");
+        let starter = || {
+            start_new(&socket, "0.0.2");
+            Ok(())
+        };
         let e = connect_matching::<blob::Client>(&socket, &Expected::new("0.0.3"), &starter)
             .await
             .err()
