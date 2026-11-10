@@ -26,4 +26,4 @@ jobs:
           cache-key: windows
       - run: cargo fmt --check -p fs-interfaces
       - run: cargo clippy -p fs-interfaces --all-targets --all-features -- -D warnings -W clippy::pedantic
-      - run: cargo test -p fs-interfaces --all-features
+      - run: cargo test -p fs-interfaces --all-features --no-fail-fast

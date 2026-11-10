@@ -1,0 +1,4 @@
+# Text files are checked out with LF on every system (the generated code is compared byte for byte with fresh output).
+* text=auto eol=lf
+*.png binary
+*.asc text eol=lf
