@@ -16,6 +16,7 @@ using Envelope = C.Envelope;
 using SupportReport = C.SupportReport;
 using ChangeListener = C.ChangeListener;
 using Subscription = C.Subscription;
+using T = import "types.capnp";
 
 struct Event {
   envelope   @0 :Envelope;         # AS2 `Event` envelope
@@ -64,6 +65,8 @@ interface Events {
   items         @1 () -> (items :Items);
   invitations   @2 () -> (invitations :Invitations);
   subscribe     @3 (listener :ChangeListener) -> (subscription :Subscription);   # event.subscribe
+  # The data types this program owns (`Event`) and what can be done with them (ADR 0066), for a generated frontend.
+  types         @4 () -> (catalog :T.TypeCatalog);
 }
 
 interface Items {

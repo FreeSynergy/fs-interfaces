@@ -6,6 +6,7 @@ invitations = { risk = "excluded", reason = "hands out the Invitations interface
 items = "read"
 subscribe = "read"
 supportReport = "read"
+types = "read"
 
 [Invitations]
 "@interface" = { risk = "excluded", reason = "no tools for invitations; respond takes a free `who` and would answer in the name of another person (ADR 0056)" }

@@ -22,6 +22,7 @@ capabilities = "read"
 items = "read"
 subscribe = "read"
 supportReport = "read"
+types = "read"
 
 [format]
 "ImportReport.notes" = "notes text (a specialist format, not a secret field; it can still hold what a person wrote)"

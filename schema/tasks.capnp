@@ -24,6 +24,7 @@ using Envelope = C.Envelope;
 using CapabilityList = C.CapabilityList;
 using ChangeListener = C.ChangeListener;
 using Subscription = C.Subscription;
+using T = import "types.capnp";
 
 # RFC 9253 relation of a task to another object (JSCalendar `relatedTo`)
 enum Relation {
@@ -77,6 +78,8 @@ interface Tasks {
   subscribe    @2 (listener :ChangeListener) -> (subscription :Subscription);
   boards       @3 () -> (boards :Boards);      # placeholder, see below
   supportReport @4 () -> (report :C.SupportReport);  # provider rule (ADR 0045)
+  # The data types this program owns (`Task`) and what can be done with them (ADR 0066), for a generated frontend.
+  types         @5 () -> (catalog :T.TypeCatalog);
 }
 
 interface Items {
