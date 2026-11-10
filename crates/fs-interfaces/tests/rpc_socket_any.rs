@@ -63,7 +63,16 @@ async fn a_problem_crosses_a_real_socket_and_the_socket_goes_with_the_server() {
         let _ = stop.send(());
         serving.await.unwrap().unwrap();
         assert!(!path.exists());
-        bind_socket(&path).await.expect("free again");
+        // A named pipe lives as long as one end of it is open, and a connection that was served is such an end: it is
+        // free once the client has gone and the connection has noticed (a Unix socket is removed by the server at once).
+        drop(client);
+        let mut tries = 0;
+        while let Err(e) = bind_socket(&path).await {
+            assert_eq!(e.kind(), ErrorKind::AddrInUse, "{e}");
+            tries += 1;
+            assert!(tries < 100, "still not free: {e}");
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
     })
     .await;
 }
