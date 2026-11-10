@@ -1,6 +1,6 @@
 //! The shared server and client side of every contract (feature `rpc`).
 //!
-//! Every program serves its contract the same way: a Unix socket per program, one two-party RPC
+//! Every program serves its contract the same way: a socket per program (a Unix socket, a named pipe on Windows), one two-party RPC
 //! system per connection, RFC 9457 problems as RPC errors, cursor pages, a change feed. All of that
 //! lives here, once, so a program's server only translates its own methods (ADR 0043 §4). Everything
 //! here runs on one thread inside a `tokio::task::LocalSet`, as `capnp-rpc` requires.
@@ -31,7 +31,7 @@ mod page;
 mod problem;
 mod pump;
 mod serve;
-mod socket;
+mod transport;
 
 pub use cursor::{PlaceParts, decode_place, encode_place};
 pub use envelope::{envelope_weight, read_envelope, write_envelope};
@@ -54,4 +54,4 @@ pub use problem::{
 pub use serve::{
     Connection, ReadLimits, connect, connect_with, run_until_signal, serve, serve_with,
 };
-pub use socket::{BoundSocket, bind_socket, default_socket};
+pub use transport::{BoundSocket, bind_socket, default_socket};

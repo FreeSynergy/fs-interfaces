@@ -6,10 +6,9 @@
 
 use std::ffi::OsString;
 use std::io;
-use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 
-use super::socket::{check_ancestors, create_private, default_socket};
+use super::transport::{Endpoint, System, default_socket};
 
 /// The acting person when none is named: the owner of this device.
 pub const LOCAL_OWNER: &str = "https://local.invalid/users/owner";
@@ -27,14 +26,11 @@ pub struct ServerOptions {
     pub instance: Option<String>,
 }
 
-/// `$XDG_DATA_HOME/freesynergy/<program>`, else below `$HOME/.local/share`.
+/// Where the data of `program` lives when nobody says otherwise: `$XDG_DATA_HOME/freesynergy/<program>`, else below
+/// `$HOME/.local/share` (Unix); `%LOCALAPPDATA%\FreeSynergy\<program>` (Windows).
 #[must_use]
 pub fn default_data_dir(program: &str) -> Option<PathBuf> {
-    let set = |name: &str| std::env::var_os(name).filter(|v| !v.is_empty());
-    let base = set("XDG_DATA_HOME")
-        .map(PathBuf::from)
-        .or_else(|| set("HOME").map(|h| PathBuf::from(h).join(".local/share")))?;
-    Some(base.join("freesynergy").join(program))
+    System::default_data_dir(program)
 }
 
 /// A domain as an IRI can carry it: labels of ASCII letters, digits and inner hyphens, 63 bytes each,
@@ -54,23 +50,13 @@ fn is_domain(name: &str) -> bool {
 }
 
 /// Create the data directory for this user alone; refuse one that others can reach, or one below a
-/// directory that others could swap. Answers the canonical path, the one that was checked and is the
+/// directory that others could swap (Unix). Answers the canonical path, the one that was checked and is the
 /// one to use.
 ///
 /// # Errors
 /// Others have access (`PermissionDenied`), or the file system refuses.
 pub fn prepare_data_dir(dir: &Path) -> io::Result<PathBuf> {
-    create_private(dir)?;
-    let dir = dir.canonicalize()?;
-    let meta = std::fs::metadata(&dir)?;
-    if meta.uid() != rustix::process::geteuid().as_raw() || meta.mode() & 0o077 != 0 {
-        return Err(io::Error::new(
-            io::ErrorKind::PermissionDenied,
-            format!("{} must belong to this user alone (0700)", dir.display()),
-        ));
-    }
-    check_ancestors(&dir)?;
-    Ok(dir)
+    System::prepare_data_dir(dir)
 }
 
 impl ServerOptions {
@@ -104,7 +90,7 @@ impl ServerOptions {
         let socket = socket
             .map(PathBuf::from)
             .or_else(|| default_socket(program))
-            .ok_or("no $XDG_RUNTIME_DIR: pass --socket")?;
+            .ok_or("no default socket (no $XDG_RUNTIME_DIR on Unix): pass --socket")?;
         let data = data
             .map(PathBuf::from)
             .or_else(|| default_data_dir(program))

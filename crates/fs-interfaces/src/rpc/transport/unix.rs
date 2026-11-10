@@ -1,4 +1,4 @@
-//! Where a program listens.
+//! Where a program listens, on Unix: a Unix socket. The Unix side of [`Endpoint`].
 //!
 //! Pattern: Factory + RAII — [`bind_socket`] builds a [`BoundSocket`]: a lock file held for the life
 //! of the process decides who owns the path, so two starts cannot both win. Only a socket nobody
@@ -6,15 +6,19 @@
 //! the lock, so it can never remove a successor's.
 
 use std::fs::{DirBuilder, File, OpenOptions, TryLockError};
+use std::future::Future;
 use std::io;
 use std::os::unix::fs::{DirBuilderExt, FileTypeExt, MetadataExt, OpenOptionsExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
+use rustix::io::Errno;
 use tokio::net::{UnixListener, UnixStream};
+
+use super::endpoint::{Accepted, Endpoint};
 
 /// `$XDG_RUNTIME_DIR/freesynergy/<program>.sock`, the same place for every program.
 #[must_use]
-pub fn default_socket(program: &str) -> Option<PathBuf> {
+pub(super) fn default_socket(program: &str) -> Option<PathBuf> {
     // An empty variable counts as unset (XDG Base Directory).
     let dir = std::env::var_os("XDG_RUNTIME_DIR").filter(|d| !d.is_empty())?;
     Some(
@@ -27,7 +31,7 @@ pub fn default_socket(program: &str) -> Option<PathBuf> {
 /// A bound socket, owned by this process until dropped.
 #[derive(Debug)]
 pub struct BoundSocket {
-    pub(super) listener: UnixListener,
+    listener: UnixListener,
     path: PathBuf,
     _lock: File,
 }
@@ -138,7 +142,7 @@ async fn clear_stale(path: &Path) -> io::Result<()> {
 /// # Errors
 /// A live server owns it (`AddrInUse`), something else is at the path, others can write in the
 /// directory, or the file system refuses.
-pub async fn bind_socket(path: &Path) -> io::Result<BoundSocket> {
+pub(super) async fn bind_socket(path: &Path) -> io::Result<BoundSocket> {
     let dir = path
         .parent()
         .filter(|d| !d.as_os_str().is_empty())
@@ -159,4 +163,86 @@ pub async fn bind_socket(path: &Path) -> io::Result<BoundSocket> {
         path,
         _lock: lock,
     })
+}
+
+/// The Unix transport.
+pub struct Unix;
+
+fn is_me(stream: &UnixStream) -> bool {
+    let me = rustix::process::geteuid().as_raw();
+    stream.peer_cred().is_ok_and(|c| c.uid() == me)
+}
+
+impl Endpoint for Unix {
+    type ServerStream = UnixStream;
+    type ClientStream = UnixStream;
+    type Bound = BoundSocket;
+
+    fn default_socket(program: &str) -> Option<PathBuf> {
+        default_socket(program)
+    }
+
+    fn default_data_dir(program: &str) -> Option<PathBuf> {
+        let set = |name: &str| std::env::var_os(name).filter(|v| !v.is_empty());
+        let base = set("XDG_DATA_HOME")
+            .map(PathBuf::from)
+            .or_else(|| set("HOME").map(|h| PathBuf::from(h).join(".local/share")))?;
+        Some(base.join("freesynergy").join(program))
+    }
+
+    fn prepare_data_dir(dir: &Path) -> io::Result<PathBuf> {
+        create_private(dir)?;
+        let dir = dir.canonicalize()?;
+        let meta = std::fs::metadata(&dir)?;
+        if meta.uid() != rustix::process::geteuid().as_raw() || meta.mode() & 0o077 != 0 {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                format!("{} must belong to this user alone (0700)", dir.display()),
+            ));
+        }
+        check_ancestors(&dir)?;
+        Ok(dir)
+    }
+
+    async fn bind(path: &Path) -> io::Result<BoundSocket> {
+        bind_socket(path).await
+    }
+
+    async fn accept(bound: &BoundSocket) -> io::Result<Accepted<UnixStream>> {
+        match bound.listener.accept().await {
+            Ok((stream, _)) if is_me(&stream) => Ok(Accepted::Peer(stream)),
+            Ok(_) => Ok(Accepted::Skip),
+            Err(e) => match Errno::from_io_error(&e) {
+                Some(Errno::CONNABORTED) => Ok(Accepted::Skip),
+                Some(Errno::MFILE | Errno::NFILE | Errno::NOMEM | Errno::NOBUFS) => {
+                    Ok(Accepted::Pause)
+                }
+                _ => Err(e),
+            },
+        }
+    }
+
+    async fn connect(path: &Path) -> io::Result<UnixStream> {
+        let stream = UnixStream::connect(path).await?;
+        if !is_me(&stream) {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                format!("{} is served by another user", path.display()),
+            ));
+        }
+        Ok(stream)
+    }
+
+    fn stop_signal() -> io::Result<impl Future<Output = ()>> {
+        // `signal` registers at once; `tokio::signal::ctrl_c()` would only register when first polled, and a stop that comes
+        // while the program opens its store must reach the clean shutdown, not kill the process.
+        let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+        let mut int = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())?;
+        Ok(async move {
+            tokio::select! {
+                _ = int.recv() => {}
+                _ = term.recv() => {}
+            }
+        })
+    }
 }

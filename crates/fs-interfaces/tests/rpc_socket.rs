@@ -1,5 +1,6 @@
-//! Sockets and connections of the shared RPC side (feature `rpc`).
-#![cfg(feature = "rpc")]
+//! Sockets and connections of the shared RPC side (feature `rpc`), the parts that are Unix only: file modes, descriptors,
+//! stale socket files. `rpc_socket_any.rs` has what holds on every system.
+#![cfg(all(unix, feature = "rpc"))]
 
 use std::io::ErrorKind;
 use std::os::unix::fs::PermissionsExt;

@@ -1,0 +1,15 @@
+# The same gate as check.yml, on the Windows runner of fs-release (windows-2022): the named-pipe transport is built and tested
+# here, never cross-built.
+name: windows
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    uses: FreeSynergy/fs-release/.github/workflows/check.yml@main
+    with:
+      runs-on: windows-2022
