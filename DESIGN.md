@@ -183,3 +183,18 @@ The MCP tool generator (stage 1, lists only) lives in `crates/fs-mcp`; see its `
 ## Contact values (feature `values`, 0.51.0)
 
 `values::{EmailAddress, PhoneNumber, ContactValue, ValueProblem}`: value objects shared by all programs (e-mail by the practical HTML rule with IDNA-mapped domains and the 254-character limit; phone E.164). Equality and hash follow the canonical form. A failure is a code, the sentence is the program's. Not a contract: no schema, no draft status.
+
+
+## Windows transport (2026-11-10, sprint decision C: a real port, no cross-build)
+`rpc/transport/` has one trait, `Endpoint` (Strategy), and two implementations; `rpc::serve`, `connect`, `bind_socket`, `default_socket`,
+`ServerOptions` and the data directory go through it and name neither. **Unix** (`transport/unix.rs`): a Unix socket, a lock file for the
+single instance, `SO_PEERCRED`, SIGTERM/SIGINT, ancestors checked. **Windows** (`transport/windows.rs`): a named pipe
+`\\.\pipe\freesynergy-<user>-<program>` (a `--socket PATH` that is not a pipe name becomes one), `first_pipe_instance` is the single-instance
+rule (a second start gets `AddrInUse`), `reject_remote_clients`, Ctrl-C/Break/close/shutdown, data in `%LOCALAPPDATA%\FreeSynergy\<program>`
+made private with `icacls`. New: `stop_self()` ends `run_until_signal` in order from inside (a lease that ran out; Windows has no signal to
+send to oneself) and `companion_path(socket, "lease")` (files that belong to a socket; a pipe has no folder).
+**Known differences on Windows:** the check "is the other end this user" (`SO_PEERCRED`) is not made, the name carries the user and the first
+instance is ours, but a client does not recognise a server of another user that already holds the name; a named pipe lives as long as one end
+is open, so after `serve` returned the name is free only when the served connections are gone; the checks of group-writable ancestors are
+Unix concepts and are not made. The Windows gate is `.github/workflows/windows.yml` (own steps: it lints and tests the crate `fs-interfaces`
+only, because the pedantic clippy of `fs-types` already fails on `main`).
