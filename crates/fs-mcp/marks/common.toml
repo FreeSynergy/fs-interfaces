@@ -5,6 +5,9 @@
 read = { risk = "read", resource = true }
 size = "read"
 
+[Control]
+"@interface" = { risk = "excluded", reason = "ends the server of a program from outside (the counterpart of SIGTERM): operation of the program, never a capability of a person or an agent" }
+
 [release]
 "Cursor.opaque" = "an opaque paging cursor that the program itself issues: it holds a position, never a secret (common.capnp)"
 "Blob.read.data" = "bytes of a file or attachment; whether they are sensitive (ADR 0029) is decided by the engine at the object, and every read needs a release anyway (ADR 0054)"
