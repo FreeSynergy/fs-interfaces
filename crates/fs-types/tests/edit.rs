@@ -215,6 +215,7 @@ fn a_read_only_field_is_shown_but_not_edited_and_travels_on_the_wire() {
         .set(&["uid"], BasicType::Text, &["x"])
         .check(&t, &BasicRules::standard())
         .unwrap_err();
+    assert_eq!(issues.len(), 1);
     assert_eq!(issues[0].problem, RecordProblem::ReadOnly);
     assert!(
         Edit::new()
@@ -239,5 +240,19 @@ fn a_read_only_field_is_shown_but_not_edited_and_travels_on_the_wire() {
     let card = back.get("Card").unwrap();
     assert!(
         card.find_field("uid").unwrap().read_only && !card.find_field("note").unwrap().read_only
+    );
+}
+
+#[test]
+fn a_required_read_only_field_is_not_missing_in_a_new_record() {
+    let t = TypeDescription::new("Card", "fs-test", "RFC 9553", "card").field(
+        FieldDescription::new("uid", BasicType::Text)
+            .label("card.uid")
+            .required()
+            .read_only(),
+    );
+    assert!(
+        t.check_record(&BasicRules::standard(), &BTreeMap::new())
+            .is_empty()
     );
 }

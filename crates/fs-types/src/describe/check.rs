@@ -86,7 +86,8 @@ impl TypeDescription {
                     .collect()
             });
             if given.is_empty() {
-                if f.required {
+                // A read-only field is set by the program: leaving it out is right, even when it is required.
+                if f.required && !f.read_only {
                     push(&f.name, 0, RecordProblem::Missing);
                 }
                 continue;
