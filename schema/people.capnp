@@ -25,6 +25,7 @@ using Uuid = C.Uuid;
 using Cursor = C.Cursor;
 using Envelope = C.Envelope;
 using SupportReport = C.SupportReport;
+using T = import "types.capnp";
 using ChangeListener = C.ChangeListener;
 using Subscription = C.Subscription;
 
@@ -50,6 +51,11 @@ struct ImportReport {
   skipped @1 :List(Text);              # uids that already existed
   failed  @2 :List(Text);
   unclear @3 :List(Text);              # stored, with a sensitive marking that names no category (ADR 0029)
+}
+
+struct PersonProblem {
+  path @0 :Text;                       # JSON pointer into the card: /emails/e1
+  code @1 :Text;                       # what is wrong, as a code
 }
 
 # ---- Relations: what someone is to me (part of the card) ----
@@ -111,6 +117,8 @@ interface People {
   persons       @1 () -> (persons :Persons);
   roles         @2 () -> (roles :Roles);
   subscribe     @3 (listener :ChangeListener) -> (subscription :Subscription);   # person.subscribe
+  # The data types this program owns (`Person`) and what can be done with them (ADR 0066), for a generated frontend.
+  types         @4 () -> (catalog :T.TypeCatalog);
 }
 
 interface Persons {
@@ -147,6 +155,15 @@ interface Persons {
   rejectSame     @24 (a :Uuid, b :Uuid) -> (rejection :Uuid);                    # same.link
   reopenSame     @25 (rejection :Uuid) -> ();                                    # same.link
   sameState      @26 (a :Uuid, b :Uuid) -> (state :SameState);                   # same.read
+  # Commands of the type description `Person` (ADR 0066).
+  # `patch`: a PatchObject (RFC 8984 section 1.4.9) as JSON text: path (a JSON pointer without its first `/`) to value,
+  # `null` removes. All or nothing; the result is validated like `update`. A path through what is not there is refused.
+  patch          @27 (id :Uuid, patch :Text) -> (person :Person);               # person.update
+  # `check`: the card against RFC 9553 and the rules of the basic types. A problem is a path and a code
+  # (translation key suffix `problem.<code>`), never a sentence; empty = in order. It changes nothing.
+  check          @28 (id :Uuid) -> (problems :List(PersonProblem));             # person.check
+  # `suggest`: completions for what is typed in a field (`field` is the field name of the description, e.g. `emails`).
+  suggest        @29 (field :Text, typed :Text) -> (suggestions :List(Text));    # person.suggest
 }
 
 interface Roles {
