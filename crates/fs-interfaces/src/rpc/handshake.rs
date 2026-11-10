@@ -93,10 +93,15 @@ pub async fn connect_matching_with<C: FromClientHook>(
     }
 }
 
+/// No server there, or one that ends while we talk to it (another client stopped it): in both cases nothing to stop.
 fn is_absent(e: &io::Error) -> bool {
     matches!(
         e.kind(),
-        io::ErrorKind::NotFound | io::ErrorKind::ConnectionRefused
+        io::ErrorKind::NotFound
+            | io::ErrorKind::ConnectionRefused
+            | io::ErrorKind::ConnectionReset
+            | io::ErrorKind::ConnectionAborted
+            | io::ErrorKind::BrokenPipe
     )
 }
 
@@ -158,8 +163,14 @@ async fn end_server<C: FromClientHook>(
         Err(e) if is_absent(&e) => return Ok(None),
         Err(e) if e.kind() == io::ErrorKind::Unsupported => {
             // Older than `Control` (also a server of `serve` alone): only the system can end it.
-            let pid = System::server_pid(socket).await.ok().flatten();
+            let pid = match System::server_pid(socket).await {
+                Err(e) if is_absent(&e) => return Ok(None), // another client ended it meanwhile
+                other => other.ok().flatten(),
+            };
             let Some(pid) = pid else {
+                if System::connect(socket).await.is_err() {
+                    return Ok(None); // gone while we looked
+                }
                 return Err(
                     "the running server is too old to be stopped by request, and its process is unknown: end it by hand"
                         .to_owned(),

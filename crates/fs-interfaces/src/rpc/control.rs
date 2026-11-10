@@ -148,8 +148,11 @@ pub async fn stop_server(socket: &Path) -> io::Result<()> {
     }
 }
 
-/// `unimplemented` (a server that does not know the method) is `Unsupported`; the rest is `Other`.
+/// `unimplemented` (a server that does not know the method) is `Unsupported`, a connection that ended is `ConnectionReset`; the rest is `Other`.
 pub(super) fn io_error(e: capnp::Error) -> io::Error {
+    if e.kind == capnp::ErrorKind::Disconnected {
+        return io::Error::new(io::ErrorKind::ConnectionReset, e);
+    }
     if e.kind == capnp::ErrorKind::Unimplemented || e.extra.contains("not implemented") {
         io::Error::new(io::ErrorKind::Unsupported, e)
     } else {
