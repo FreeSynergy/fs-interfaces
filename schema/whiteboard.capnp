@@ -35,6 +35,7 @@ using CapabilityList = C.CapabilityList;
 using SupportReport = C.SupportReport;
 using ChangeListener = C.ChangeListener;
 using Subscription = C.Subscription;
+using T = import "types.capnp";
 
 struct Point { x @0 :Float64; y @1 :Float64; }
 
@@ -121,6 +122,10 @@ interface Whiteboard {
   supportReport @1 () -> (report :SupportReport);                 # provider rule (ADR 0045)
   boards        @2 () -> (boards :Boards);
   subscribe     @3 (board :Uuid, listener :ChangeListener) -> (subscription :Subscription); # board.subscribe
+  # The data types this program owns (`Board`, `Page`, `Element`) and what can be done with them (ADR 0066), for a
+  # generated frontend. Every command of the requirements is described; the ones this provider cannot do are marked
+  # unsupported (types.capnp, once it has the field).
+  types         @4 () -> (catalog :T.TypeCatalog);
 }
 
 interface Boards {

@@ -40,6 +40,7 @@ rename = "change"
 boards = "read"
 capabilities = "read"
 subscribe = "read"
+types = "read"
 supportReport = "read"
 
 [format]
