@@ -38,6 +38,7 @@ setTemplate = "change"
 subscribe = "read"
 supportReport = "read"
 trash = "change"
+types = "read"
 
 [Expect]
 any = "change"

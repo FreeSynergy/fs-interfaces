@@ -51,6 +51,7 @@ using Envelope = C.Envelope;
 using SupportReport = C.SupportReport;
 using ChangeListener = C.ChangeListener;
 using Subscription = C.Subscription;
+using T = import "types.capnp";
 
 const notFoundProblemType    :Text = "https://freesynergy.net/problems/texts/not-found";
 const conflictProblemType    :Text = "https://freesynergy.net/problems/texts/conflict";
@@ -249,5 +250,7 @@ interface Texts {
   purgeRevision @34 (id :Uuid, number :UInt64) -> ();                                         # text.history: removes ONE old revision for good (leaked secret); not the current one (invalidProblemType, issue `current-revision`); unknown/pruned = notFoundProblemType kind "revision"
   # trash method added after the first draft of 0.2 so `delete` keeps its meaning (@35, in the trash group above in meaning)
   trash      @35 (id :Uuid) -> (item :TrashItem);   # text.trash: moves the text with its history out of sight; path free again; already trashed or unknown = notFoundProblemType
+  # The data types this program owns (`Page`, `Document`, `Draft`, `Link`, ...) and what can be done with them (ADR 0066), for a generated frontend.
+  types      @36 () -> (catalog :T.TypeCatalog);
 }
 
