@@ -158,12 +158,19 @@ interface Persons {
   # Commands of the type description `Person` (ADR 0066).
   # `patch`: a PatchObject (RFC 8984 section 1.4.9) as JSON text: path (a JSON pointer without its first `/`) to value,
   # `null` removes. All or nothing; the result is validated like `update`. A path through what is not there is refused.
+  # DEPRECATED for frontends (rule of 2026-11-10: no JSON in a form): a frontend uses `change` (typed, field by field). `patch`
+  # stays (never remove) as the means of tools that already hold a PatchObject.
   patch          @27 (id :Uuid, patch :Text) -> (person :Person);               # person.update
   # `check`: the card against RFC 9553 and the rules of the basic types. A problem is a path and a code
   # (translation key suffix `problem.<code>`), never a sentence; empty = in order. It changes nothing.
   check          @28 (id :Uuid) -> (problems :List(PersonProblem));             # person.check
   # `suggest`: completions for what is typed in a field (`field` is the field name of the description, e.g. `emails`).
   suggest        @29 (field :Text, typed :Text) -> (suggestions :List(Text));    # person.suggest
+  # `change`: the command `change` of the description `Person`: an `Edit` (types.capnp), field path plus typed values, field by
+  # field. A field not in the `Edit` stays; one with no values is cleared; otherwise the values replace the field's. The
+  # entries of a multiple field that the description does not show (their sub-objects' contexts, pref, label) stay with the
+  # values that remain. The backend turns it into the card's PatchObject. All or nothing, validated like `update`.
+  change         @30 (id :Uuid, edit :T.Edit) -> (person :Person);              # person.update
 }
 
 interface Roles {

@@ -37,6 +37,7 @@ unrelate = "destructive"
 update = "destructive"
 updateIf = "destructive"
 patch = "destructive"
+change = "destructive"
 check = "read"
 suggest = "read"
 
