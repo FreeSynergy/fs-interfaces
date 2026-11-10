@@ -33,7 +33,8 @@ fn a_sound_description_registers_and_is_found() {
     let t = reg.get("Contact").unwrap();
     assert_eq!(t.find_field("emails").unwrap().basic, BasicType::Email);
     assert_eq!(t.find_command("create").unwrap().kind, CommandKind::Create);
-    assert!(reg.unresolved_targets().is_empty());
+    let unresolved = reg.unresolved_targets();
+    assert!(unresolved.is_empty(), "{unresolved:?}");
     assert_eq!(
         reg.register::<Contact>().err(),
         Some(P::TypeExists("Contact".into()))
@@ -64,7 +65,8 @@ fn a_record_is_checked_by_the_rules_of_its_fields() {
         ("emails", &["ada@example.org", ""]),
         ("kind", &["org"]),
     ]);
-    assert!(t.check_record(&rules, &ok).is_empty());
+    let issues = t.check_record(&rules, &ok);
+    assert!(issues.is_empty(), "{issues:?}");
 
     let bad = record(&[
         ("emails", &["ada@example.org", "nope", "b@c.org"]),

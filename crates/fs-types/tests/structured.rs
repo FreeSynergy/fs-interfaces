@@ -36,7 +36,8 @@ fn name_separator_attaches() {
 fn name_typed_on_one_line_is_not_split() {
     let n = Name::parse("  Ada   Lovelace ").unwrap();
     assert_eq!(n.canonical(), "Ada Lovelace");
-    assert!(n.components().is_empty());
+    let components = n.components();
+    assert!(components.is_empty(), "{components:?}");
     assert_eq!(Name::new("", &[]).err(), Some(TypeProblem::NoParts));
     assert_eq!(Name::parse("").err(), Some(TypeProblem::Empty));
     assert_eq!(Name::new("a\u{7}", &[]).err(), Some(TypeProblem::Character));

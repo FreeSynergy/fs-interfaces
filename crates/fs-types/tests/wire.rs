@@ -116,7 +116,7 @@ fn unknown_enum_values_read_as_unknown() {
     let bytes = answer(&reg);
     let mut hits = 0;
     for i in (0..bytes.len() - 1).step_by(2) {
-        if bytes[i] != BasicType::Reference as u16 as u8 || bytes[i + 1] != 0 {
+        if bytes[i] != u8::try_from(BasicType::Reference as u16).unwrap() || bytes[i + 1] != 0 {
             continue;
         }
         let mut patched = bytes.clone();

@@ -194,7 +194,8 @@ fn empty_texts_in_an_edit_count_as_not_given() {
         .set(&["kind"], BasicType::Choice, &[" "])
         .check(&desc, &rules)
         .unwrap();
-    assert!(cleared.fields[0].values.is_empty());
+    let values = &cleared.fields[0].values;
+    assert!(values.is_empty(), "{values:?}");
     let kept = Edit::new()
         .set(&["emails"], BasicType::Email, &["a@x.org", ""])
         .check(&desc, &rules)
@@ -251,8 +252,6 @@ fn a_required_read_only_field_is_not_missing_in_a_new_record() {
             .required()
             .read_only(),
     );
-    assert!(
-        t.check_record(&BasicRules::standard(), &BTreeMap::new())
-            .is_empty()
-    );
+    let issues = t.check_record(&BasicRules::standard(), &BTreeMap::new());
+    assert!(issues.is_empty(), "{issues:?}");
 }

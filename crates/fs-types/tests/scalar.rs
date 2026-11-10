@@ -56,8 +56,10 @@ fn email_domains_are_suggested_by_frequency() {
         vec!["ada@work.org", "ada@home.net"]
     );
     assert_eq!(EmailAddress::suggest("ada@h", &known), vec!["ada@home.net"]);
-    assert!(EmailAddress::suggest("", &known).is_empty());
-    assert!(EmailAddress::suggest("a@b@c", &known).is_empty());
+    let found = EmailAddress::suggest("", &known);
+    assert!(found.is_empty(), "{found:?}");
+    let found = EmailAddress::suggest("a@b@c", &known);
+    assert!(found.is_empty(), "{found:?}");
 }
 
 #[test]
@@ -67,7 +69,8 @@ fn phone_is_e164_and_has_no_suggestion() {
         bad::<PhoneNumber>("030 123456").code(),
         "phone.no-country-code"
     );
-    assert!(PhoneNumber::suggest("+49", &["+4930123456"]).is_empty());
+    let found = PhoneNumber::suggest("+49", &["+4930123456"]);
+    assert!(found.is_empty(), "{found:?}");
 }
 
 #[test]
@@ -102,7 +105,8 @@ fn link_is_absolute_and_normalised() {
         Link::suggest("example.org/x", &[]),
         vec!["https://example.org/x"]
     );
-    assert!(Link::suggest("hello", &[]).is_empty());
+    let found = Link::suggest("hello", &[]);
+    assert!(found.is_empty(), "{found:?}");
 }
 
 #[test]
@@ -217,7 +221,8 @@ fn link_without_a_host_keeps_its_dots_and_unsafe_schemes_are_refused() {
         TypeProblem::UnsafeScheme
     );
     assert_eq!(bad::<Link>("data:text/html,x"), TypeProblem::UnsafeScheme);
-    assert!(Link::suggest("ada@example.org", &[]).is_empty());
+    let found = Link::suggest("ada@example.org", &[]);
+    assert!(found.is_empty(), "{found:?}");
 }
 
 #[test]
@@ -245,7 +250,8 @@ fn key_prefix_is_case_insensitive_and_0x_is_allowed() {
 
 #[test]
 fn the_typed_address_is_not_its_own_suggestion() {
-    assert!(EmailAddress::suggest("ada@work.org", &["b@work.org"]).is_empty());
+    let found = EmailAddress::suggest("ada@work.org", &["b@work.org"]);
+    assert!(found.is_empty(), "{found:?}");
 }
 
 #[test]
