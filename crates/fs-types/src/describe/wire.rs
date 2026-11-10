@@ -15,6 +15,7 @@ fn write_field(f: &FieldDescription, mut b: field_description::Builder<'_>) {
     b.set_basic(f.basic);
     b.set_required(f.required);
     b.set_multiple(f.multiple);
+    b.set_read_only(f.read_only);
     b.set_label(&f.label);
     b.set_target(&f.target);
     let mut list = b.init_choices(u32::try_from(f.choices.len()).unwrap_or(u32::MAX));
@@ -31,6 +32,7 @@ fn read_field(r: field_description::Reader<'_>) -> capnp::Result<FieldDescriptio
     Ok(FieldDescription {
         name: r.get_name()?.to_string()?,
         basic: r.get_basic().unwrap_or(BasicType::Unknown),
+        read_only: r.get_read_only(),
         required: r.get_required(),
         multiple: r.get_multiple(),
         label: r.get_label()?.to_string()?,

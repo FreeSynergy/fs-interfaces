@@ -25,6 +25,8 @@ pub enum RecordProblem {
     WrongType,
     /// An edit path with more than one step: descriptions have flat fields, so a deeper path is not typed (`Unsupported`).
     NestedPath,
+    /// An edit names a read-only field.
+    ReadOnly,
     /// Two entries of an edit for one path.
     DuplicatePath,
 }

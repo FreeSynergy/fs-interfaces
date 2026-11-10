@@ -201,3 +201,43 @@ fn empty_texts_in_an_edit_count_as_not_given() {
         .unwrap();
     assert_eq!(kept.fields[0].values, vec!["a@x.org"]);
 }
+
+#[test]
+fn a_read_only_field_is_shown_but_not_edited_and_travels_on_the_wire() {
+    let t = TypeDescription::new("Card", "fs-test", "RFC 9553", "card")
+        .field(
+            FieldDescription::new("uid", BasicType::Text)
+                .label("card.uid")
+                .read_only(),
+        )
+        .field(FieldDescription::new("note", BasicType::Text).label("card.note"));
+    let issues = Edit::new()
+        .set(&["uid"], BasicType::Text, &["x"])
+        .check(&t, &BasicRules::standard())
+        .unwrap_err();
+    assert_eq!(issues[0].problem, RecordProblem::ReadOnly);
+    assert!(
+        Edit::new()
+            .set(&["note"], BasicType::Text, &["x"])
+            .check(&t, &BasicRules::standard())
+            .is_ok()
+    );
+    let mut reg = TypeRegistry::new();
+    reg.add(t).unwrap();
+    let mut msg = capnp::message::Builder::new_default();
+    reg.write(
+        msg.init_root::<type_catalog::describe_results::Builder<'_>>()
+            .init_types(1),
+    );
+    let back = TypeRegistry::read(
+        msg.get_root_as_reader::<type_catalog::describe_results::Reader<'_>>()
+            .unwrap()
+            .get_types()
+            .unwrap(),
+    )
+    .unwrap();
+    let card = back.get("Card").unwrap();
+    assert!(
+        card.find_field("uid").unwrap().read_only && !card.find_field("note").unwrap().read_only
+    );
+}

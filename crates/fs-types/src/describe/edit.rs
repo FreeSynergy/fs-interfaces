@@ -103,6 +103,10 @@ impl Edit {
                 push(0, RecordProblem::UnknownField);
                 continue;
             };
+            if field.read_only {
+                push(0, RecordProblem::ReadOnly);
+                continue;
+            }
             if f.path.len() > 1 {
                 push(0, RecordProblem::NestedPath);
                 continue;

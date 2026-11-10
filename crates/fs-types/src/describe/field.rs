@@ -21,6 +21,8 @@ pub struct FieldDescription {
     pub target: String,
     /// For a `choice`: the allowed keys.
     pub choices: Vec<String>,
+    /// The program sets it itself (uid, created ...): shown, never edited. An `Edit` naming it is refused.
+    pub read_only: bool,
 }
 
 impl FieldDescription {
@@ -35,6 +37,7 @@ impl FieldDescription {
             label: String::new(),
             target: String::new(),
             choices: Vec::new(),
+            read_only: false,
         }
     }
 
@@ -49,6 +52,13 @@ impl FieldDescription {
     #[must_use]
     pub fn multiple(mut self) -> Self {
         self.multiple = true;
+        self
+    }
+
+    /// The program sets it itself; shown, never edited.
+    #[must_use]
+    pub fn read_only(mut self) -> Self {
+        self.read_only = true;
         self
     }
 

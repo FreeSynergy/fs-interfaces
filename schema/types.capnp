@@ -89,6 +89,9 @@ struct FieldDescription {
   label    @4 :Text;                     # translation key (coding.md section 2a), never a sentence: "person.emails"
   target   @5 :Text;                     # for `reference`: name of the data type referred to; empty = any
   choices  @6 :List(Text);               # for `choice`: the allowed keys (a label key per entry is "<label>.<key>")
+  # The program sets this field itself (uid, created, updated, prodId ...): shown, never editable. A generated form shows it
+  # as plain display; an `Edit` that names it is refused (`readOnly`). Unset = editable, so an old description loses nothing.
+  readOnly @7 :Bool;
 }
 
 struct CommandDescription {
