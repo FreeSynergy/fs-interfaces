@@ -41,6 +41,7 @@ using Blob = C.Blob;
 using SupportReport = C.SupportReport;
 using ChangeListener = C.ChangeListener;
 using Subscription = C.Subscription;
+using T = import "types.capnp";
 
 const nameConflictProblemType   :Text = "https://freesynergy.net/problems/files/name-conflict";
 const invalidNameProblemType    :Text = "https://freesynergy.net/problems/files/invalid-name";
@@ -117,6 +118,8 @@ interface Files {
   backends      @4 () -> (backends :Backends);
   sharing       @5 () -> (sharing :Sharing);                                     # placeholder
   subscribe     @6 (listener :ChangeListener) -> (subscription :Subscription);   # file.subscribe
+  # The data types this program owns (`File`, `Folder`, `Album`, `Picture`) and what can be done with them (ADR 0066), for a generated frontend.
+  types         @7 () -> (catalog :T.TypeCatalog);
 }
 
 interface Folders {
