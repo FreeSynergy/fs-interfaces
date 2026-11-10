@@ -33,8 +33,8 @@ const ACCESS_DENIED: i32 = 5;
 /// `ERROR_BAD_PIPE`.
 const CALLER_GONE: [i32; 4] = [232, 233, 109, 230];
 /// A client that finds no instance for a moment (the server is making the next one) asks again, this often, this far apart.
-const NOT_FOUND_TRIES: u32 = 20;
-const NOT_FOUND_WAIT: Duration = Duration::from_millis(25);
+const NOT_FOUND_TRIES: u32 = 8;
+const NOT_FOUND_WAIT: Duration = Duration::from_millis(10);
 
 /// `\\.\pipe\freesynergy-<sid>-<program>`, the same place for every program.
 #[must_use]
