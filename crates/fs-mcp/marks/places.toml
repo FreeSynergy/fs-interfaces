@@ -10,6 +10,7 @@ list = "read"
 subscribe = "read"
 supportReport = "read"
 tiles = "read"
+types = "read"
 update = "change"
 within = "read"
 

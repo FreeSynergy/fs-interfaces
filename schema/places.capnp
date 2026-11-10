@@ -13,6 +13,7 @@ using Timestamp = C.Timestamp;
 using Cursor = C.Cursor;
 using Envelope = C.Envelope;
 using SupportReport = C.SupportReport;
+using T = import "types.capnp";
 using ChangeListener = C.ChangeListener;
 using Subscription = C.Subscription;
 
@@ -39,6 +40,8 @@ interface Places {
   findByName @7 (term :Text, cursor :Cursor) -> (page :PlacePage);               # place.find
   subscribe  @8 (listener :ChangeListener) -> (subscription :Subscription);      # place.subscribe
   tiles      @9 () -> (source :TileSource);                                      # tile.read: a program has one socket, this is the way to its tiles
+  # The data types this program owns (`Place`, `MapLayer`) and what can be done with them (ADR 0066), for a generated frontend.
+  types      @10 () -> (catalog :T.TypeCatalog);
 }
 
 # ---- Provider interface: where map tiles come from. PMTiles over HTTP, a file, a region package. ----
