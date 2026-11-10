@@ -1,5 +1,5 @@
 //! A write under way survives SIGTERM (feature `rpc`). Alone in its file: the signal goes to this whole process.
-#![cfg(feature = "rpc")]
+#![cfg(all(unix, feature = "rpc"))] // signals sent with `kill`
 
 use std::cell::Cell;
 use std::io::ErrorKind;

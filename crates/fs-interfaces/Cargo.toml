@@ -17,14 +17,17 @@ rpc = ["dep:capnp-rpc", "dep:tokio", "dep:tokio-util", "dep:futures", "dep:fs-ob
 [dependencies]
 capnp = "0.27"
 capnp-rpc = { version = "0.27", optional = true }
-tokio = { version = "1", features = ["rt", "net", "sync", "macros", "signal", "time"], optional = true }
+tokio = { version = "1", features = ["rt", "net", "sync", "macros", "signal", "time", "io-util"], optional = true }
 tokio-util = { version = "0.7", features = ["compat", "rt"], optional = true }
 futures = { version = "0.3", optional = true }
 fs-objects = { git = "https://github.com/FreeSynergy/fs-objects", tag = "v0.0.1", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"], optional = true }
 uuid = { version = "1", optional = true }
-rustix = { version = "1", features = ["process"], optional = true }
 idna = { version = "1", optional = true }
+
+[target.'cfg(unix)'.dependencies]
+# Who is on the other end of a Unix socket, and who runs this; the tests send themselves signals.
+rustix = { version = "1", features = ["process"], optional = true }
 
 [dev-dependencies]
 # Our own pure-Rust schema compiler (ADR 0040) regenerates the committed code ...
@@ -33,4 +36,4 @@ capnpc = "0.27"
 # ... and the official compiler (as WASM) is the oracle in tests/generated_matches_official.rs.
 capnpc-embedded = "0.2"
 tempfile = "3"
-tokio = { version = "1", features = ["rt", "net", "sync", "macros", "signal", "time"] }
+tokio = { version = "1", features = ["rt", "net", "sync", "macros", "signal", "time", "io-util"] }

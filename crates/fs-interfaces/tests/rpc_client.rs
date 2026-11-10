@@ -4,7 +4,6 @@
 mod support;
 
 use std::io::ErrorKind;
-use std::os::unix::net::UnixListener;
 use std::time::{Duration, Instant};
 
 use fs_interfaces::rpc::client::problems::Failure;
@@ -83,11 +82,12 @@ fn a_silent_server_ends_a_call_with_the_deadline_named() {
     assert!(block_on(delete(&worker, OK)).unwrap().is_ok());
 }
 
+#[cfg(unix)]
 #[test]
 fn a_server_that_never_answers_the_handshake_ends_start_with_the_deadline_named() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("mute.sock");
-    let _listener = UnixListener::bind(&path).unwrap();
+    let _listener = std::os::unix::net::UnixListener::bind(&path).unwrap();
     let began = Instant::now();
     let error = Worker::<Tasks>::start("tasks", &path, quick())
         .err()

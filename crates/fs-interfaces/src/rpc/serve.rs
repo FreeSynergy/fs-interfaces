@@ -1,4 +1,4 @@
-//! Serving a capability on a Unix socket, and reaching it.
+//! Serving a capability on the program's socket (a Unix socket, or a named pipe on Windows), and reaching it.
 //!
 //! Pattern: Adapter (transport) — streams become two-party RPC systems; RAII in [`Connection`];
 //! Template method in [`run_until_signal`]: register the signals, bind, open, serve until a signal. Must run on a `LocalSet`.
@@ -12,13 +12,12 @@ use capnp::capability::{Client, FromClientHook};
 use capnp::message::ReaderOptions;
 use capnp_rpc::rpc_twoparty_capnp::Side;
 use capnp_rpc::{RpcSystem, twoparty};
-use rustix::io::Errno;
-use tokio::net::UnixStream;
+use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::oneshot;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 use super::finish::{FINISH_TIMEOUT, finish_underway};
-use super::socket::{BoundSocket, bind_socket};
+use super::transport::{Accepted, BoundSocket, Endpoint, System, bind_socket};
 
 /// What this end of a connection reads at most in one message; the default is
 /// [`MAX_MESSAGE_BYTES`](super::MAX_MESSAGE_BYTES). It says nothing about what the other end reads, so
@@ -31,24 +30,19 @@ pub type ReadLimits = ReaderOptions;
 /// Pause after the system ran out of descriptors or memory, instead of spinning on `accept`.
 const ACCEPT_PAUSE: Duration = Duration::from_millis(100);
 
-fn system(
-    stream: UnixStream,
+fn system<S: AsyncRead + AsyncWrite + Unpin + 'static>(
+    stream: S,
     side: Side,
     bootstrap: Option<Client>,
     limits: ReadLimits,
 ) -> RpcSystem<Side> {
-    let (r, w) = stream.into_split();
+    let (r, w) = tokio::io::split(stream);
     let network = twoparty::VatNetwork::new(r.compat(), w.compat_write(), side, limits);
     RpcSystem::new(Box::new(network), bootstrap)
 }
 
-fn is_me(stream: &UnixStream) -> bool {
-    let me = rustix::process::geteuid().as_raw();
-    stream.peer_cred().is_ok_and(|c| c.uid() == me)
-}
-
 /// Hand `bootstrap` to every connection until `shutdown` resolves. Only this user may connect
-/// (`SO_PEERCRED`); others are dropped. The socket is removed on return.
+/// (checked by the transport: `SO_PEERCRED` on Unix); others are dropped. The socket is removed on return.
 ///
 /// # Errors
 /// The listener failed in a way that will not pass; a shortage of descriptors or memory only pauses.
@@ -83,26 +77,20 @@ async fn accept_until(
     loop {
         tokio::select! {
             () = &mut shutdown => return Ok(()),
-            accepted = socket.listener.accept() => match accepted {
-                Ok((stream, _)) => {
-                    if !is_me(&stream) {
-                        continue;
-                    }
+            accepted = System::accept(socket) => match accepted? {
+                Accepted::Peer(stream) => {
                     let rpc = system(stream, Side::Server, Some(bootstrap.clone()), limits);
                     tokio::task::spawn_local(async move {
                         drop(rpc.await);
                     });
                 }
-                Err(e) => match Errno::from_io_error(&e) {
-                    Some(Errno::CONNABORTED) => {}
-                    Some(Errno::MFILE | Errno::NFILE | Errno::NOMEM | Errno::NOBUFS) => {
-                        tokio::select! {
-                            () = &mut shutdown => return Ok(()),
-                            () = tokio::time::sleep(ACCEPT_PAUSE) => {}
-                        }
+                Accepted::Skip => {}
+                Accepted::Pause => {
+                    tokio::select! {
+                        () = &mut shutdown => return Ok(()),
+                        () = tokio::time::sleep(ACCEPT_PAUSE) => {}
                     }
-                    _ => return Err(e),
-                },
+                }
             }
         }
     }
@@ -132,13 +120,7 @@ pub async fn connect_with<C: FromClientHook>(
     socket: &Path,
     limits: ReadLimits,
 ) -> io::Result<Connection<C>> {
-    let stream = UnixStream::connect(socket).await?;
-    if !is_me(&stream) {
-        return Err(io::Error::new(
-            io::ErrorKind::PermissionDenied,
-            format!("{} is served by another user", socket.display()),
-        ));
-    }
+    let stream = System::connect(socket).await?;
     let mut rpc = system(stream, Side::Client, None, limits);
     let client: C = rpc.bootstrap(Side::Server);
     let disconnector = rpc.get_disconnector();
@@ -158,7 +140,7 @@ pub async fn connect_with<C: FromClientHook>(
 }
 
 /// A program's main loop: bind `socket` first, so a second start never touches the data of the first;
-/// then serve what `open` builds until Ctrl-C or SIGTERM. Connections wait in the backlog meanwhile.
+/// then serve what `open` builds until Ctrl-C or SIGTERM (a stop request of the system). Connections wait in the backlog meanwhile.
 /// After the signal it waits up to [`FINISH_TIMEOUT`] for [`run_to_end`](super::run_to_end) work, and
 /// holds the socket and its lock until then, so a successor cannot open the same data during the wait.
 /// Runs its own single-threaded runtime and `LocalSet`.
@@ -175,19 +157,11 @@ where
         .build()?;
     let local = tokio::task::LocalSet::new();
     local.block_on(&runtime, async {
-        // Handlers first: a TERM during the start (a lease that ran out, a stop under load) must reach the clean shutdown
+        // Handlers first: a stop during the start (a lease that ran out, a stop under load) must reach the clean shutdown
         // below, not kill the process. A signal that comes now is remembered and ends the serving as soon as it starts.
-        // `signal` registers at once; `tokio::signal::ctrl_c()` would only register when first polled.
-        let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
-        let mut int = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())?;
+        let stop = System::stop_signal()?;
         let bound = bind_socket(socket).await?;
         let bootstrap = open().await?;
-        let stop = async move {
-            tokio::select! {
-                _ = int.recv() => {}
-                _ = term.recv() => {}
-            }
-        };
         let served = accept_until(&bound, bootstrap, stop, ReadLimits::default()).await;
         let finished = finish_underway(FINISH_TIMEOUT).await;
         drop(bound);

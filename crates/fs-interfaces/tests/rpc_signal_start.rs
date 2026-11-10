@@ -1,6 +1,6 @@
 //! A SIGTERM during the start ends the program cleanly (feature `rpc`). Alone in its file: the signal goes to this whole
 //! process. Before the fix the handler was registered after `open`, and the signal killed the process hard.
-#![cfg(feature = "rpc")]
+#![cfg(all(unix, feature = "rpc"))] // signals sent with `kill`
 
 use capnp_rpc::new_client;
 use fs_interfaces::common_capnp::blob;
