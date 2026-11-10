@@ -5,6 +5,7 @@
 persons = "read"
 roles = "read"
 subscribe = "read"
+types = "read"
 supportReport = "read"
 
 [Persons]
@@ -35,11 +36,15 @@ unlinkSame = "destructive"
 unrelate = "destructive"
 update = "destructive"
 updateIf = "destructive"
+patch = "destructive"
+check = "read"
+suggest = "read"
 
 [Roles]
 "@interface" = { risk = "excluded", reason = "administration of rights, roles, memberships, sharing or storage: an agent is never admin (ADR 0056); reads here are left out too" }
 
 [format]
+"Persons.patch.patch" = "PatchObject (RFC 8984 section 1.4.9) as JSON text (a specialist format, not a secret field; it can still hold what a person wrote)"
 "Person.jscontact" = "JSContact (a specialist format, not a secret field; it can still hold what a person wrote)"
 "Persons.create.jscontact" = "JSContact (a specialist format, not a secret field; it can still hold what a person wrote)"
 "Persons.update.jscontact" = "JSContact (a specialist format, not a secret field; it can still hold what a person wrote)"
