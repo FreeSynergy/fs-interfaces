@@ -1,7 +1,7 @@
 //! Serving a capability on a Unix socket, and reaching it.
 //!
 //! Pattern: Adapter (transport) — streams become two-party RPC systems; RAII in [`Connection`];
-//! Template method in [`run_until_signal`]: bind, open, serve until a signal. Must run on a `LocalSet`.
+//! Template method in [`run_until_signal`]: register the signals, bind, open, serve until a signal. Must run on a `LocalSet`.
 
 use std::future::Future;
 use std::io;
@@ -175,12 +175,16 @@ where
         .build()?;
     let local = tokio::task::LocalSet::new();
     local.block_on(&runtime, async {
+        // Handlers first: a TERM during the start (a lease that ran out, a stop under load) must reach the clean shutdown
+        // below, not kill the process. A signal that comes now is remembered and ends the serving as soon as it starts.
+        // `signal` registers at once; `tokio::signal::ctrl_c()` would only register when first polled.
+        let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+        let mut int = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())?;
         let bound = bind_socket(socket).await?;
         let bootstrap = open().await?;
-        let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
         let stop = async move {
             tokio::select! {
-                _ = tokio::signal::ctrl_c() => {}
+                _ = int.recv() => {}
                 _ = term.recv() => {}
             }
         };
