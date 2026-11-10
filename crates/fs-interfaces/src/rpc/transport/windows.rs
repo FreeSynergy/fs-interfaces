@@ -188,6 +188,7 @@ impl Endpoint for Windows {
         }
     }
 
+    #[allow(clippy::unused_async_trait_impl)] // the trait says async; a pipe has nothing to ask
     async fn server_pid(_path: &Path) -> io::Result<Option<u32>> {
         Ok(None)
     }
