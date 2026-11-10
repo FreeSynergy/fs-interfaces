@@ -5,6 +5,7 @@
 capabilities = "read"
 streams = "read"
 subscribe = "read"
+types = "read"
 supportReport = "read"
 
 [Streams]

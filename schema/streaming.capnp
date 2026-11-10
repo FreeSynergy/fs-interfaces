@@ -31,6 +31,7 @@ using Envelope = C.Envelope;
 using CapabilityList = C.CapabilityList;
 using SupportReport = C.SupportReport;
 using Subscription = C.Subscription;
+using T = import "types.capnp";
 
 enum StreamState { idle @0; checking @1; live @2; ended @3; error @4; interrupted @5; }
 
@@ -123,6 +124,9 @@ interface Streaming {
   supportReport @1 () -> (report :SupportReport);                 # provider rule (ADR 0045)
   streams       @2 () -> (streams :Streams);
   subscribe     @3 (listener :StatusListener) -> (subscription :Subscription); # stream.subscribe
+  # The data types this program owns (`Stream`, `Target`) and what can be done with them (ADR 0066), for a generated
+  # frontend. A key is never a field of either type.
+  types         @4 () -> (catalog :T.TypeCatalog);
 }
 
 interface Streams {
