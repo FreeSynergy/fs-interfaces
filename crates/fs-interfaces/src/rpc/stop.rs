@@ -11,10 +11,19 @@ static REQUESTED: AtomicBool = AtomicBool::new(false);
 static WAKE: Notify = Notify::const_new();
 
 /// Asks [`run_until_signal`](super::run_until_signal) to end in order, as a signal would. Callable from any thread, at any
-/// time (also before the server runs: the request is remembered).
+/// time (also before the server runs: the request is remembered until that run ends).
 pub fn stop_self() {
     REQUESTED.store(true, Ordering::SeqCst);
     WAKE.notify_one();
+}
+
+/// A run of the server. When it ends (also by an error), a request that was made is forgotten: it belonged to this run.
+pub(super) struct Run;
+
+impl Drop for Run {
+    fn drop(&mut self) {
+        REQUESTED.store(false, Ordering::SeqCst);
+    }
 }
 
 /// Resolves once [`stop_self`] was called.

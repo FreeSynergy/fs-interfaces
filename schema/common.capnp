@@ -35,6 +35,12 @@ interface Blob {                                            # bytes behind a cap
   read @1 (offset :UInt64, length :UInt32) -> (data :Data);  # may answer fewer bytes than asked; empty = the end
 }
 
+interface Control {                                         # served next to every program's capability (rpc::run_until_signal)
+  stop @0 () -> ();
+  # Ends the server in order, as SIGTERM does (Windows has no signal to send): it answers, then finishes the work under way
+  # (`run_to_end`) and goes. Reachable only for the user the server runs as: the transport lets nobody else connect.
+}
+
 # AS2 envelope (ADR 0020, 0032): every object carries it
 struct Envelope {
   id           @0 :Uuid;

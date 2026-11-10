@@ -21,6 +21,7 @@
 //! Pattern: Facade (declarations).
 
 pub mod client;
+mod control;
 mod cursor;
 mod envelope;
 mod feed;
@@ -34,6 +35,7 @@ mod serve;
 mod stop;
 mod transport;
 
+pub use control::stop_server;
 pub use cursor::{PlaceParts, decode_place, encode_place};
 pub use envelope::{envelope_weight, read_envelope, write_envelope};
 pub use feed::{
@@ -42,7 +44,10 @@ pub use feed::{
 };
 pub use finish::{FINISH_TIMEOUT, finish_underway, run_to_end};
 pub use ids::{from_millis, read_object_id, read_uuid, to_millis, write_object_id, write_uuid};
-pub use options::{LOCAL_OWNER, ServerOptions, default_data_dir, prepare_data_dir};
+pub use options::{
+    FACET_FLAG, LOCAL_OWNER, ServerOptions, default_data_dir, facet_from_args, parse_facet,
+    prepare_data_dir,
+};
 pub use page::{
     DEFAULT_PAGE_SIZE, MAX_INTAKE_BYTES, MAX_ITEM_BYTES, MAX_MESSAGE_BYTES, MAX_PAGE_BYTES, Page,
     check_answer, check_intake, clamp_read,
