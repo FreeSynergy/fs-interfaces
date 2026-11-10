@@ -6,6 +6,7 @@
 
 use std::collections::BTreeMap;
 
+use super::validate::Mode;
 use super::{DescribesType, DescriptionProblem, TypeDescription};
 
 /// Descriptions by type name, in name order.
@@ -34,7 +35,24 @@ impl TypeRegistry {
     /// # Errors
     /// The defect of the description, or [`DescriptionProblem::TypeExists`].
     pub fn add(&mut self, description: TypeDescription) -> Result<&mut Self, DescriptionProblem> {
-        description.validate()?;
+        self.insert(description, Mode::Strict)
+    }
+
+    /// Add a description that was read from the wire: as `add`, but a kind this version does not know is let through
+    /// (it may be newer than we are; a frontend shows such a field as plain text).
+    pub(crate) fn add_read(
+        &mut self,
+        description: TypeDescription,
+    ) -> Result<&mut Self, DescriptionProblem> {
+        self.insert(description, Mode::Lenient)
+    }
+
+    fn insert(
+        &mut self,
+        description: TypeDescription,
+        mode: Mode,
+    ) -> Result<&mut Self, DescriptionProblem> {
+        description.validate_in(mode)?;
         if self.types.contains_key(&description.name) {
             return Err(DescriptionProblem::TypeExists(description.name));
         }

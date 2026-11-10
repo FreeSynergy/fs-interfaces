@@ -1,6 +1,6 @@
 //! `DescribesType`: the trait a data type implements to report itself.
 //!
-//! Pattern: Registry entry point (`coding.md` §2) — a program lists each data type it owns with
+//! Pattern: Registry (`coding.md` §2), the trait is how a type enters it — a program lists each data type it owns with
 //! `TypeRegistry::register::<T>()`. Trait first (ADR 0043): the generated frontend depends on this and on
 //! [`TypeDescription`], not on the program's types.
 

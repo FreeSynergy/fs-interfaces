@@ -1,11 +1,11 @@
 //! `Image`: AS2 `Image`, a link with a media type `image/…` and, when known, a size in pixels.
 //!
-//! Pattern: Value object over [`Link`]. The media type is never guessed from the file name; typed as one line it is a
+//! Pattern: Value object over the link rules of `iri`. The media type is never guessed from the file name; typed as one line it is a
 //! link only (media type empty, "not known"). Reading the pixels of the file is not the job of a basic type.
 
 use fs_interfaces::types_capnp::BasicType;
 
-use crate::iri::Link;
+use crate::iri::{UNSAFE_FOR_IMAGE, checked, normalized};
 use crate::{BasicValue, TypeProblem};
 
 /// A picture reachable by a link.
@@ -34,7 +34,7 @@ impl Image {
     /// # Errors
     /// The errors of a link for `uri`; [`TypeProblem::NotImage`] for a media type that is not `image/<subtype>`.
     pub fn new(uri: &str, media_type: &str, width: u32, height: u32) -> Result<Self, TypeProblem> {
-        let uri = Link::parse(uri)?.canonical();
+        let uri = normalized(checked(uri, &UNSAFE_FOR_IMAGE)?);
         let media_type = media_type.trim().to_ascii_lowercase();
         if !media_type.is_empty() && !media_type_ok(&media_type) {
             return Err(TypeProblem::NotImage);

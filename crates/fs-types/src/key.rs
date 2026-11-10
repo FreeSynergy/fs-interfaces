@@ -20,7 +20,14 @@ impl BasicValue for Key {
         if t.is_empty() {
             return Err(TypeProblem::Empty);
         }
-        let t = t.strip_prefix("openpgp4fpr:").unwrap_or(t);
+        let t = match t.get(..12) {
+            Some(p) if p.eq_ignore_ascii_case("openpgp4fpr:") => &t[12..],
+            _ => t,
+        };
+        let t = t
+            .strip_prefix("0x")
+            .or_else(|| t.strip_prefix("0X"))
+            .unwrap_or(t);
         let digits: String = t.chars().filter(|c| !matches!(c, ' ' | ':')).collect();
         if !matches!(digits.len(), 40 | 64) || !digits.chars().all(|c| c.is_ascii_hexdigit()) {
             return Err(TypeProblem::BadFingerprint);

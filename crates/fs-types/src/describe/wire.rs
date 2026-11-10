@@ -125,7 +125,7 @@ impl TypeRegistry {
     pub fn read(list: struct_list::Reader<'_, type_description::Owned>) -> capnp::Result<Self> {
         let mut reg = Self::new();
         for t in list {
-            reg.add(TypeDescription::read(t)?)
+            reg.add_read(TypeDescription::read(t)?)
                 .map_err(|p| capnp::Error::failed(p.to_string()))?;
         }
         Ok(reg)

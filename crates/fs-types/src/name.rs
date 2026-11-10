@@ -7,6 +7,7 @@
 use fs_interfaces::types_capnp::{BasicType, NameKind};
 use unicode_normalization::UnicodeNormalization;
 
+use crate::value::bad_char;
 use crate::{BasicValue, TypeProblem};
 
 /// A name: a full text, components, or both.
@@ -28,26 +29,35 @@ impl Name {
     /// Make a name; texts are trimmed, white space collapsed, empty components dropped.
     ///
     /// # Errors
-    /// [`TypeProblem::NoParts`] with neither full text nor component; [`TypeProblem::Character`] for control characters;
+    /// [`TypeProblem::NoParts`] with neither full text nor component; [`TypeProblem::Character`] for control characters (a line end at the edges is no problem, white space is collapsed);
     /// [`TypeProblem::TooLong`] above 1024 characters in a part.
     pub fn new(full: &str, components: &[(NameKind, &str)]) -> Result<Self, TypeProblem> {
-        let all = std::iter::once(full).chain(components.iter().map(|c| c.1));
-        for t in all {
-            if t.chars().any(char::is_control) {
-                return Err(TypeProblem::Character);
-            }
-            if t.chars().count() > 1024 {
-                return Err(TypeProblem::TooLong);
-            }
-        }
+        // A separator is literal (RFC 9553 section 2.2.1.2): neither trimmed nor collapsed, only dropped when empty.
         let components: Vec<(NameKind, String)> = components
             .iter()
-            .map(|(k, v)| (*k, tidy(v)))
+            .map(|(k, v)| {
+                let text = if *k == NameKind::Separator {
+                    (*v).nfc().collect()
+                } else {
+                    tidy(v)
+                };
+                (*k, text)
+            })
             .filter(|(_, v)| !v.is_empty())
             .collect();
         let full = tidy(full);
         if full.is_empty() && components.is_empty() {
             return Err(TypeProblem::NoParts);
+        }
+        let texts = components
+            .iter()
+            .map(|c| c.1.as_str())
+            .chain([full.as_str()]);
+        if texts.clone().any(|t| t.chars().any(bad_char)) {
+            return Err(TypeProblem::Character);
+        }
+        if texts.map(|t| t.chars().count()).max().unwrap_or(0) > 1024 {
+            return Err(TypeProblem::TooLong);
         }
         Ok(Self { full, components })
     }
@@ -65,14 +75,14 @@ impl Name {
             return self.full.clone();
         }
         let mut out = String::new();
+        let mut after_separator = true;
         for (kind, v) in &self.components {
-            if *kind != NameKind::Separator
-                && !out.is_empty()
-                && !out.ends_with(char::is_whitespace)
-            {
+            let separator = *kind == NameKind::Separator;
+            if !separator && !after_separator {
                 out.push(' ');
             }
             out.push_str(v);
+            after_separator = separator;
         }
         out
     }

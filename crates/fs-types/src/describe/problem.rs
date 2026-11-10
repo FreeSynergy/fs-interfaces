@@ -19,11 +19,14 @@ pub enum DescriptionProblem {
     /// A `choice` field with no keys.
     NoChoices(String),
     /// Keys on a field that is not a `choice`.
-    ChoicesOnChoice(String),
+    ChoicesOnNonChoice(String),
+    /// A choice key that is not a lower-case key (`a`, `in-process`) and so can neither be typed back after trimming nor
+    /// carry a label key `<label>.<key>`.
+    BadChoice(String),
     /// Two equal keys in one list of choices.
     DuplicateChoice(String),
     /// A `target` on a field that is not a `reference`.
-    TargetOnReference(String),
+    TargetOnNonReference(String),
     /// A command of kind `unknown`.
     UnknownCommandKind(String),
     /// A type of this name is already registered.
@@ -41,9 +44,10 @@ impl DescriptionProblem {
             Self::BadLabel(_) => "bad-label",
             Self::Duplicate(_) => "duplicate",
             Self::NoChoices(_) => "no-choices",
-            Self::ChoicesOnChoice(_) => "choices-on-non-choice",
+            Self::ChoicesOnNonChoice(_) => "choices-on-non-choice",
+            Self::BadChoice(_) => "bad-choice",
             Self::DuplicateChoice(_) => "duplicate-choice",
-            Self::TargetOnReference(_) => "target-on-non-reference",
+            Self::TargetOnNonReference(_) => "target-on-non-reference",
             Self::UnknownCommandKind(_) => "unknown-command-kind",
             Self::TypeExists(_) => "type-exists",
         }
@@ -58,9 +62,10 @@ impl std::fmt::Display for DescriptionProblem {
             | Self::BadLabel(n)
             | Self::Duplicate(n)
             | Self::NoChoices(n)
-            | Self::ChoicesOnChoice(n)
+            | Self::ChoicesOnNonChoice(n)
+            | Self::BadChoice(n)
             | Self::DuplicateChoice(n)
-            | Self::TargetOnReference(n)
+            | Self::TargetOnNonReference(n)
             | Self::UnknownCommandKind(n)
             | Self::TypeExists(n) => write!(f, "{}: {n}", self.code()),
         }

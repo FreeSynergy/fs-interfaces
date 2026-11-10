@@ -60,7 +60,7 @@ fn defects_are_named() {
                 .label("x")
                 .choices(&["a"])
         )),
-        Err(P::ChoicesOnChoice("Contact.pick".into()))
+        Err(P::ChoicesOnNonChoice("Contact.pick".into()))
     );
     assert_eq!(
         with(|t| t.field(
@@ -76,7 +76,7 @@ fn defects_are_named() {
                 .label("x")
                 .target("Contact")
         )),
-        Err(P::TargetOnReference("Contact.site".into()))
+        Err(P::TargetOnNonReference("Contact.site".into()))
     );
     assert_eq!(
         with(|t| t.command(CommandDescription::new("create", CommandKind::Create, "x"))),
@@ -97,5 +97,35 @@ fn defects_are_named() {
     assert_eq!(
         with(|t| t.field(FieldDescription::new("nolabel", BasicType::Text))),
         Err(P::BadLabel(String::new()))
+    );
+}
+
+#[test]
+fn choice_keys_must_be_usable_keys() {
+    for bad in ["", " a", "A B"] {
+        let r = with(|t| {
+            t.field(
+                FieldDescription::new("pick", BasicType::Choice)
+                    .label("x")
+                    .choices(&[bad]),
+            )
+        });
+        assert_eq!(
+            r,
+            Err(P::BadChoice(format!("Contact.pick.{bad}"))),
+            "{bad:?}"
+        );
+    }
+}
+
+#[test]
+fn a_target_is_a_type_name() {
+    assert_eq!(
+        with(|t| t.field(
+            FieldDescription::new("boss", BasicType::Reference)
+                .label("x")
+                .target("contact")
+        )),
+        Err(P::BadName("contact".into()))
     );
 }

@@ -104,3 +104,12 @@ fn one_value_can_be_checked_and_normalised_on_its_own() {
         Err(RecordProblem::UnknownField)
     );
 }
+
+#[test]
+fn issues_name_the_index_the_values_were_sent_at() {
+    let t = Contact::describe();
+    let rec = record(&[("name", &["Ada"]), ("emails", &["", "  ", "bad"])]);
+    let issues = t.check_record(&BasicRules::standard(), &rec);
+    assert_eq!(issues.len(), 1);
+    assert_eq!((issues[0].field.as_str(), issues[0].index), ("emails", 2));
+}

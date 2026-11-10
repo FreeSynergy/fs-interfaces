@@ -41,14 +41,22 @@ pub trait BasicValue: Sized {
     }
 }
 
-/// Shared by the one-line types: trim, compose to NFC, refuse control characters and over-long text.
+/// A character no text of ours holds: a control character, a line or paragraph separator (U+2028, U+2029), or a
+/// bidirectional override or isolate (U+202A to U+202E, U+2066 to U+2069), which can make a text read differently from
+/// what it is. `\n` is not special here; the types that allow it say so.
+pub(crate) fn bad_char(c: char) -> bool {
+    c.is_control()
+        || matches!(c, '\u{2028}' | '\u{2029}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}')
+}
+
+/// Shared by the one-line types: trim, compose to NFC, refuse bad characters and over-long text.
 pub(crate) fn one_line(typed: &str, max_chars: usize) -> Result<String, TypeProblem> {
     use unicode_normalization::UnicodeNormalization;
     let t = typed.trim();
     if t.is_empty() {
         return Err(TypeProblem::Empty);
     }
-    if t.chars().any(char::is_control) {
+    if t.chars().any(bad_char) {
         return Err(TypeProblem::Character);
     }
     let t: String = t.nfc().collect();

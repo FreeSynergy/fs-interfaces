@@ -50,8 +50,25 @@ impl BasicValue for Date {
 }
 
 /// An instant with the offset it was written in; the canonical text has `T`, and `Z` for UTC.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug)]
 pub struct DateTime(ChronoDateTime<chrono::FixedOffset>);
+
+// Equal means equal canonical text: the same instant written in another offset is another value (chrono alone would
+// call them equal).
+impl PartialEq for DateTime {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0 && self.0.offset() == other.0.offset()
+    }
+}
+
+impl Eq for DateTime {}
+
+impl std::hash::Hash for DateTime {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+        self.0.offset().local_minus_utc().hash(state);
+    }
+}
 
 impl DateTime {
     /// The instant as `chrono` knows it, for calculations.
@@ -68,6 +85,10 @@ impl BasicValue for DateTime {
         let t = typed.trim();
         if t.is_empty() {
             return Err(TypeProblem::Empty);
+        }
+        // RFC 3339: `-00:00` means "offset unknown", which `Z` would turn into "UTC"; not representable, so refused.
+        if t.ends_with("-00:00") {
+            return Err(TypeProblem::BadDateTime);
         }
         ChronoDateTime::parse_from_rfc3339(t)
             .map(Self)

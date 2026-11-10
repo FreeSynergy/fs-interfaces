@@ -67,6 +67,8 @@ impl Rule for ChoiceRule {
 
 /// All rules by kind.
 pub struct BasicRules {
+    /// The rule of plain text: what a kind we do not know gets.
+    text: Box<dyn Rule>,
     rules: Vec<Box<dyn Rule>>,
 }
 
@@ -79,7 +81,6 @@ impl BasicRules {
     #[must_use]
     pub fn standard() -> Self {
         let rules: Vec<Box<dyn Rule>> = vec![
-            boxed::<Text>(),
             boxed::<MultilineText>(),
             boxed::<EmailAddress>(),
             boxed::<PhoneNumber>(),
@@ -96,7 +97,10 @@ impl BasicRules {
             boxed::<Keywords>(),
             boxed::<Reference>(),
         ];
-        Self { rules }
+        Self {
+            text: boxed::<Text>(),
+            rules,
+        }
     }
 
     /// The rule for `kind`; `unknown` and kinds from a newer schema get the rule of plain text.
@@ -105,7 +109,7 @@ impl BasicRules {
         self.rules
             .iter()
             .find(|r| r.kind() == kind)
-            .unwrap_or(&self.rules[0])
+            .unwrap_or(&self.text)
             .as_ref()
     }
 

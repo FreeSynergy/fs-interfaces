@@ -32,7 +32,36 @@ pub(crate) fn absolute(typed: &str) -> Result<&str, TypeProblem> {
     }
 }
 
-/// A link: an absolute URI or IRI, normalised.
+/// Check `typed` as an absolute IRI that does not use one of the `blocked` schemes (case-insensitive); the IRI.
+pub(crate) fn checked<'a>(typed: &'a str, blocked: &[&str]) -> Result<&'a IriStr, TypeProblem> {
+    let iri = IriStr::new(absolute(typed)?).map_err(|_| TypeProblem::BadUri)?;
+    if blocked
+        .iter()
+        .any(|b| iri.scheme_str().eq_ignore_ascii_case(b))
+    {
+        return Err(TypeProblem::UnsafeScheme);
+    }
+    Ok(iri)
+}
+
+/// The normal form of a link (see [`Link`]).
+pub(crate) fn normalized(iri: &IriStr) -> String {
+    if iri.authority_str().is_some() {
+        return iri.normalize().to_string();
+    }
+    let rest = &iri.as_str()[iri.scheme_str().len()..];
+    format!("{}{rest}", iri.scheme_str().to_ascii_lowercase())
+}
+
+/// The schemes a link may not have: a frontend may make a link clickable, and these run code or embed a document
+/// (provisional rule, DESIGN.md).
+const UNSAFE_FOR_LINK: [&str; 3] = ["javascript", "vbscript", "data"];
+/// The same for a picture: a small `data:` image is legitimate.
+pub(crate) const UNSAFE_FOR_IMAGE: [&str; 2] = ["javascript", "vbscript"];
+
+/// A link: an absolute URI or IRI. With a host (`//`) it is normalised (scheme and host in lower case, dot segments
+/// removed, percent codes of unreserved characters decoded and hex digits in upper case); without one (`mailto:`,
+/// `urn:`, `tel:`) only the scheme is put in lower case, because dot segments there are part of the name.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Link(String);
 
@@ -40,9 +69,7 @@ impl BasicValue for Link {
     const KIND: BasicType = BasicType::Link;
 
     fn parse(typed: &str) -> Result<Self, TypeProblem> {
-        let t = absolute(typed)?;
-        let iri = IriStr::new(t).map_err(|_| TypeProblem::BadUri)?;
-        Ok(Self(iri.normalize().to_string()))
+        checked(typed, &UNSAFE_FOR_LINK).map(|iri| Self(normalized(iri)))
     }
 
     fn canonical(&self) -> String {
@@ -53,7 +80,12 @@ impl BasicValue for Link {
     fn suggest(typed: &str, _known: &[&str]) -> Vec<String> {
         let t = typed.trim();
         let host = t.split('/').next().unwrap_or("");
-        if t.is_empty() || t.contains(':') || !host.contains('.') || host.starts_with('.') {
+        if t.is_empty()
+            || t.contains(':')
+            || host.contains('@')
+            || !host.contains('.')
+            || host.starts_with('.')
+        {
             return Vec::new();
         }
         let candidate = format!("https://{t}");

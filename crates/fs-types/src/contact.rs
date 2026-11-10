@@ -45,7 +45,7 @@ impl BasicValue for EmailAddress {
         domains
             .into_iter()
             .map(|(d, _)| format!("{local}@{d}"))
-            .filter(|s| <EmailAddress as ContactValue>::check(s).is_ok())
+            .filter(|s| s != typed && <EmailAddress as ContactValue>::check(s).is_ok())
             .collect()
     }
 }

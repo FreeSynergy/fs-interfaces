@@ -1,7 +1,7 @@
 //! `TypeDescription::validate`: the rules a description has to meet before it is registered.
 //!
-//! Pattern: Template method in one place — one pass over type, fields, commands. The rules are those of the comments in
-//! `types.capnp`.
+//! Pattern: Specification (`coding.md` §2 has no closer name) — a fixed set of rules over a description, applied in one
+//! pass over type, fields and commands; the rules are those of the comments in `types.capnp`. [`Mode`] chooses how strict.
 
 use std::collections::BTreeSet;
 
@@ -47,7 +47,15 @@ fn label_ok(k: &str) -> Result<(), P> {
     }
 }
 
-fn fields_ok(fields: &[FieldDescription], scope: &str) -> Result<(), P> {
+/// How strict: `Strict` for a description a program registers itself; `Lenient` for one read from the wire, which may
+/// come from a newer schema (a kind, or a command kind, this version reads as `unknown`) and must still be usable.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Mode {
+    Strict,
+    Lenient,
+}
+
+fn fields_ok(fields: &[FieldDescription], scope: &str, mode: Mode) -> Result<(), P> {
     let mut seen = BTreeSet::new();
     for f in fields {
         name_ok(&f.name, lower_camel)?;
@@ -56,19 +64,29 @@ fn fields_ok(fields: &[FieldDescription], scope: &str) -> Result<(), P> {
         }
         label_ok(&f.label)?;
         let at = format!("{scope}.{}", f.name);
+        // A kind we do not know may be a choice or a reference in the sender's schema: its lists are not ours to judge.
+        if f.basic == BasicType::Unknown && mode == Mode::Lenient {
+            continue;
+        }
         match (f.basic == BasicType::Choice, f.choices.is_empty()) {
             (true, true) => return Err(P::NoChoices(at)),
-            (false, false) => return Err(P::ChoicesOnChoice(at)),
+            (false, false) => return Err(P::ChoicesOnNonChoice(at)),
             _ => {}
         }
         let mut keys = BTreeSet::new();
         for k in &f.choices {
+            if !label_key(k) {
+                return Err(P::BadChoice(format!("{at}.{k}")));
+            }
             if !keys.insert(k.as_str()) {
                 return Err(P::DuplicateChoice(format!("{at}.{k}")));
             }
         }
-        if !f.target.is_empty() && f.basic != BasicType::Reference {
-            return Err(P::TargetOnReference(at));
+        if !f.target.is_empty() {
+            if f.basic != BasicType::Reference {
+                return Err(P::TargetOnNonReference(at));
+            }
+            name_ok(&f.target, upper_camel)?;
         }
     }
     Ok(())
@@ -80,12 +98,16 @@ impl TypeDescription {
     /// # Errors
     /// The first defect found.
     pub fn validate(&self) -> Result<(), P> {
+        self.validate_in(Mode::Strict)
+    }
+
+    pub(crate) fn validate_in(&self, mode: Mode) -> Result<(), P> {
         name_ok(&self.name, upper_camel)?;
         if self.program.is_empty() {
             return Err(P::EmptyProgram);
         }
         label_ok(&self.label)?;
-        fields_ok(&self.fields, &self.name)?;
+        fields_ok(&self.fields, &self.name, mode)?;
         let mut seen = BTreeSet::new();
         for c in &self.commands {
             name_ok(&c.name, lower_camel)?;
@@ -93,11 +115,11 @@ impl TypeDescription {
                 return Err(P::Duplicate(format!("{}.{}", self.name, c.name)));
             }
             label_ok(&c.label)?;
-            if c.kind == CommandKind::Unknown {
+            if c.kind == CommandKind::Unknown && mode == Mode::Strict {
                 return Err(P::UnknownCommandKind(format!("{}.{}", self.name, c.name)));
             }
-            fields_ok(&c.input, &format!("{}.{}.input", self.name, c.name))?;
-            fields_ok(&c.result, &format!("{}.{}.result", self.name, c.name))?;
+            fields_ok(&c.input, &format!("{}.{}.input", self.name, c.name), mode)?;
+            fields_ok(&c.result, &format!("{}.{}.result", self.name, c.name), mode)?;
         }
         Ok(())
     }

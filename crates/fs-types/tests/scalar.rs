@@ -199,3 +199,63 @@ fn keywords_are_a_sorted_lower_case_set() {
         vec!["family, fire", "family, friend"]
     );
 }
+
+#[test]
+fn link_without_a_host_keeps_its_dots_and_unsafe_schemes_are_refused() {
+    assert_eq!(canon::<Link>("URN:a/../b"), "urn:a/../b");
+    assert_eq!(canon::<Link>("mailto:a/../b@x.org"), "mailto:a/../b@x.org");
+    assert_eq!(
+        canon::<Link>("https://ex.org/%7euser/%e4"),
+        "https://ex.org/~user/%E4"
+    );
+    assert_eq!(
+        bad::<Link>("javascript:alert(1)"),
+        TypeProblem::UnsafeScheme
+    );
+    assert_eq!(
+        bad::<Link>("JavaScript:alert(1)"),
+        TypeProblem::UnsafeScheme
+    );
+    assert_eq!(bad::<Link>("data:text/html,x"), TypeProblem::UnsafeScheme);
+    assert!(Link::suggest("ada@example.org", &[]).is_empty());
+}
+
+#[test]
+fn date_time_values_are_equal_only_when_their_text_is() {
+    let a = DateTime::parse("2026-11-10T10:00:00+01:00").unwrap();
+    let b = DateTime::parse("2026-11-10T09:00:00Z").unwrap();
+    assert_ne!(a, b);
+    assert_ne!(a.canonical(), b.canonical());
+    assert_eq!(a, DateTime::parse("2026-11-10T10:00:00+01:00").unwrap());
+    assert_eq!(
+        bad::<DateTime>("2026-11-10T09:00:00-00:00"),
+        TypeProblem::BadDateTime
+    );
+}
+
+#[test]
+fn key_prefix_is_case_insensitive_and_0x_is_allowed() {
+    let digits = "ab".repeat(20);
+    assert_eq!(
+        canon::<Key>(&format!("OPENPGP4FPR:{digits}")),
+        digits.to_uppercase()
+    );
+    assert_eq!(canon::<Key>(&format!("0x{digits}")), digits.to_uppercase());
+}
+
+#[test]
+fn the_typed_address_is_not_its_own_suggestion() {
+    assert!(EmailAddress::suggest("ada@work.org", &["b@work.org"]).is_empty());
+}
+
+#[test]
+fn line_and_paragraph_separators_and_bidi_overrides_are_refused() {
+    for c in ['\u{2028}', '\u{2029}', '\u{202e}', '\u{2066}'] {
+        assert_eq!(
+            bad::<Text>(&format!("a{c}b")),
+            TypeProblem::Character,
+            "{c:?}"
+        );
+        assert_eq!(bad::<Keywords>(&format!("a{c}b")), TypeProblem::BadKeyword);
+    }
+}

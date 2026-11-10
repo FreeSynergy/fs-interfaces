@@ -140,3 +140,38 @@ fn unknown_enum_values_read_as_unknown() {
     }
     assert_eq!(hits, 1, "exactly the `basic` field turns into unknown");
 }
+
+/// What a newer program may send: a kind and a command kind this version reads as `unknown`, the field carrying a list or
+/// a target of its own. The whole catalog must still be readable.
+#[test]
+fn a_description_from_a_newer_schema_is_still_readable() {
+    let newer = TypeDescription::new("Thing", "p", "s", "thing")
+        .field(
+            FieldDescription::new("tint", BasicType::Unknown)
+                .label("thing.tint")
+                .target("Colour")
+                .choices(&["red"]),
+        )
+        .command(CommandDescription::new(
+            "odd",
+            CommandKind::Unknown,
+            "thing.odd",
+        ));
+    assert!(
+        newer.validate().is_err(),
+        "a program must not register this itself"
+    );
+    let mut msg = Builder::new_default();
+    let mut list = msg
+        .init_root::<type_catalog::describe_results::Builder<'_>>()
+        .init_types(1);
+    newer.write(list.reborrow().get(0));
+    let reg = TypeRegistry::read(
+        msg.get_root_as_reader::<type_catalog::describe_results::Reader<'_>>()
+            .unwrap()
+            .get_types()
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(reg.get("Thing"), Some(&newer));
+}

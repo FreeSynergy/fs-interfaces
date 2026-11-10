@@ -41,7 +41,7 @@ impl BasicValue for MultilineText {
         let unified = typed.replace("\r\n", "\n").replace('\r', "\n");
         if unified
             .chars()
-            .any(|c| c.is_control() && c != '\n' && c != '\t')
+            .any(|c| crate::value::bad_char(c) && c != '\n' && c != '\t')
         {
             return Err(TypeProblem::Character);
         }

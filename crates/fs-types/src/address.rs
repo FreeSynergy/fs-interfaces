@@ -7,6 +7,7 @@
 use fs_interfaces::types_capnp::{AddressKind, BasicType};
 use unicode_normalization::UnicodeNormalization;
 
+use crate::value::bad_char;
 use crate::{BasicValue, TypeProblem};
 
 /// A postal address: components, country code, full text.
@@ -36,14 +37,6 @@ impl Address {
         country_code: &str,
         full: &str,
     ) -> Result<Self, TypeProblem> {
-        for t in std::iter::once(full).chain(components.iter().map(|c| c.1)) {
-            if t.chars().any(char::is_control) {
-                return Err(TypeProblem::Character);
-            }
-            if t.chars().count() > 1024 {
-                return Err(TypeProblem::TooLong);
-            }
-        }
         let country_code = country_code.trim().to_ascii_uppercase();
         if !country_code.is_empty()
             && (country_code.len() != 2 || !country_code.bytes().all(|b| b.is_ascii_uppercase()))
@@ -55,9 +48,28 @@ impl Address {
             .map(|(k, v)| (*k, tidy(v)))
             .filter(|(_, v)| !v.is_empty())
             .collect();
-        let full = tidy(full);
+        // `full` is the address as people write it on an envelope: its line ends stay.
+        let full = full
+            .lines()
+            .map(tidy)
+            .filter(|l| !l.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n");
         if full.is_empty() && components.is_empty() {
             return Err(TypeProblem::NoParts);
+        }
+        let texts = components
+            .iter()
+            .map(|c| c.1.as_str())
+            .chain([full.as_str()]);
+        if texts
+            .clone()
+            .any(|t| t.chars().any(|c| c != '\n' && bad_char(c)))
+        {
+            return Err(TypeProblem::Character);
+        }
+        if texts.map(|t| t.chars().count()).max().unwrap_or(0) > 1024 {
+            return Err(TypeProblem::TooLong);
         }
         Ok(Self {
             components,

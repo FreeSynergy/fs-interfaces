@@ -1,7 +1,8 @@
 //! Check a record against a type description.
 //!
-//! Pattern: Template method — one fixed flow (unknown field, missing, too many, each value through the rule of its basic
-//! type) that every program shares, so the admin frontend and a program's own `check` command say the same thing.
+//! Pattern: Strategy by kind — each value goes through the rule [`BasicRules`] holds for its basic type; the flow around it
+//! (unknown field, missing, too many) is the same for every program, so the admin frontend and a program's own `check`
+//! command say the same thing.
 
 use std::collections::BTreeMap;
 
@@ -69,8 +70,12 @@ impl TypeDescription {
             push(name, 0, RecordProblem::UnknownField);
         }
         for f in &self.fields {
-            let given: Vec<&String> = record.get(&f.name).map_or_else(Vec::new, |v| {
-                v.iter().filter(|t| !t.trim().is_empty()).collect()
+            // The index counts the values as they were sent, empty ones included: it is the input a frontend marks.
+            let given: Vec<(usize, &String)> = record.get(&f.name).map_or_else(Vec::new, |v| {
+                v.iter()
+                    .enumerate()
+                    .filter(|(_, t)| !t.trim().is_empty())
+                    .collect()
             });
             if given.is_empty() {
                 if f.required {
@@ -81,7 +86,7 @@ impl TypeDescription {
             if given.len() > 1 && !f.multiple {
                 push(&f.name, 0, RecordProblem::NotMultiple);
             }
-            for (i, typed) in given.iter().enumerate() {
+            for &(i, typed) in &given {
                 if let Err(p) = rules.check(f.basic, typed, &f.choices) {
                     push(&f.name, i, RecordProblem::Value(p));
                 }

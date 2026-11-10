@@ -22,8 +22,11 @@ A workspace crate of `fs-interfaces`, next to `fs-mcp`, not a repository of its 
 ## Decisions (provisional, marked for the strategy)
 
 * Kinds in this version: the thirteen of the task list plus `text` and `multilineText`. `onlineService`, `timeZone`, `duration`, `recurrence`, `quantity`, `money`, `colour`, `sound`, `video`, formatted text are in `map.md` and are appended to `BasicType` later (append only; a reader meeting a newer kind treats the field as plain text).
-* Canonical forms: e-mail as `fs-interfaces` makes it; phone `+<digits>`; language RFC 5646 case; link normalised (scheme and host lower case, dot segments removed); reference kept as written (an identity); date `YYYY-MM-DD`; date-time with offset, `Z` for UTC; place as `geo:` URI; fingerprint bare upper-case hex; keywords lower case, sorted, `, `-joined.
+* Canonical forms: e-mail as `fs-interfaces` makes it; phone `+<digits>`; language RFC 5646 case; link with a host (`//`) normalised by RFC 3986 syntax rules (scheme and host lower case, dot segments removed, percent codes of unreserved characters decoded and hex digits upper case), link without a host (`mailto:`, `urn:`, `tel:`) only the scheme in lower case; reference kept as written (an identity); date `YYYY-MM-DD`; date-time with offset, `Z` for UTC (two date-times are equal only if instant and offset are; `-00:00`, "offset unknown", is refused); place as `geo:` URI; fingerprint bare upper-case hex; keywords lower case, sorted, `, `-joined.
 * Limits (ours, provisional): text 4096 chars, multi-line 65536, URI 2048 bytes, keyword 64 chars and 256 per set, name/address parts 1024 chars.
+* Unsafe schemes (provisional): a `Link` may not use `javascript:`, `vbscript:` or `data:`, an `Image` not `javascript:` or `vbscript:` (a frontend may make them clickable); `TypeProblem::UnsafeScheme`. Characters refused in every text: control characters, U+2028/U+2029 and the bidirectional overrides and isolates; multi-line texts and `Address.full` keep `\n`.
+* A description read from the wire is validated leniently: a kind or command kind this version reads as `unknown` passes (with its list or target), so one newer program cannot make the whole catalog unreadable; `register`/`add` stay strict.
+* A name separator is literal (RFC 9553 section 2.2.1.2), so `", "` must carry its own space.
 * A name typed on one line is never split into given and surname (wrong for many names); components come from a form.
 * Problems are codes (`TypeProblem::code`, translation key suffix `problem.<code>`), never sentences (ADR 0057, `coding.md` §2a).
 * Labels in a description are translation keys: lower-case words of letters and digits joined by `.` or `-`.
@@ -37,7 +40,7 @@ Candidate `calcard` 0.3.14 (Stalwart Labs; `Apache-2.0 OR MIT`; first released 2
 | Area | State |
 |---|---|
 | `types.capnp` draft 0.1: `BasicType` (17 values), `Name`, `Address`, `Image` and their kinds, type description (`FieldDescription`, `CommandDescription`, `TypeDescription`, `CommandKind`), `TypeCatalog.describe` | done, draft |
-| Rules for all 16 kinds: check, normalise (suggest where it makes sense: e-mail domains, language, link scheme, reference, keywords, choice) | done, tested (24 tests over the kinds) |
+| Rules for all 16 kinds: check, normalise (suggest where it makes sense: e-mail domains, language, link scheme, reference, keywords, choice) | done, tested (each kind, incl. the cases the independent review found) |
 | `BasicRules` registry, unknown kind as text | done, tested |
 | Description: builders, validation, registry, record check, wire round trip, `CatalogServer` (feature `rpc`) | done, tested (incl. a real RPC call) |
 
@@ -45,6 +48,6 @@ Candidate `calcard` 0.3.14 (Stalwart Labs; `Apache-2.0 OR MIT`; first released 2
 
 * `onlineService`, `timeZone`, `duration`, `recurrence`, `quantity`, `money`, `colour`, `sound`, `video`, formatted text: not yet in `BasicType`.
 * Date-time without offset (JSCalendar `LocalDateTime`) and IANA time zones: need the tz database.
-* Language: well-formed only, the IANA subtag registry is not consulted. Address: country code checked for shape, not against the ISO 3166-1 list. Place: points only (no GeoJSON shapes). Key: OpenPGP fingerprints only (no SSH, age, X.509). Phone and e-mail: no existence check (a network matter).
+* Language: well-formed only, the IANA subtag registry is not consulted. Address: country code checked for shape, not against the ISO 3166-1 list. Place: points only (no `GeoJSON` shapes; unknown `geo:` parameters are dropped; the poles are not canonicalised). Key: OpenPGP fingerprints only (no SSH, age, X.509). Phone and e-mail: no existence check (a network matter).
 * Suggestions: phone, date, date-time, place, key, name, address, image, text offer none (`suggest` returns an empty list on purpose).
 * Components (`input`, `display`, `compact`, `cell`) per basic type are thread C's, in `fs-components`; nothing of the look is here.

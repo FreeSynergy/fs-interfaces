@@ -20,6 +20,8 @@ pub enum TypeProblem {
     BadLanguage,
     /// Not a URI or IRI (RFC 3986/3987).
     BadUri,
+    /// A scheme that runs code or embeds a document when opened (`javascript:`, `vbscript:`; for a link also `data:`).
+    UnsafeScheme,
     /// A URI or IRI must be absolute: it needs a scheme (`https:`).
     NotAbsolute,
     /// Not a date in the form `YYYY-MM-DD`, or the day does not exist.
@@ -56,6 +58,7 @@ impl TypeProblem {
             Self::BadLanguage => "language.bad-tag",
             Self::BadUri => "uri.bad",
             Self::NotAbsolute => "uri.not-absolute",
+            Self::UnsafeScheme => "uri.unsafe-scheme",
             Self::BadDate => "date.bad",
             Self::BadDateTime => "date-time.bad",
             Self::BadPlace => "place.bad",

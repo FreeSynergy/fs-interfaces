@@ -24,7 +24,7 @@ fn name_separator_attaches() {
         "",
         &[
             (NameKind::Surname, "Smith"),
-            (NameKind::Separator, ","),
+            (NameKind::Separator, ", "),
             (NameKind::Given, "Jo"),
         ],
     )
@@ -115,4 +115,43 @@ fn choice_is_one_of_the_list() {
     );
     assert_eq!(Choice::pick("", &list).err(), Some(TypeProblem::Empty));
     assert_eq!(Choice::suggest("IN", &list), vec!["in-process"]);
+}
+
+#[test]
+fn name_separators_are_literal_and_a_trailing_line_end_is_no_error() {
+    let n = Name::new(
+        "",
+        &[
+            (NameKind::Surname, "Smith"),
+            (NameKind::Separator, "-"),
+            (NameKind::Surname, "Jones"),
+            (NameKind::Given, "Ann"),
+        ],
+    )
+    .unwrap();
+    assert_eq!(n.display(), "Smith-Jones Ann");
+    let n = Name::new(
+        "",
+        &[
+            (NameKind::Given, "Ann"),
+            (NameKind::Separator, " van "),
+            (NameKind::Surname, "Dyck"),
+        ],
+    )
+    .unwrap();
+    assert_eq!(n.display(), "Ann van Dyck");
+    assert_eq!(
+        Name::parse("Ada Lovelace\n").unwrap().canonical(),
+        "Ada Lovelace"
+    );
+}
+
+#[test]
+fn a_full_address_may_have_several_lines() {
+    let a = Address::new(&[], "AT", "  Hauptstr. 1 \r\n\n1010   Wien\n").unwrap();
+    assert_eq!(a.display(), "Hauptstr. 1\n1010 Wien");
+    assert_eq!(
+        Address::new(&[], "AT", "x\u{7}y").err(),
+        Some(TypeProblem::Character)
+    );
 }

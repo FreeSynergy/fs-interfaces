@@ -44,10 +44,11 @@ fn one(raw: &str) -> Result<Option<String>, TypeProblem> {
     if k.is_empty() {
         return Ok(None);
     }
-    if k.chars().any(char::is_control) || k.chars().count() > KEYWORD_MAX {
+    let k: String = k.nfc().collect();
+    if k.chars().any(crate::value::bad_char) || k.chars().count() > KEYWORD_MAX {
         return Err(TypeProblem::BadKeyword);
     }
-    Ok(Some(k.nfc().collect::<String>().to_lowercase()))
+    Ok(Some(k.to_lowercase()))
 }
 
 impl BasicValue for Keywords {

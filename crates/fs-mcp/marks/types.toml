@@ -1,0 +1,10 @@
+# Risk marks for types.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+# `describe` only reports what a program can do (names, basic types, labels); it reads no object and no secret.
+
+[TypeCatalog]
+describe = "read"
+
+[format]
+"NameComponent.value" = "one part of a person's name (given name, surname ...); display text of the kind in `kind`, not a secret field"
+"AddressComponent.value" = "one part of a postal address (street, locality, postcode ...); display text of the kind in `kind`, not a secret field"
