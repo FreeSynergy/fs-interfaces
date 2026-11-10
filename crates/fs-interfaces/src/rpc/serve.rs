@@ -140,7 +140,7 @@ pub async fn connect_with<C: FromClientHook>(
 }
 
 /// A program's main loop: bind `socket` first, so a second start never touches the data of the first;
-/// then serve what `open` builds until Ctrl-C or SIGTERM (a stop request of the system). Connections wait in the backlog meanwhile.
+/// then serve what `open` builds until Ctrl-C, SIGTERM (a stop request of the system) or [`stop_self`](super::stop_self). Connections wait in the backlog meanwhile.
 /// After the signal it waits up to [`FINISH_TIMEOUT`] for [`run_to_end`](super::run_to_end) work, and
 /// holds the socket and its lock until then, so a successor cannot open the same data during the wait.
 /// Runs its own single-threaded runtime and `LocalSet`.
@@ -159,7 +159,13 @@ where
     local.block_on(&runtime, async {
         // Handlers first: a stop during the start (a lease that ran out, a stop under load) must reach the clean shutdown
         // below, not kill the process. A signal that comes now is remembered and ends the serving as soon as it starts.
-        let stop = System::stop_signal()?;
+        let signal = System::stop_signal()?;
+        let stop = async move {
+            tokio::select! {
+                () = signal => {}
+                () = super::stop::requested() => {}
+            }
+        };
         let bound = bind_socket(socket).await?;
         let bootstrap = open().await?;
         let served = accept_until(&bound, bootstrap, stop, ReadLimits::default()).await;

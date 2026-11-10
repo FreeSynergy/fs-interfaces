@@ -120,6 +120,15 @@ impl Endpoint for Windows {
         default_socket(program)
     }
 
+    fn companion(socket: &Path, extension: &str) -> PathBuf {
+        let base = std::env::var_os("LOCALAPPDATA")
+            .filter(|v| !v.is_empty())
+            .map_or_else(std::env::temp_dir, PathBuf::from);
+        let dir = base.join("FreeSynergy").join("run");
+        let _ = std::fs::create_dir_all(&dir);
+        dir.join(format!("{}.{extension}", clean(&pipe_name(socket))))
+    }
+
     fn default_data_dir(program: &str) -> Option<PathBuf> {
         let base = std::env::var_os("LOCALAPPDATA").filter(|v| !v.is_empty())?;
         Some(PathBuf::from(base).join("FreeSynergy").join(program))

@@ -15,6 +15,13 @@ pub fn default_socket(program: &str) -> Option<PathBuf> {
     System::default_socket(program)
 }
 
+/// A file that belongs to the socket (`x.sock` and its `lease` or `log`): next to the socket on Unix; in the person's own
+/// folder `%LOCALAPPDATA%\\FreeSynergy\\run` on Windows, where a pipe has no folder to put it in.
+#[must_use]
+pub fn companion_path(socket: &Path, extension: &str) -> PathBuf {
+    System::companion(socket, extension)
+}
+
 /// Bind the socket. A lock decides who owns it, so two starts cannot both win.
 ///
 /// # Errors

@@ -29,6 +29,10 @@ pub trait Endpoint {
     /// Where the server of `program` listens when nobody says otherwise.
     fn default_socket(program: &str) -> Option<PathBuf>;
 
+    /// A file that belongs to the socket of a program (`x.sock` and its `lease`, `log`): next to the socket on Unix; the pipe
+    /// has no folder, so in a folder of the person's own on Windows.
+    fn companion(socket: &Path, extension: &str) -> PathBuf;
+
     /// Where the data of `program` lives when nobody says otherwise.
     fn default_data_dir(program: &str) -> Option<PathBuf>;
 
