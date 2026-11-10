@@ -117,6 +117,8 @@ struct CommandDescription {
 # One field of a record changed by a `change` command (decided 2026-11-10).
 # RULE: a field that is not in the `Edit` stays as it is. A field in the `Edit` with no values (`values` empty, the null of a
 # PatchObject) is cleared. Otherwise `values` replaces all values of the field; for a single-valued field it holds exactly one.
+# A value that is empty after trimming counts as not given; a field left with no value is cleared. Which record is changed is
+# not part of the `Edit`: the program's contract call carries the record's id next to it.
 struct FieldEdit {
   path   @0 :List(Text);                 # the field: ["emails"]; deeper steps (a map key, then a property) are further entries
   basic  @1 :BasicType;                  # the basic type of the values, so the backend can check without the description

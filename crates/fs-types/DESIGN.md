@@ -35,7 +35,7 @@ A workspace crate of `fs-interfaces`, next to `fs-mcp`, not a repository of its 
 ## Commands, change and supported (decided 2026-11-10, written in `types.capnp`)
 
 * **`supported` per command** (`CommandDescription.supported @5`): a description lists every command the type is meant to have; one the core lacks has `supported = false` (`CommandDescription::unsupported()`), a frontend shows it locked and frees it when the core reports it. Unset on the wire reads as false (the safe side), so a writer must set it; the builder default is true.
-* **`change`** = `Edit` = list of `FieldEdit` (path, basic type, values). Missing field = unchanged; no values = cleared; else replaced (`Edit::apply`). `Edit::check` validates against the description (unknown field, wrong type, several values for a single field, clearing a required field, duplicate path, rule of the basic type) and returns canonical values. `FieldEdit::pointer` gives the RFC 6901 path for the backend's PatchObject. A `change` command has no input fields (`ChangeWithInput`). Paths deeper than one step are `Unsupported` in `check` (`RecordProblem::NestedPath`): descriptions have flat fields.
+* **`change`** = `Edit` = list of `FieldEdit` (path, basic type, values). Missing field = unchanged; no values = cleared; else replaced (`Edit::apply`). `Edit::check` validates against the description (unknown field, wrong type, several values for a single field, clearing a required field, duplicate path, rule of the basic type) and returns canonical values. `FieldEdit::pointer` gives the PatchObject key (RFC 8984 §1.4.9: steps joined by `/`, escaped as RFC 6901, no leading `/`). Values empty after trimming count as not given. The record id travels in the program's call, not in the `Edit`. A `change` command has no input fields (`ChangeWithInput`). Paths deeper than one step are `Unsupported` in `check` (`RecordProblem::NestedPath`): descriptions have flat fields.
 * **list = find**: `CommandDescription::standard_find` (input `term`, empty = list; paging with the `Cursor` of `common.capnp` in the contract call).
 * **Record commands** (`TypeDescription::record_commands`): input has a `reference` to the type itself (or without target), plus `change` and `delete`; `type_commands` is the rest.
 
@@ -53,6 +53,8 @@ Candidate `calcard` 0.3.14 (Stalwart Labs; `Apache-2.0 OR MIT`; first released 2
 | Description: builders, validation, registry, record check, wire round trip, `CatalogServer` (feature `rpc`) | done, tested (incl. a real RPC call) |
 
 ## Unsupported (named, not faked)
+
+* `Edit` paths deeper than one step (map key, then property): the wire form carries them, `Edit::check` refuses them (`NestedPath`) because descriptions have flat fields; nested typing comes with nested descriptions.
 
 * `onlineService`, `timeZone`, `duration`, `recurrence`, `quantity`, `money`, `colour`, `sound`, `video`, formatted text: not yet in `BasicType`.
 * Date-time without offset (JSCalendar `LocalDateTime`) and IANA time zones: need the tz database.

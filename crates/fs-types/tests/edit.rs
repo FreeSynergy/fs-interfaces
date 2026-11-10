@@ -185,3 +185,19 @@ fn supported_travels_and_defaults_to_true_in_the_builder() {
     assert!(!t.find_command("merge").unwrap().supported);
     assert!(t.find_command("create").unwrap().supported);
 }
+
+#[test]
+fn empty_texts_in_an_edit_count_as_not_given() {
+    let desc = Contact::describe();
+    let rules = BasicRules::standard();
+    let cleared = Edit::new()
+        .set(&["kind"], BasicType::Choice, &[" "])
+        .check(&desc, &rules)
+        .unwrap();
+    assert!(cleared.fields[0].values.is_empty());
+    let kept = Edit::new()
+        .set(&["emails"], BasicType::Email, &["a@x.org", ""])
+        .check(&desc, &rules)
+        .unwrap();
+    assert_eq!(kept.fields[0].values, vec!["a@x.org"]);
+}

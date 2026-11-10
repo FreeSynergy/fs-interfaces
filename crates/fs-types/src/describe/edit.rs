@@ -1,6 +1,7 @@
 //! `Edit`: a change to a record, field by field, typed.
 //!
-//! Pattern: Command (`coding.md` §2) — an `Edit` is the data of the `change` command: a list of field paths with typed
+//! Pattern: Value object, the data of the Command `change` (`coding.md` §2; the operation itself is carried out by the
+//! program) — a list of field paths with typed
 //! values, applied to a record (`apply`) or turned by the backend into the standard's patch. The rules (decided
 //! 2026-11-10, written in `types.capnp`): a field not in the edit stays as it is; a field with no values is cleared;
 //! otherwise the values replace the old ones. No JSON anywhere.
@@ -25,7 +26,8 @@ pub struct FieldEdit {
 }
 
 impl FieldEdit {
-    /// The path as a JSON Pointer (RFC 6901: `~` is `~0`, `/` is `~1`), which is the key of a PatchObject (RFC 8984).
+    /// The path as the key of a `PatchObject` (RFC 8984 section 1.4.9): steps joined by `/`, `~` written `~0` and `/`
+    /// written `~1` (RFC 6901); the leading `/` of a JSON Pointer is implied there and not written.
     /// Only the path is text of that standard; the value stays typed.
     #[must_use]
     pub fn pointer(&self) -> String {
@@ -109,14 +111,21 @@ impl Edit {
                 push(0, RecordProblem::WrongType);
                 continue;
             }
-            if f.values.is_empty() && field.required {
+            // As in `check_record`: a value that is empty after trimming is not given. A field left with none is cleared.
+            let given: Vec<(usize, &String)> = f
+                .values
+                .iter()
+                .enumerate()
+                .filter(|(_, v)| !v.trim().is_empty())
+                .collect();
+            if given.is_empty() && field.required {
                 push(0, RecordProblem::Missing);
             }
-            if f.values.len() > 1 && !field.multiple {
+            if given.len() > 1 && !field.multiple {
                 push(0, RecordProblem::NotMultiple);
             }
             let mut values = Vec::new();
-            for (i, v) in f.values.iter().enumerate() {
+            for (i, v) in given {
                 match rules.check(field.basic, v, &field.choices) {
                     Ok(c) => values.push(c),
                     Err(p) => push(i, RecordProblem::Value(p)),
