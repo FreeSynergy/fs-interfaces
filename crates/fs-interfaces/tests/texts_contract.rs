@@ -75,7 +75,8 @@ fn new_methods_are_appended_without_gaps() {
             "resolve",
             "search",
             "purgeRevision",
-            "trash"
+            "trash",
+            "types"
         ]
     );
 }
