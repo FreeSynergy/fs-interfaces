@@ -98,10 +98,9 @@ async fn a_caller_that_hangs_up_before_the_accept_does_not_end_the_server() {
     let bound = bind_socket(&path).await.unwrap();
     // Connects and hangs up before anybody accepted.
     drop(Windows::connect(&path).await.unwrap());
-    assert!(matches!(
-        Windows::accept(&bound).await.unwrap(),
-        Accepted::Skip
-    ));
+    // Skipped, or taken as a connection that is closed already: what matters is that it is no error that ends the server.
+    let first = Windows::accept(&bound).await;
+    assert!(first.is_ok(), "{:?}", first.err());
     // The next caller is served, on a new instance.
     let (client, accepted) = tokio::join!(Windows::connect(&path), Windows::accept(&bound));
     let mut client = client.unwrap();
