@@ -53,6 +53,18 @@ pub trait Endpoint {
         bound: &Self::Bound,
     ) -> impl Future<Output = io::Result<Accepted<Self::ServerStream>>>;
 
+    /// The process that serves `path`, if the system can tell (peer credentials on Unix; `None` elsewhere).
+    ///
+    /// # Errors
+    /// Nothing listens on `path`.
+    fn server_pid(path: &Path) -> impl Future<Output = io::Result<Option<u32>>>;
+
+    /// Asks the system to end the process `pid` in order (SIGTERM). A system without such a signal refuses (`Unsupported`).
+    ///
+    /// # Errors
+    /// The process is not there, belongs to another user, or the system has no such signal.
+    fn terminate(pid: u32) -> io::Result<()>;
+
     /// Reaches the server on `path`; refuses one that another user runs (`PermissionDenied`).
     fn connect(path: &Path) -> impl Future<Output = io::Result<Self::ClientStream>>;
 

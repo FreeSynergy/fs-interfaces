@@ -26,6 +26,7 @@ mod cursor;
 mod envelope;
 mod feed;
 mod finish;
+mod handshake;
 mod ids;
 mod options;
 mod page;
@@ -35,7 +36,7 @@ mod serve;
 mod stop;
 mod transport;
 
-pub use control::stop_server;
+pub use control::{PROTOCOL, ServerIdentity, stop_server};
 pub use cursor::{PlaceParts, decode_place, encode_place};
 pub use envelope::{envelope_weight, read_envelope, write_envelope};
 pub use feed::{
@@ -43,6 +44,10 @@ pub use feed::{
     change_channel, forward, write_change,
 };
 pub use finish::{FINISH_TIMEOUT, finish_underway, run_to_end};
+pub use handshake::{
+    CommandStarter, Expected, HandshakeError, RestartTimes, ServerInfo, ServerStarter,
+    connect_matching, connect_matching_with,
+};
 pub use ids::{from_millis, read_object_id, read_uuid, to_millis, write_object_id, write_uuid};
 pub use options::{
     FACET_FLAG, LOCAL_OWNER, ServerOptions, default_data_dir, facet_from_args, parse_facet,
@@ -58,7 +63,8 @@ pub use problem::{
     unsupported,
 };
 pub use serve::{
-    Connection, ReadLimits, connect, connect_with, run_until_signal, serve, serve_with,
+    Connection, ReadLimits, connect, connect_with, run_until_signal, run_until_signal_as, serve,
+    serve_with,
 };
 pub use stop::stop_self;
 pub use transport::{BoundSocket, bind_socket, companion_path, default_socket};

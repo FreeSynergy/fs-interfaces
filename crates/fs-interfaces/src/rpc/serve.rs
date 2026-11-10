@@ -16,6 +16,7 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::oneshot;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
+use super::control::ServerIdentity;
 use super::finish::{FINISH_TIMEOUT, finish_underway};
 use super::transport::{Accepted, BoundSocket, Endpoint, System, bind_socket};
 
@@ -152,6 +153,23 @@ where
     F: FnOnce() -> Fut,
     Fut: Future<Output = io::Result<Client>>,
 {
+    run_until_signal_as(socket, ServerIdentity::default(), open)
+}
+
+/// [`run_until_signal`] that also tells who it is (`Control.version`), so a client of another version can replace this server
+/// ([`connect_matching`](super::connect_matching)). Every program should use this one, with its own name and version.
+///
+/// # Errors
+/// As for [`run_until_signal`].
+pub fn run_until_signal_as<F, Fut>(
+    socket: &Path,
+    identity: ServerIdentity,
+    open: F,
+) -> io::Result<()>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = io::Result<Client>>,
+{
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
@@ -169,7 +187,7 @@ where
             }
         };
         let bound = bind_socket(socket).await?;
-        let bootstrap = super::control::with_control(open().await?);
+        let bootstrap = super::control::with_control(open().await?, identity);
         let served = accept_until(&bound, bootstrap, stop, ReadLimits::default()).await;
         let finished = finish_underway(FINISH_TIMEOUT).await;
         drop(bound);

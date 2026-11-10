@@ -39,6 +39,11 @@ interface Control {                                         # served next to eve
   stop @0 () -> ();
   # Ends the server in order, as SIGTERM does (Windows has no signal to send): it answers, then finishes the work under way
   # (`run_to_end`) and goes. Reachable only for the user the server runs as: the transport lets nobody else connect.
+
+  version @1 () -> (program :Text, version :Text, protocol :UInt32);
+  # Who is running: the program's own version (empty = the program did not say) and the protocol level of `rpc` (`PROTOCOL`).
+  # A client compares both with what it expects and replaces a server that differs (`rpc::connect_matching`). A server older
+  # than this method answers `unimplemented`, which the client reads as "older".
 }
 
 # AS2 envelope (ADR 0020, 0032): every object carries it

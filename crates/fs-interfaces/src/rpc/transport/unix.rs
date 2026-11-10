@@ -226,6 +226,25 @@ impl Endpoint for Unix {
         }
     }
 
+    async fn server_pid(path: &Path) -> io::Result<Option<u32>> {
+        let stream = Self::connect(path).await?;
+        Ok(stream
+            .peer_cred()?
+            .pid()
+            .and_then(|p| u32::try_from(p).ok()))
+    }
+
+    fn terminate(pid: u32) -> io::Result<()> {
+        let pid = i32::try_from(pid)
+            .ok()
+            .and_then(rustix::process::Pid::from_raw)
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "not a process"))?;
+        Ok(rustix::process::kill_process(
+            pid,
+            rustix::process::Signal::TERM,
+        )?)
+    }
+
     async fn connect(path: &Path) -> io::Result<UnixStream> {
         let stream = UnixStream::connect(path).await?;
         if !is_me(&stream) {

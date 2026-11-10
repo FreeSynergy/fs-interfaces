@@ -22,8 +22,33 @@ use crate::common_capnp::control;
 /// The time the answer gets to leave before the server goes.
 const ANSWER_GRACE: Duration = Duration::from_millis(100);
 
+/// The protocol level of `rpc` and `Control`: raised when a server and a client of this crate stop understanding each other.
+/// Part of what [`connect_matching`](super::connect_matching) compares.
+pub const PROTOCOL: u32 = 1;
+
+/// What a server says about itself through `Control.version`.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ServerIdentity {
+    /// The program's name (`fs-files`); empty = not said.
+    pub program: String,
+    /// The program's version (`0.0.3`); empty = not said (then only the protocol is compared).
+    pub version: String,
+}
+
+impl ServerIdentity {
+    /// A program and its version, usually `env!("CARGO_PKG_NAME")` and `env!("CARGO_PKG_VERSION")`.
+    #[must_use]
+    pub fn new(program: impl Into<String>, version: impl Into<String>) -> Self {
+        Self {
+            program: program.into(),
+            version: version.into(),
+        }
+    }
+}
+
 struct Controlled {
     inner: Client,
+    identity: ServerIdentity,
 }
 
 #[derive(Clone)]
@@ -61,6 +86,13 @@ impl Server for Dispatch {
         mut results: Results<any_pointer::Owned>,
     ) -> DispatchCallResult {
         if interface_id == <control::Client as HasTypeId>::TYPE_ID {
+            if method_id == 1 {
+                let mut out = results.get().init_as::<control::version_results::Builder>();
+                out.set_program(self.0.identity.program.as_str());
+                out.set_version(self.0.identity.version.as_str());
+                out.set_protocol(PROTOCOL);
+                return DispatchCallResult::new(Promise::ok(()), false);
+            }
             if method_id != 0 {
                 return unimplemented();
             }
@@ -92,8 +124,11 @@ impl Server for Dispatch {
 }
 
 /// `capability`, and `Control` next to it.
-pub(super) fn with_control(capability: Client) -> Client {
-    capnp_rpc::new_client(Controlled { inner: capability })
+pub(super) fn with_control(capability: Client, identity: ServerIdentity) -> Client {
+    capnp_rpc::new_client(Controlled {
+        inner: capability,
+        identity,
+    })
 }
 
 /// Asks the server on `socket` to end in order, and answers when it has taken the request (or is gone already). A program
@@ -101,13 +136,23 @@ pub(super) fn with_control(capability: Client) -> Client {
 /// a `LocalSet`, like [`connect`].
 ///
 /// # Errors
-/// Nothing listens on `socket`, it is served by another user, or the server refused (a server older than `Control`
-/// answers `unimplemented`).
+/// Nothing listens on `socket`, it is served by another user, or the server refused. A server older than `Control` answers
+/// `unimplemented`, which comes back as [`io::ErrorKind::Unsupported`] (then only a signal can end it, see
+/// [`connect_matching`](super::connect_matching)).
 pub async fn stop_server(socket: &Path) -> io::Result<()> {
     let connection = connect::<control::Client>(socket).await?;
     match connection.client.stop_request().send().promise.await {
         Ok(_) => Ok(()),
         Err(e) if e.kind == capnp::ErrorKind::Disconnected => Ok(()),
-        Err(e) => Err(io::Error::other(e)),
+        Err(e) => Err(io_error(e)),
+    }
+}
+
+/// `unimplemented` (a server that does not know the method) is `Unsupported`; the rest is `Other`.
+pub(super) fn io_error(e: capnp::Error) -> io::Error {
+    if e.kind == capnp::ErrorKind::Unimplemented || e.extra.contains("not implemented") {
+        io::Error::new(io::ErrorKind::Unsupported, e)
+    } else {
+        io::Error::other(e)
     }
 }

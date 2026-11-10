@@ -188,6 +188,17 @@ impl Endpoint for Windows {
         }
     }
 
+    async fn server_pid(_path: &Path) -> io::Result<Option<u32>> {
+        Ok(None)
+    }
+
+    fn terminate(_pid: u32) -> io::Result<()> {
+        Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "Windows has no signal to end another program",
+        ))
+    }
+
     async fn connect(path: &Path) -> io::Result<NamedPipeClient> {
         let name = my_pipe_name(path)?;
         let (mut busy, mut missing) = (0, 0);
