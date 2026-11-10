@@ -3,7 +3,7 @@
 //! Pattern: Builder, as [`super::FieldDescription`]. A command is described, not executed: the program carries it
 //! out through its own contract (`people.capnp`, `tasks.capnp` …), the description only lets a frontend offer it.
 
-use fs_interfaces::types_capnp::CommandKind;
+use fs_interfaces::types_capnp::{BasicType, CommandKind};
 
 use super::FieldDescription;
 
@@ -20,6 +20,8 @@ pub struct CommandDescription {
     pub input: Vec<FieldDescription>,
     /// The result; empty = nothing but success.
     pub result: Vec<FieldDescription>,
+    /// Whether the program can do it now; `false` = listed but not there yet (a frontend shows it locked).
+    pub supported: bool,
 }
 
 impl CommandDescription {
@@ -32,7 +34,29 @@ impl CommandDescription {
             label: label.to_owned(),
             input: Vec::new(),
             result: Vec::new(),
+            supported: true,
         }
+    }
+
+    /// Report it as not there yet: listed so a frontend can show it locked, until the core has it.
+    #[must_use]
+    pub fn unsupported(mut self) -> Self {
+        self.supported = false;
+        self
+    }
+
+    /// The standard `find`: input `term` (empty = everything, which is the list), result a list of references to
+    /// `data_type`. Paging with a `Cursor` is part of every `find` call (rule in `types.capnp`), not a field here.
+    #[must_use]
+    pub fn standard_find(label: &str, data_type: &str) -> Self {
+        Self::new("find", CommandKind::Find, label)
+            .input(FieldDescription::new("term", BasicType::Text).label("find.term"))
+            .result(
+                FieldDescription::new("items", BasicType::Reference)
+                    .multiple()
+                    .label("find.items")
+                    .target(data_type),
+            )
     }
 
     /// Add an input field.

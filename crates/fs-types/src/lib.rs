@@ -33,8 +33,8 @@ pub use address::Address;
 pub use choice::Choice;
 pub use datetime::{Date, DateTime};
 pub use describe::{
-    CommandDescription, CommandKind, DescribesType, DescriptionProblem, FieldDescription,
-    RecordIssue, RecordProblem, TypeDescription, TypeRegistry,
+    CommandDescription, CommandKind, DescribesType, DescriptionProblem, Edit, FieldDescription,
+    FieldEdit, RecordIssue, RecordProblem, TypeDescription, TypeRegistry,
 };
 pub use fs_interfaces::types_capnp::{AddressKind, BasicType, NameKind};
 pub use fs_interfaces::values::{EmailAddress, PhoneNumber};

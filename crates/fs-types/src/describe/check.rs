@@ -21,6 +21,12 @@ pub enum RecordProblem {
     NotMultiple,
     /// A value breaks the rule of its basic type.
     Value(TypeProblem),
+    /// An edit names a basic type other than the field's.
+    WrongType,
+    /// An edit path with more than one step: descriptions have flat fields, so a deeper path is not typed (`Unsupported`).
+    NestedPath,
+    /// Two entries of an edit for one path.
+    DuplicatePath,
 }
 
 /// One finding: which field, which value (0-based; 0 for field-wide findings), what.

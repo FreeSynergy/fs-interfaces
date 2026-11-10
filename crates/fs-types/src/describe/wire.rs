@@ -75,6 +75,7 @@ impl TypeDescription {
             cb.set_name(&c.name);
             cb.set_kind(c.kind);
             cb.set_label(&c.label);
+            cb.set_supported(c.supported);
             write_fields(&c.input, cb.reborrow().init_input(len(c.input.len())));
             write_fields(&c.result, cb.init_result(len(c.result.len())));
         }
@@ -105,6 +106,7 @@ fn read_command(c: command_description::Reader<'_>) -> capnp::Result<CommandDesc
         name: c.get_name()?.to_string()?,
         kind: c.get_kind().unwrap_or(CommandKind::Unknown),
         label: c.get_label()?.to_string()?,
+        supported: c.get_supported(),
         input: read_fields(c.get_input()?)?,
         result: read_fields(c.get_result()?)?,
     })

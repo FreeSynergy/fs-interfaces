@@ -27,6 +27,8 @@ pub enum DescriptionProblem {
     DuplicateChoice(String),
     /// A `target` on a field that is not a `reference`.
     TargetOnNonReference(String),
+    /// A command of kind `change` with input fields: its input is an `Edit` and nothing else.
+    ChangeWithInput(String),
     /// A command of kind `unknown`.
     UnknownCommandKind(String),
     /// A type of this name is already registered.
@@ -48,6 +50,7 @@ impl DescriptionProblem {
             Self::BadChoice(_) => "bad-choice",
             Self::DuplicateChoice(_) => "duplicate-choice",
             Self::TargetOnNonReference(_) => "target-on-non-reference",
+            Self::ChangeWithInput(_) => "change-with-input",
             Self::UnknownCommandKind(_) => "unknown-command-kind",
             Self::TypeExists(_) => "type-exists",
         }
@@ -66,6 +69,7 @@ impl std::fmt::Display for DescriptionProblem {
             | Self::BadChoice(n)
             | Self::DuplicateChoice(n)
             | Self::TargetOnNonReference(n)
+            | Self::ChangeWithInput(n)
             | Self::UnknownCommandKind(n)
             | Self::TypeExists(n) => write!(f, "{}: {n}", self.code()),
         }

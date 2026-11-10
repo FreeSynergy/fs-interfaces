@@ -1,2 +1,2 @@
 # Proper names used in docs; without this clippy::pedantic wants backticks around them.
-doc-valid-idents = ["..", "FreeSynergy", "JSContact", "JSCalendar", "Cap'n", "RFC", "OpenPGP", "BCP", "IRI", "URI"]
+doc-valid-idents = ["..", "FreeSynergy", "JSContact", "JSCalendar", "Cap'n", "RFC", "PatchObject", "OpenPGP", "BCP", "IRI", "URI"]

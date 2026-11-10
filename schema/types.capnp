@@ -97,6 +97,34 @@ struct CommandDescription {
   label  @2 :Text;                       # translation key
   input  @3 :List(FieldDescription);
   result @4 :List(FieldDescription);     # empty = nothing but success; `multiple` = a list
+  # Whether the program can do it now. The description lists EVERY command the type is meant to have; one the core does not
+  # have yet is reported with `supported = false` (the provider rule of ADR 0045 made visible). A frontend shows it locked
+  # ("coming"), and frees it when the core reports it, without a change to the frontend. A writer MUST set it: unset
+  # reads as false, i.e. "not supported" (the safe side).
+  supported @5 :Bool;
+}
+
+# RULES FOR COMMANDS (decided 2026-11-10, same for every type and program):
+#   list   = `find`. There is no list command per program: a list is `find` with an empty term; it pages with a `Cursor`
+#            (common.capnp) the same way for all types. Filters beyond `term` are further input fields of that `find`.
+#   change = kind `change`. Its input is an `Edit` (below) and nothing else (the command's `input` list is empty): field
+#            path plus typed value, field by field. The backend turns it into the standard's patch (e.g. a JSContact or
+#            JSCalendar PatchObject); no JSON appears in this contract or in a form.
+#   record commands = the commands that work on ONE record: those whose input holds a `reference` field with `target`
+#            equal to the type's own name (or empty target), plus `change` and `delete`. A frontend puts these on the
+#            record (menu, toolbar); the others (create, find, ...) belong to the type as a whole.
+
+# One field of a record changed by a `change` command (decided 2026-11-10).
+# RULE: a field that is not in the `Edit` stays as it is. A field in the `Edit` with no values (`values` empty, the null of a
+# PatchObject) is cleared. Otherwise `values` replaces all values of the field; for a single-valued field it holds exactly one.
+struct FieldEdit {
+  path   @0 :List(Text);                 # the field: ["emails"]; deeper steps (a map key, then a property) are further entries
+  basic  @1 :BasicType;                  # the basic type of the values, so the backend can check without the description
+  values @2 :List(Text);                 # canonical texts as the rules of `fs-types` return them (Name/Address/Image: their one-line form)
+}
+
+struct Edit {
+  fields @0 :List(FieldEdit);            # at most one entry per path
 }
 
 struct TypeDescription {

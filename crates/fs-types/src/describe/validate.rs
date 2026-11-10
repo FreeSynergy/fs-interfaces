@@ -118,6 +118,9 @@ impl TypeDescription {
             if c.kind == CommandKind::Unknown && mode == Mode::Strict {
                 return Err(P::UnknownCommandKind(format!("{}.{}", self.name, c.name)));
             }
+            if c.kind == CommandKind::Change && !c.input.is_empty() {
+                return Err(P::ChangeWithInput(format!("{}.{}", self.name, c.name)));
+            }
             fields_ok(&c.input, &format!("{}.{}.input", self.name, c.name), mode)?;
             fields_ok(&c.result, &format!("{}.{}.result", self.name, c.name), mode)?;
         }
