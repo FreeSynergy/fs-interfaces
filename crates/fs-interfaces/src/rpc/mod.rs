@@ -31,6 +31,7 @@ mod page;
 mod problem;
 mod pump;
 mod serve;
+mod stop;
 mod transport;
 
 pub use cursor::{PlaceParts, decode_place, encode_place};
@@ -54,4 +55,5 @@ pub use problem::{
 pub use serve::{
     Connection, ReadLimits, connect, connect_with, run_until_signal, serve, serve_with,
 };
-pub use transport::{BoundSocket, bind_socket, default_socket};
+pub use stop::stop_self;
+pub use transport::{BoundSocket, bind_socket, companion_path, default_socket};

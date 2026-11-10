@@ -182,6 +182,10 @@ impl Endpoint for Unix {
         default_socket(program)
     }
 
+    fn companion(socket: &Path, extension: &str) -> PathBuf {
+        socket.with_extension(extension)
+    }
+
     fn default_data_dir(program: &str) -> Option<PathBuf> {
         let set = |name: &str| std::env::var_os(name).filter(|v| !v.is_empty());
         let base = set("XDG_DATA_HOME")

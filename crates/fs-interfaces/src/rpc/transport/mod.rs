@@ -9,7 +9,7 @@ mod unix;
 mod windows;
 
 pub(super) use endpoint::{Accepted, Endpoint};
-pub use socket::{BoundSocket, bind_socket, default_socket};
+pub use socket::{BoundSocket, bind_socket, companion_path, default_socket};
 #[cfg(unix)]
 pub(super) use unix::Unix as System;
 #[cfg(windows)]
