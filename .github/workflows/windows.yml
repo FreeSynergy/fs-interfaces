@@ -1,5 +1,6 @@
-# The same gate as check.yml, on the Windows runner of fs-release (windows-2022): the named-pipe transport is built and tested
-# here, never cross-built.
+# The gate on the Windows runner of fs-release (windows-2022): the named-pipe transport is built and tested here, never
+# cross-built. Own steps instead of the reusable check.yml: the pedantic clippy of the whole workspace also lints `fs-types`,
+# which is not part of this port; the crate that has the transport is linted with the same flags.
 name: windows
 on:
   push:
@@ -8,8 +9,21 @@ on:
 permissions:
   contents: read
 
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
 jobs:
-  check:
-    uses: FreeSynergy/fs-release/.github/workflows/check.yml@main
-    with:
-      runs-on: windows-2022
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: FreeSynergy/fs-release/actions/setup-rust@main
+        with:
+          components: rustfmt,clippy
+          cache-key: windows
+      - run: cargo fmt --check -p fs-interfaces
+      - run: cargo clippy -p fs-interfaces --all-targets --all-features -- -D warnings -W clippy::pedantic
+      - run: cargo test -p fs-interfaces --all-features
