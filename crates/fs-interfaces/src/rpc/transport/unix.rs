@@ -235,6 +235,13 @@ impl Endpoint for Unix {
     }
 
     fn terminate(pid: u32) -> io::Result<()> {
+        // Never this process (a `serve()` server in the same process has our own PID), never init or a process group.
+        if pid <= 1 || i32::try_from(pid) == Ok(rustix::process::getpid().as_raw_pid()) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "the server is this process (or not a process of its own)",
+            ));
+        }
         let pid = i32::try_from(pid)
             .ok()
             .and_then(rustix::process::Pid::from_raw)

@@ -51,10 +51,22 @@ impl ServerStarter for CommandStarter {
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null());
         #[cfg(unix)]
-        std::os::unix::process::CommandExt::process_group(&mut command, 0);
+        {
+            use std::os::unix::process::CommandExt;
+            // SAFETY: `setsid` is a plain system call (async-signal-safe), the only thing run between fork and exec. A new
+            // session: no terminal, and no signal of the caller's group (Ctrl-C of a window) reaches the server.
+            unsafe {
+                command.pre_exec(|| {
+                    rustix::process::setsid()?;
+                    Ok(())
+                });
+            }
+        }
         #[cfg(windows)]
-        std::os::windows::process::CommandExt::creation_flags(&mut command, 0x0000_0008); // DETACHED_PROCESS
-        // Not waited for: the server outlives this call. (A child that ends early is reaped by the system when we end.)
-        command.spawn().map(drop)
+        std::os::windows::process::CommandExt::creation_flags(&mut command, 0x0000_0208); // DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+        let mut child = command.spawn()?;
+        // The server outlives this call; the thread collects the child's exit state if it ends early (no zombie).
+        std::thread::spawn(move || drop(child.wait()));
+        Ok(())
     }
 }

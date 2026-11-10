@@ -62,7 +62,13 @@ pub async fn connect_matching_with<C: FromClientHook>(
         reason,
     };
     if running.is_some() {
-        end_server(socket, times).await.map_err(cannot)?;
+        // Another client may have replaced the server meanwhile (two windows after an update): then this is the one.
+        if let Some(connection) = end_server::<C>(socket, expected, times)
+            .await
+            .map_err(cannot)?
+        {
+            return Ok(connection);
+        }
     }
     starter
         .start()
@@ -130,15 +136,28 @@ async fn ask<C: FromClientHook>(
     Ok((connection, info))
 }
 
-/// Ends the running server and waits until its socket is free.
-async fn end_server(socket: &Path, times: RestartTimes) -> Result<(), String> {
+/// Ends the running server and waits until its socket is free. Asks the version once more right before the stop, and watches
+/// while it waits: a server that fits (started by another client in the meantime) is left alone and returned. A server that
+/// is gone already counts as ended.
+async fn end_server<C: FromClientHook>(
+    socket: &Path,
+    expected: &Expected,
+    times: RestartTimes,
+) -> Result<Option<Connection<C>>, String> {
+    match ask::<C>(socket, times.call).await {
+        Ok((connection, info)) if expected.accepts(&info) => return Ok(Some(connection)),
+        Ok(_) => {}
+        Err(e) if is_absent(&e) => return Ok(None),
+        Err(e) => return Err(format!("the running server cannot be asked: {e}")),
+    }
     let stopped = tokio::time::timeout(times.call, stop_server(socket))
         .await
         .unwrap_or_else(|_| Err(io::Error::new(io::ErrorKind::TimedOut, "no answer")));
     match stopped {
         Ok(()) => {}
+        Err(e) if is_absent(&e) => return Ok(None),
         Err(e) if e.kind() == io::ErrorKind::Unsupported => {
-            // Older than `Control`: only the system can end it.
+            // Older than `Control` (also a server of `serve` alone): only the system can end it.
             let pid = System::server_pid(socket).await.ok().flatten();
             let Some(pid) = pid else {
                 return Err(
@@ -152,11 +171,15 @@ async fn end_server(socket: &Path, times: RestartTimes) -> Result<(), String> {
         Err(e) => return Err(format!("the running server did not accept the stop: {e}")),
     }
     let began = Instant::now();
-    while System::connect(socket).await.is_ok() {
+    loop {
+        match ask::<C>(socket, times.call).await {
+            Err(e) if is_absent(&e) => return Ok(None),
+            Ok((connection, info)) if expected.accepts(&info) => return Ok(Some(connection)),
+            _ => {}
+        }
         if began.elapsed() >= times.stop {
             return Err("the old server did not end in time".to_owned());
         }
         tokio::time::sleep(POLL).await;
     }
-    Ok(())
 }
