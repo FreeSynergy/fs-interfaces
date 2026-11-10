@@ -21,6 +21,7 @@ using Cursor = C.Cursor;
 using Problem = C.Problem;
 using Envelope = C.Envelope;
 using Blob = C.Blob;
+using T = import "types.capnp";
 
 # pages: one struct per item type (Cap'n Proto has no List(T) over generic parameters)
 struct MessagePage      { items @0 :List(MessageSummary);      next @1 :Cursor; skipped @2 :UInt32; }   # skipped = unreadable local records on this page; empty items with a next is not the end
@@ -155,6 +156,9 @@ interface Messenger {
   rules         @5 () -> (rules :Rules);                    # optional capability: may be null
   subscribe     @6 (filter :EventFilter, listener :Listener) -> (subscription :Subscription);
   supportReport @7 () -> (report :C.SupportReport);         # provider rule (ADR 0045)
+  # The data types this program owns (`Conversation`, `Message`, `Account`, `Draft`) and what can be done with them
+  # (ADR 0066), for a generated frontend. Account secrets are never a field or an input of a type.
+  types         @8 () -> (catalog :T.TypeCatalog);
 }
 
 interface Accounts {

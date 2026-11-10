@@ -49,6 +49,7 @@ rules = "read"
 search = "read"
 subscribe = "read"
 supportReport = "read"
+types = "read"
 
 [Rules]
 list = "read"
