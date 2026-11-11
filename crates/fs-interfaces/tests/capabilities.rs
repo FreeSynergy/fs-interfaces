@@ -9,6 +9,7 @@ fn the_list_is_well_formed_and_unique() {
     for c in &all {
         assert!(capabilities::is_well_formed(c.name), "{}", c.name);
         assert!(!c.description.is_empty(), "{} has no description", c.name);
+        assert!(!c.display_name.is_empty(), "{} has no display name", c.name);
         assert!(seen.insert(c.name), "{} twice", c.name);
     }
 }
@@ -35,4 +36,29 @@ fn constants_are_on_the_list() {
     assert!(!capabilities::is_well_formed("People"));
     assert!(!capabilities::is_well_formed("a..b"));
     assert!(!capabilities::is_well_formed(""));
+}
+
+#[test]
+fn every_line_of_the_file_is_read() {
+    let lines = capabilities::SOURCE
+        .lines()
+        .filter(|l| !l.trim().is_empty() && !l.starts_with('#'))
+        .count();
+    assert_eq!(
+        lines,
+        capabilities::all().count(),
+        "a line has the wrong form"
+    );
+}
+
+#[test]
+fn display_names_pair_with_the_schema_keys_and_planned_is_marked() {
+    assert_eq!(capabilities::display_name("whiteboard"), Some("Boards"));
+    assert_eq!(capabilities::display_name("surveys"), Some("Decisions"));
+    assert_eq!(capabilities::display_name("messenger"), Some("Messages"));
+    assert_eq!(capabilities::display_name("boards"), None);
+    assert!(capabilities::is_planned(name::STORAGE_PROVIDER));
+    assert!(capabilities::is_known(name::STORAGE_PROVIDER));
+    assert!(!capabilities::is_planned(name::COMMENTS));
+    assert!(!capabilities::is_planned("nonsense"));
 }

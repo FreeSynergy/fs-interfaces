@@ -8,11 +8,24 @@
 /// The list as written in `schema/capabilities.txt`, for programs and scripts that read the file themselves.
 pub const SOURCE: &str = include_str!("../../../schema/capabilities.txt");
 
-/// A capability name and what it means.
+/// How far a capability is built.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Status {
+    /// The interface exists.
+    Stable,
+    /// Named, not built yet (the name may already be used in a catalog).
+    Planned,
+}
+
+/// A capability: machine key, name for people, status and what it means.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Capability {
-    /// Lower-case dotted name, for example `people.persons`.
+    /// Lower-case dotted machine key, for example `people.persons`; for a topic it is the schema name.
     pub name: &'static str,
+    /// The name shown to people, for example `Boards` for `whiteboard`.
+    pub display_name: &'static str,
+    /// Whether it is built.
+    pub status: Status,
     /// One line for people.
     pub description: &'static str,
 }
@@ -45,25 +58,47 @@ pub mod name {
     pub const IDENTITY_RADIUS: &str = "identity.radius";
 }
 
-/// Every capability of the list, in file order.
+/// Every capability of the list, in file order. A line that is not of the form `key | display | status | description`
+/// is skipped (the tests refuse such a file).
 pub fn all() -> impl Iterator<Item = Capability> {
     SOURCE.lines().filter_map(|line| {
         let line = line.trim();
         if line.is_empty() || line.starts_with('#') {
             return None;
         }
-        let (name, description) = line.split_once(char::is_whitespace).unwrap_or((line, ""));
+        let mut parts = line.splitn(4, '|').map(str::trim);
+        let (name, display_name, status, description) =
+            (parts.next()?, parts.next()?, parts.next()?, parts.next()?);
+        let status = match status {
+            "stable" => Status::Stable,
+            "planned" => Status::Planned,
+            _ => return None,
+        };
         Some(Capability {
             name,
-            description: description.trim(),
+            display_name,
+            status,
+            description,
         })
     })
 }
 
-/// Whether `name` is on the list.
+/// Whether `name` is on the list (planned ones included).
 #[must_use]
 pub fn is_known(name: &str) -> bool {
     all().any(|c| c.name == name)
+}
+
+/// Whether `name` is on the list but not built yet.
+#[must_use]
+pub fn is_planned(name: &str) -> bool {
+    all().any(|c| c.name == name && c.status == Status::Planned)
+}
+
+/// The name for people of the machine key `key` (`whiteboard` gives `Boards`); `None` for a key not on the list.
+#[must_use]
+pub fn display_name(key: &str) -> Option<&'static str> {
+    all().find(|c| c.name == key).map(|c| c.display_name)
 }
 
 /// Whether `name` has the form of a capability name: lower-case parts of `a-z`, digits and `-`, joined by dots, each part

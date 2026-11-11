@@ -1,30 +1,34 @@
-# Capability names (ADR 0068): ONE list, read by fs-store (fs_interfaces::capabilities) and by the catalog generator
-# (fs-catalog/scripts/gen_catalog.py reads this file). Format: `name` then a space and a short description; `#` starts a comment.
-# A name is lower-case dotted (`topic` or `topic.facet`). A package states a level `major.minor` next to the name (provides,
-# requires, recommends). Names of topics are the topics of fs-interfaces (ADR 0045); only append, never rename or remove.
-messenger         Saying something to someone (fs-messenger)
-people            People and how to reach them (fs-people)
-people.persons    A directory of persons (JSContact)
-people.users      Persons that can sign in
-groups            Groups, membership, delegation (fs-groups)
-events            Events (JSCalendar Event)
-tasks             Tasks (JSCalendar Task)
-dependency.evaluate Readiness of tasks from their dependencies
-dependency.cycle-check Refusing a dependency that would close a cycle
-comments          Comments on any object (AS2 Note)
-history           What was done (AS2 activities)
-resources         What we have and need
-files             Files and folders
-storage.provider  A storage provider: a tree of things one has access to (ADR 0070)
-texts             Texts and the wiki
-places            Places (GeoJSON)
-surveys           Asking and deciding together
-whiteboard         Visual boards
-streaming         Live media
-store             Installing and updating programs
-identity.accounts Accounts and credentials
-identity.oidc     Sign-in with OpenID Connect
-identity.ldap     A directory over LDAP
-identity.scim     Provisioning over SCIM
-identity.pam      System sign-in through PAM
-identity.radius   Network access over RADIUS
+# Capability names (ADR 0068): ONE list, read by fs-store (fs_interfaces::capabilities) and planned for the catalog generator
+# (fs-catalog/scripts/gen_catalog.py). One line per capability, fields separated by `|`, spaces around them ignored:
+#   key | display name | status | description
+# key: lower-case dotted machine name (`topic` or `topic.facet`); a topic key is the name of its schema in fs-interfaces
+#   (ADR 0068). display name: for people ("Boards" for key `whiteboard`); the pair lives here and nowhere else.
+# status: `stable` (the interface exists) or `planned` (named, not built yet; is_known is true, is_planned tells).
+# A package states a level `major.minor` next to the key (provides, requires, recommends). Only append, never rename or remove.
+# `#` starts a comment line.
+messenger | Messages | stable | Saying something to someone (fs-messenger)
+people | People | stable | People and how to reach them (fs-people)
+people.persons | Persons | stable | A directory of persons (JSContact)
+people.users | Users | stable | Persons that can sign in
+groups | Groups | stable | Groups, membership, delegation (fs-groups)
+events | Events | stable | Events (JSCalendar Event)
+tasks | Tasks | stable | Tasks (JSCalendar Task)
+dependency.evaluate | Task readiness | stable | Readiness of tasks from their dependencies
+dependency.cycle-check | Dependency cycle check | stable | Refusing a dependency that would close a cycle
+comments | Comments | stable | Comments on any object (AS2 Note)
+history | History | stable | What was done (AS2 activities)
+resources | Resources | stable | What we have and need
+files | Files | stable | Files and folders
+storage.provider | Storage provider | planned | A storage provider: a tree of things one has access to (ADR 0070)
+texts | Texts | stable | Texts and the wiki
+places | Places | stable | Places (GeoJSON)
+surveys | Decisions | stable | Asking and deciding together
+whiteboard | Boards | stable | Visual boards
+streaming | Live media | stable | Live media
+store | Store | stable | Installing and updating programs
+identity.accounts | Accounts | stable | Accounts and credentials
+identity.oidc | OpenID Connect | stable | Sign-in with OpenID Connect
+identity.ldap | LDAP | stable | A directory over LDAP
+identity.scim | SCIM | stable | Provisioning over SCIM
+identity.pam | PAM | stable | System sign-in through PAM
+identity.radius | RADIUS | stable | Network access over RADIUS
