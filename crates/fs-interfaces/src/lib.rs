@@ -42,6 +42,9 @@ pub mod values;
 pub mod common_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
+pub mod comments_capnp;
+#[rustfmt::skip]
+#[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod events_capnp;
 #[rustfmt::skip]
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
@@ -89,6 +92,7 @@ pub mod texts_capnp;
 #[allow(clippy::all, clippy::pedantic, unused_parens, dead_code, missing_docs)]
 pub mod types_capnp;
 
+pub mod capabilities;
 pub mod provider;
 #[cfg(feature = "rpc")]
 pub mod rpc;

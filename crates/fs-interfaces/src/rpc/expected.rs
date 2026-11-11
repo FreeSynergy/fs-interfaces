@@ -14,6 +14,10 @@ pub struct Expected {
     pub version: String,
     /// The protocol level, [`PROTOCOL`] of this crate.
     pub protocol: u32,
+    /// The program's name (`fs-people`); empty = any. A server that says another name is never replaced (a wrong `--socket`
+    /// must not end the server of another program): [`connect_matching`](super::connect_matching) fails with
+    /// [`HandshakeError::CannotRestart`]. A server that does not say its name is taken as it is.
+    program: Option<std::sync::Arc<String>>, // behind a pointer: keeps `HandshakeError` small
 }
 
 impl Expected {
@@ -23,7 +27,38 @@ impl Expected {
         Self {
             version: version.into(),
             protocol: PROTOCOL,
+            program: None,
         }
+    }
+
+    /// Also expects the server to be the program `name` (usually `env!("CARGO_PKG_NAME")`).
+    #[must_use]
+    pub fn with_program(mut self, name: impl Into<String>) -> Self {
+        let name = name.into();
+        self.program = (!name.is_empty()).then(|| std::sync::Arc::new(name));
+        self
+    }
+
+    /// The expected program's name; empty = any.
+    #[must_use]
+    pub fn program(&self) -> &str {
+        self.program.as_deref().map_or("", String::as_str)
+    }
+
+    /// Whether `info` names a program other than the expected one. Both names must be given to differ.
+    #[must_use]
+    pub fn is_other_program(&self, info: &ServerInfo) -> bool {
+        !self.program().is_empty() && !info.program.is_empty() && info.program != self.program()
+    }
+
+    /// The reason a server of another program is left alone.
+    #[must_use]
+    pub fn other_program_reason(&self, info: &ServerInfo) -> String {
+        format!(
+            "the socket is served by {}, not by {}: check the --socket argument",
+            info.program,
+            self.program()
+        )
     }
 
     /// Whether a server that says `info` is the one expected. A server that does not say its version is compared by the

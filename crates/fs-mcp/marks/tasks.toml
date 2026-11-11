@@ -4,9 +4,12 @@
 [Items]
 assign = "acts-in-name"
 assignLabel = "change"
+blockedBy = "read"
 create = "add"
 createRelation = "add"
+createRelationWithGap = "add"
 delete = "destructive"
+dependents = "read"
 edit = "change"
 editIf = "change"
 exportIcs = "read"
@@ -15,6 +18,7 @@ getByUid = "read"
 importIcs = "add"
 list = "read"
 query = "read"
+readiness = "read"
 
 [Tasks]
 boards = "read"

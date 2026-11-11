@@ -21,3 +21,4 @@ update = "acts-in-name"
 
 [format]
 "Package.summary" = "one-line description of a package from the signed catalog (plain text, AppStream <summary>); a display text, not a secret field"
+"Package.description.text" = "long description of a package from the signed catalog (plain text, AppStream <description>); a display text, not a secret field"

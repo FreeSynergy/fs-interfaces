@@ -22,7 +22,7 @@ mod reply;
 mod timeouts;
 mod worker;
 
-pub use fault::Fault;
+pub use fault::{Fault, connection_lost};
 pub use limited::call_limited;
 pub use remote::Remote;
 pub use timeouts::{CALL_TIMEOUT, CONNECT_TIMEOUT, Timeouts};

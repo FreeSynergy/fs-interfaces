@@ -1,0 +1,29 @@
+# Capability names (ADR 0068): ONE list, read by fs-store (fs_interfaces::capabilities) and by the catalog generator
+# (fs-catalog/scripts/gen_catalog.py reads this file). Format: `name` then a space and a short description; `#` starts a comment.
+# A name is lower-case dotted (`topic` or `topic.facet`). A package states a level `major.minor` next to the name (provides,
+# requires, recommends). Names of topics are the topics of fs-interfaces (ADR 0045); only append, never rename or remove.
+messages          Saying something to someone (fs-messenger)
+people            People and how to reach them (fs-people)
+people.persons    A directory of persons (JSContact)
+people.users      Persons that can sign in
+groups            Groups, membership, delegation (fs-groups)
+events            Events (JSCalendar Event)
+tasks             Tasks (JSCalendar Task)
+dependency.evaluate Readiness of tasks from their dependencies
+comments          Comments on any object (AS2 Note)
+history           What was done (AS2 activities)
+resources         What we have and need
+files             Files and folders
+storage.provider  A storage provider: a tree of things one has access to (ADR 0070)
+texts             Texts and the wiki
+places            Places (GeoJSON)
+decisions         Asking and deciding together
+boards            Visual boards
+streaming         Live media
+store             Installing and updating programs
+identity.accounts Accounts and credentials
+identity.oidc     Sign-in with OpenID Connect
+identity.ldap     A directory over LDAP
+identity.scim     Provisioning over SCIM
+identity.pam      System sign-in through PAM
+identity.radius   Network access over RADIUS

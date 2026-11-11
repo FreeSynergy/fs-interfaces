@@ -4,7 +4,7 @@
 
 use std::path::{Path, PathBuf};
 
-const SCHEMAS: [&str; 17] = [
+const SCHEMAS: [&str; 18] = [
     "common",
     "tasks",
     "messenger",
@@ -22,6 +22,7 @@ const SCHEMAS: [&str; 17] = [
     "streaming",
     "store",
     "types",
+    "comments",
 ];
 
 fn root() -> PathBuf {

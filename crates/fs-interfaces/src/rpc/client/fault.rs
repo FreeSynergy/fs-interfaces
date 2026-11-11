@@ -44,3 +44,20 @@ impl fmt::Display for Fault {
 }
 
 impl std::error::Error for Fault {}
+
+impl Fault {
+    /// Whether the server is out of reach for good (the connection thread ended): a window offers to connect again
+    /// ([`connect_matching`](crate::rpc::connect_matching)) instead of showing a plain failure.
+    #[must_use]
+    pub fn is_connection_lost(&self) -> bool {
+        matches!(self, Self::Gone { .. })
+    }
+}
+
+/// Whether a call failed because the connection ended under it (the server went away mid-session, for example after an
+/// update replaced it): `Disconnected` in the protocol. A window reads this as "the server went away" and connects again; any
+/// other error is the server's answer.
+#[must_use]
+pub fn connection_lost(e: &capnp::Error) -> bool {
+    e.kind == capnp::ErrorKind::Disconnected
+}

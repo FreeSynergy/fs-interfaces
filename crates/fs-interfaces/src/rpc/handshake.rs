@@ -48,6 +48,14 @@ pub async fn connect_matching_with<C: FromClientHook>(
     times: RestartTimes,
 ) -> Result<Connection<C>, HandshakeError> {
     let running = match ask::<C>(socket, times.call).await {
+        Ok((_, info)) if expected.is_other_program(&info) => {
+            // Never ends the server of another program: the socket is wrong.
+            return Err(HandshakeError::CannotRestart {
+                expected: expected.clone(),
+                reason: expected.other_program_reason(&info),
+                running: Some(info),
+            });
+        }
         Ok((connection, info)) if expected.accepts(&info) => return Ok(connection),
         Ok((connection, info)) => {
             drop(connection);
@@ -150,6 +158,9 @@ async fn end_server<C: FromClientHook>(
     times: RestartTimes,
 ) -> Result<Option<Connection<C>>, String> {
     match ask::<C>(socket, times.call).await {
+        Ok((_, info)) if expected.is_other_program(&info) => {
+            return Err(expected.other_program_reason(&info)); // replaced by another program meanwhile: leave it
+        }
         Ok((connection, info)) if expected.accepts(&info) => return Ok(Some(connection)),
         Ok(_) => {}
         Err(e) if is_absent(&e) => return Ok(None),

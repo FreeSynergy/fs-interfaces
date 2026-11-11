@@ -242,6 +242,17 @@ impl Endpoint for Unix {
                 "the server is this process (or not a process of its own)",
             ));
         }
+        // Only a process of this user (the pid came from peer credentials a moment ago and may have been reused since).
+        #[cfg(target_os = "linux")]
+        match std::fs::metadata(format!("/proc/{pid}")) {
+            Ok(meta) if meta.uid() != rustix::process::geteuid().as_raw() => {
+                return Err(io::Error::new(
+                    io::ErrorKind::PermissionDenied,
+                    "the process belongs to another user",
+                ));
+            }
+            _ => {} // gone (SRCH below) or this user's
+        }
         let pid = i32::try_from(pid)
             .ok()
             .and_then(rustix::process::Pid::from_raw)

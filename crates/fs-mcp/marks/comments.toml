@@ -1,0 +1,16 @@
+# Risk marks for comments.capnp (stage 1, provisional; they move into the contract as annotations later).
+# A method or union member without an entry counts as `unknown` and is listed by the tests.
+
+[Comments]
+add = "add"
+capabilities = "read"
+delete = "destructive"
+edit = "change"
+list = "read"
+subscribe = "read"
+supportReport = "read"
+
+[format]
+"Comment.body" = "comment text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"Comments.add.body" = "comment text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"
+"Comments.edit.body" = "comment text (plain text); a specialist or display format, not a secret field; it can still hold what a person wrote"

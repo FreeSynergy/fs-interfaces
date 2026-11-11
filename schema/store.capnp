@@ -18,6 +18,7 @@
 # is refused. Nothing here reads anything sensitive.
 #
 # Evolution rules (Cap'n Proto): never renumber or remove fields/methods; only append.
+# 0.0.19: `Package` got fields @7 to @18, `Release`, `Origin`, `Trust`, `CapabilityRef` and `Picture` are new; nothing was renumbered.
 
 @0xd8a3f61b9c27e504;
 
@@ -27,6 +28,7 @@ using CapabilityList = C.CapabilityList;
 using SupportReport = C.SupportReport;
 using ChangeListener = C.ChangeListener;
 using Subscription = C.Subscription;
+using Timestamp = C.Timestamp;
 
 enum PackageKind {
   program   @0;
@@ -83,6 +85,56 @@ struct Package {
   source    @4 :Text;    # source id
   summary   @5 :Text;
   facets    @6 :List(Text);
+  # Appended in 0.0.19 (ADR 0068; information per package). All optional: a catalog that does not say leaves the default
+  # (0, empty), and a client that does not know the fields reads the package as before.
+  size      @7 :UInt64;                  # bytes of the release file; 0 = not said
+  released  @8 :Timestamp;               # release date of `version`; `unixMillis` 0 = not said
+  releases  @9 :List(Release);           # changes per version, newest first; may be empty
+  origin    @10 :Origin;
+  trust     @11 :Trust;
+  # What the package offers, needs and can use (ADR 0068). Names come from the list of `fs-interfaces`
+  # (`fs_interfaces::capabilities`, `schema/capabilities.txt`); a name the reader does not know is shown, never dropped.
+  provides   @12 :List(CapabilityRef);   # `version` = the level offered
+  requires   @13 :List(CapabilityRef);   # `version` = the least level needed (mandatory)
+  recommends @14 :List(CapabilityRef);   # `version` = the least level that helps (optional)
+  iconSha256 @15 :Text;                  # lower-case hex of the icon file; empty = the catalog has no icon (shown as missing)
+  pictures   @16 :List(Picture);         # screenshots; only https, with checksum and licence (else the store lists them as withheld)
+  description :union {                   # the long description: text, or a block of the wiki (type only, nothing is loaded here)
+    text      @17 :Text;                 # default arm: unset = empty text
+    wikiBlock @18 :Text;                 # id of a wiki block (ADR 0031)
+  }
+}
+
+# One entry of the change list of a package.
+struct Release {
+  version  @0 :Text;
+  released @1 :Timestamp;                # `unixMillis` 0 = not said
+  changes  @2 :Text;                     # plain text; empty = not said
+}
+
+# Where a package comes from (mirror, ADR 0068). All parts optional.
+struct Origin {
+  source          @0 :Text;              # https address the maker publishes it at (the mirror's upstream)
+  maker           @1 :Text;              # name of the maker (organisation or person)
+  makerSignature  @2 :Text;              # the maker's own signature, as the catalog gives it (fingerprint or address); empty = none
+  sourceCode      @3 :Text;              # https address of the source code of exactly this version, mirrored with the package
+}
+
+# How far a package can be trusted, as the store verified it. Clients must tolerate values they do not know.
+enum Trust {
+  unknown      @0;                       # not said
+  checksumOnly @1;                       # only a checksum
+  ourKeyOnly   @2;                       # signed by the key of the source
+  makerAndMirror @3;                     # the maker's signature checked, then signed by the mirror
+}
+
+# A capability (ADR 0068): a name of the list in `fs-interfaces` and a level `major.minor`; empty level = any.
+struct CapabilityRef { name @0 :Text; version @1 :Text; }
+
+struct Picture {
+  url     @0 :Text;                      # https only
+  sha256  @1 :Text;                      # lower-case hex
+  license @2 :Text;                      # SPDX id or text; empty = unclear (the store withholds the picture)
 }
 
 # A catalog entry the store refused to offer, with the reason; never dropped silently.
