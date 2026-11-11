@@ -2,7 +2,7 @@
 # (fs-catalog/scripts/gen_catalog.py reads this file). Format: `name` then a space and a short description; `#` starts a comment.
 # A name is lower-case dotted (`topic` or `topic.facet`). A package states a level `major.minor` next to the name (provides,
 # requires, recommends). Names of topics are the topics of fs-interfaces (ADR 0045); only append, never rename or remove.
-messages          Saying something to someone (fs-messenger)
+messenger         Saying something to someone (fs-messenger)
 people            People and how to reach them (fs-people)
 people.persons    A directory of persons (JSContact)
 people.users      Persons that can sign in
@@ -18,8 +18,8 @@ files             Files and folders
 storage.provider  A storage provider: a tree of things one has access to (ADR 0070)
 texts             Texts and the wiki
 places            Places (GeoJSON)
-decisions         Asking and deciding together
-boards            Visual boards
+surveys           Asking and deciding together
+whiteboard         Visual boards
 streaming         Live media
 store             Installing and updating programs
 identity.accounts Accounts and credentials
