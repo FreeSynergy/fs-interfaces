@@ -61,11 +61,12 @@ impl Expected {
         )
     }
 
-    /// Whether a server that says `info` is the one expected. A server that does not say its version is compared by the
+    /// Whether a server that says `info` is the one expected (not another program, same protocol, same version). A server that does not say its version is compared by the
     /// protocol alone.
     #[must_use]
     pub fn accepts(&self, info: &ServerInfo) -> bool {
-        info.protocol == self.protocol
+        !self.is_other_program(info)
+            && info.protocol == self.protocol
             && (self.version.is_empty() || info.version.is_empty() || info.version == self.version)
     }
 }

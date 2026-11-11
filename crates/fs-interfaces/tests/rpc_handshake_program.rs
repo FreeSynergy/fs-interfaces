@@ -52,3 +52,19 @@ fn a_server_of_another_program_is_left_alone() {
         wait_gone(&socket).await;
     });
 }
+
+#[test]
+fn accepts_refuses_another_program() {
+    use fs_interfaces::rpc::{PROTOCOL, ServerInfo};
+    let info = |program: &str| ServerInfo {
+        program: program.to_owned(),
+        version: "0.0.3".to_owned(),
+        protocol: PROTOCOL,
+    };
+    let expected = Expected::new("0.0.3").with_program("fs-people");
+    assert!(expected.accepts(&info("fs-people")));
+    assert!(expected.accepts(&info(""))); // a server that does not say its name
+    assert!(!expected.accepts(&info("fs-files")));
+    assert!(Expected::new("0.0.3").accepts(&info("fs-files"))); // no name expected
+    assert_eq!(expected.program(), "fs-people");
+}
