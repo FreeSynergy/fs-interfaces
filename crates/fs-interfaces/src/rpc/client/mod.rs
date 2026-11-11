@@ -15,6 +15,7 @@
 //! ends without one, so a lost job reads as [`Fault::Interrupted`] and not as a lost connection.
 
 mod fault;
+mod limited;
 pub mod problems;
 mod remote;
 mod reply;
@@ -22,6 +23,7 @@ mod timeouts;
 mod worker;
 
 pub use fault::Fault;
+pub use limited::call_limited;
 pub use remote::Remote;
 pub use timeouts::{CALL_TIMEOUT, CONNECT_TIMEOUT, Timeouts};
 pub use worker::Worker;

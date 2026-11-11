@@ -246,10 +246,11 @@ impl Endpoint for Unix {
             .ok()
             .and_then(rustix::process::Pid::from_raw)
             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "not a process"))?;
-        Ok(rustix::process::kill_process(
-            pid,
-            rustix::process::Signal::TERM,
-        )?)
+        match rustix::process::kill_process(pid, rustix::process::Signal::TERM) {
+            // No such process: it ended between the lookup and the signal, which is what was wanted.
+            Ok(()) | Err(Errno::SRCH) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
     }
 
     async fn connect(path: &Path) -> io::Result<UnixStream> {

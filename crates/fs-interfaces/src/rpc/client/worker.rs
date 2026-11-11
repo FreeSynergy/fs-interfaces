@@ -25,7 +25,7 @@ use crate::Capabilities;
 use crate::rpc::connect;
 
 use super::reply::Reply;
-use super::{Fault, Remote, Timeouts};
+use super::{Fault, Remote, Timeouts, call_limited};
 
 /// A command for the thread of the connection.
 type Job<R> = Box<dyn FnOnce(R) -> Pin<Box<dyn Future<Output = ()>>> + Send>;
@@ -145,14 +145,26 @@ impl<R: Remote> Worker<R> {
         F: FnOnce(R) -> Fut + Send + 'static,
         Fut: Future<Output = T> + 'static,
     {
-        let (server, limit) = (self.server, self.timeouts.call);
+        self.call_within(self.timeouts.call, work).await
+    }
+
+    /// [`call`](Self::call) with a deadline of its own, for a call that may take longer (a transfer) or must be quick.
+    ///
+    /// # Errors
+    /// As for [`call`](Self::call), with `limit` as the deadline.
+    pub async fn call_within<T, F, Fut>(&self, limit: Duration, work: F) -> Result<T, Fault>
+    where
+        T: Send + 'static,
+        F: FnOnce(R) -> Fut + Send + 'static,
+        Fut: Future<Output = T> + 'static,
+    {
+        let server = self.server;
         let gone = Fault::Gone { server };
         let (to, answer) = oneshot::channel();
         let job: Job<R> = Box::new(move |remote| {
             Box::pin(async move {
                 let reply = Reply::started(to, server);
-                let done = tokio::time::timeout(limit, work(remote)).await;
-                reply.send(done.map_err(|_| Fault::TimedOut { server, limit }));
+                reply.send(call_limited(server, limit, work(remote)).await);
             })
         });
         self.jobs.send(job).map_err(|_| gone.clone())?;
