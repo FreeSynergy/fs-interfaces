@@ -65,7 +65,14 @@ enum OnConflict { refuse @0; keepBoth @1; }
 # `modified` = the time the record last changed (rename, move, new bytes found by rescan), not the disk's mtime.
 # `size`: a folder counts as 0. `mediaType`: ascending only (descending answers Unsupported); a folder counts as inode/directory.
 enum SortBy { name @0; modified @1; size @2; mediaType @3; }
-struct Sort { by @0 :SortBy; descending @1 :Bool; }
+struct Sort {
+  by @0 :SortBy;
+  descending @1 :Bool;
+  # Appended in 0.0.19. Folders come before files, whatever `by` says (ties still by name, then id). The default is TRUE, as
+  # Cap'n Proto stores a Bool's default by XOR: a message of an old client, which never writes this field, reads as true, so
+  # nothing switches silently. A client that wants a mixed order sets it to false.
+  foldersFirst @2 :Bool = true;
+}
 
 struct File {
   envelope  @0 :Envelope;          # AS2 `Document` (`Image`, `Video`, `Audio` where they apply); envelope.name = the real file name
