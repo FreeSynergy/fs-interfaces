@@ -56,6 +56,12 @@ pub mod name {
     pub const IDENTITY_PAM: &str = "identity.pam";
     /// Network access over RADIUS.
     pub const IDENTITY_RADIUS: &str = "identity.radius";
+    /// Authorisation with OAuth 2.0.
+    pub const IDENTITY_OAUTH2: &str = "identity.oauth2";
+    /// Public SSH keys on accounts.
+    pub const IDENTITY_SSH_KEYS: &str = "identity.ssh-keys";
+    /// Sign-in with `WebAuthn` passkeys.
+    pub const IDENTITY_PASSKEYS: &str = "identity.passkeys";
 }
 
 /// Every capability of the list, in file order. A line that is not of the form `key | display | status | description`

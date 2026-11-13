@@ -703,7 +703,7 @@ checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
 name = "fs-interfaces"
-version = "0.0.1"
+version = "0.0.20"
 dependencies = [
  "capnp",
  "capnp-compiler",
@@ -724,7 +724,7 @@ dependencies = [
 
 [[package]]
 name = "fs-mcp"
-version = "0.0.1"
+version = "0.0.20"
 dependencies = [
  "capnp",
  "capnp-compiler",
@@ -763,7 +763,7 @@ dependencies = [
 
 [[package]]
 name = "fs-types"
-version = "0.0.1"
+version = "0.0.20"
 dependencies = [
  "capnp",
  "capnp-rpc",
@@ -1873,7 +1873,7 @@ dependencies = [
 
 [[package]]
 name = "regenerate"
-version = "0.0.1"
+version = "0.0.20"
 dependencies = [
  "capnp-compiler",
  "capnpc",

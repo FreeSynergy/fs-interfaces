@@ -32,3 +32,6 @@ identity.ldap | LDAP | stable | A directory over LDAP
 identity.scim | SCIM | stable | Provisioning over SCIM
 identity.pam | PAM | stable | System sign-in through PAM
 identity.radius | RADIUS | stable | Network access over RADIUS
+identity.oauth2 | OAuth 2.0 | planned | Authorisation with OAuth 2.0 (code grant, client credentials, introspection, token exchange)
+identity.ssh-keys | SSH keys | planned | Public SSH keys on accounts, handed out to servers
+identity.passkeys | Passkeys | planned | Sign-in with WebAuthn passkeys

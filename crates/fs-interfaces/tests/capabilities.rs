@@ -29,6 +29,9 @@ fn constants_are_on_the_list() {
         name::IDENTITY_SCIM,
         name::IDENTITY_PAM,
         name::IDENTITY_RADIUS,
+        name::IDENTITY_OAUTH2,
+        name::IDENTITY_SSH_KEYS,
+        name::IDENTITY_PASSKEYS,
     ] {
         assert!(capabilities::is_known(n), "{n}");
     }
@@ -59,6 +62,17 @@ fn display_names_pair_with_the_schema_keys_and_planned_is_marked() {
     assert_eq!(capabilities::display_name("boards"), None);
     assert!(capabilities::is_planned(name::STORAGE_PROVIDER));
     assert!(capabilities::is_known(name::STORAGE_PROVIDER));
+    for n in [
+        name::IDENTITY_OAUTH2,
+        name::IDENTITY_SSH_KEYS,
+        name::IDENTITY_PASSKEYS,
+    ] {
+        assert!(capabilities::is_planned(n), "{n}");
+    }
+    assert_eq!(
+        capabilities::display_name(name::IDENTITY_OAUTH2),
+        Some("OAuth 2.0")
+    );
     assert!(!capabilities::is_planned(name::COMMENTS));
     assert!(!capabilities::is_planned("nonsense"));
 }

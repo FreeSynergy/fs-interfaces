@@ -35,6 +35,7 @@ enum PackageKind {
   frontend  @1;
   component @2;
   theme     @3;
+  server    @4;   # a program that runs on a server (0.0.20; ADR 0077)
 }
 
 enum PackageFormat {
